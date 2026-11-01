@@ -31,6 +31,12 @@ export const CreateLendingModal: React.FC<CreateLendingModalProps> = ({
   const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async () => {
+    if (!activeWorkspace) {
+      setError('Please create or select an account first');
+      haptics.error();
+      return;
+    }
+
     if (!contactName.trim()) {
       setError('Contact / Person name is required');
       haptics.error();
@@ -49,10 +55,11 @@ export const CreateLendingModal: React.FC<CreateLendingModalProps> = ({
       setError(null);
 
       await lendingApi.create({
+        accountId: activeWorkspace.id,
         borrowerOrLenderName: contactName.trim(),
         type,
         totalAmount: parsedAmount,
-        currency: activeWorkspace?.currency || 'USD',
+        currency: activeWorkspace.currency || activeWorkspace.currencyCode || 'USD',
         notes: notes.trim() || undefined,
         dueDate: undefined,
       });

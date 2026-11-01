@@ -89,46 +89,71 @@ if (app.Environment.IsDevelopment())
             {
                 try
                 {
-                    await dbContext.Database.ExecuteSqlRawAsync(
-                        """
-                        ALTER TABLE accounts ADD COLUMN IF NOT EXISTS is_default BOOLEAN NOT NULL DEFAULT FALSE;
-                        CREATE INDEX IF NOT EXISTS ix_accounts_user_id_is_default ON accounts (user_id, is_default);
-                        ALTER TABLE categories ADD COLUMN IF NOT EXISTS account_id UUID NULL REFERENCES accounts(id) ON DELETE CASCADE;
-                        ALTER TABLE budgets ADD COLUMN IF NOT EXISTS account_id UUID NULL REFERENCES accounts(id) ON DELETE CASCADE;
-                        ALTER TABLE savings_goals ADD COLUMN IF NOT EXISTS account_id UUID NULL REFERENCES accounts(id) ON DELETE CASCADE;
-                        CREATE INDEX IF NOT EXISTS ix_categories_user_id_account_id ON categories (user_id, account_id);
-                        CREATE INDEX IF NOT EXISTS ix_savings_goals_user_id_account_id ON savings_goals (user_id, account_id);
+                var sqlStatements = new[]
+                {
+                    "ALTER TABLE accounts ADD COLUMN IF NOT EXISTS is_default BOOLEAN NOT NULL DEFAULT FALSE;",
+                    "CREATE INDEX IF NOT EXISTS ix_accounts_user_id_is_default ON accounts (user_id, is_default);",
+                    """
+                    DO $$ 
+                    BEGIN 
+                        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'categories' AND column_name = 'account_id') THEN
+                            ALTER TABLE categories ADD COLUMN account_id UUID NULL REFERENCES accounts("Id") ON DELETE CASCADE;
+                        END IF;
+                        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'budgets' AND column_name = 'account_id') THEN
+                            ALTER TABLE budgets ADD COLUMN account_id UUID NULL REFERENCES accounts("Id") ON DELETE CASCADE;
+                        END IF;
+                        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'savings_goals' AND column_name = 'account_id') THEN
+                            ALTER TABLE savings_goals ADD COLUMN account_id UUID NULL REFERENCES accounts("Id") ON DELETE CASCADE;
+                        END IF;
+                    END $$;
+                    """,
+                    "CREATE INDEX IF NOT EXISTS ix_categories_user_id_account_id ON categories (user_id, account_id);",
+                    "CREATE INDEX IF NOT EXISTS ix_savings_goals_user_id_account_id ON savings_goals (user_id, account_id);",
+                    """
+                    CREATE TABLE IF NOT EXISTS lending_records (
+                        "Id" UUID PRIMARY KEY,
+                        user_id VARCHAR(128) NOT NULL,
+                        account_id UUID NOT NULL REFERENCES accounts("Id") ON DELETE CASCADE,
+                        type INT NOT NULL,
+                        counterparty VARCHAR(100) NOT NULL,
+                        original_amount NUMERIC(19, 4) NOT NULL,
+                        remaining_amount NUMERIC(19, 4) NOT NULL,
+                        currency_code VARCHAR(3) NOT NULL,
+                        due_date DATE NULL,
+                        notes VARCHAR(500) NULL,
+                        status INT NOT NULL,
+                        created_at_utc TIMESTAMPTZ NOT NULL,
+                        updated_at_utc TIMESTAMPTZ NULL
+                    );
+                    """,
+                    "CREATE INDEX IF NOT EXISTS ix_lending_records_user_id_account_id ON lending_records (user_id, account_id);",
+                    "CREATE INDEX IF NOT EXISTS ix_lending_records_user_id_status ON lending_records (user_id, status);",
+                    """
+                    CREATE TABLE IF NOT EXISTS lending_payments (
+                        "Id" UUID PRIMARY KEY,
+                        lending_record_id UUID NOT NULL REFERENCES lending_records("Id") ON DELETE CASCADE,
+                        amount NUMERIC(19, 4) NOT NULL,
+                        currency_code VARCHAR(3) NOT NULL,
+                        occurred_on DATE NOT NULL,
+                        notes VARCHAR(500) NULL,
+                        created_at_utc TIMESTAMPTZ NOT NULL,
+                        updated_at_utc TIMESTAMPTZ NULL
+                    );
+                    """,
+                    "CREATE INDEX IF NOT EXISTS ix_lending_payments_lending_record_id ON lending_payments (lending_record_id);"
+                };
 
-                        CREATE TABLE IF NOT EXISTS lending_records (
-                            id UUID PRIMARY KEY,
-                            user_id VARCHAR(128) NOT NULL,
-                            account_id UUID NOT NULL REFERENCES accounts(id) ON DELETE CASCADE,
-                            type INT NOT NULL,
-                            counterparty VARCHAR(100) NOT NULL,
-                            original_amount NUMERIC(19, 4) NOT NULL,
-                            remaining_amount NUMERIC(19, 4) NOT NULL,
-                            currency_code VARCHAR(3) NOT NULL,
-                            due_date DATE NULL,
-                            notes VARCHAR(500) NULL,
-                            status INT NOT NULL,
-                            created_at_utc TIMESTAMPTZ NOT NULL,
-                            updated_at_utc TIMESTAMPTZ NULL
-                        );
-                        CREATE INDEX IF NOT EXISTS ix_lending_records_user_id_account_id ON lending_records (user_id, account_id);
-                        CREATE INDEX IF NOT EXISTS ix_lending_records_user_id_status ON lending_records (user_id, status);
-
-                        CREATE TABLE IF NOT EXISTS lending_payments (
-                            id UUID PRIMARY KEY,
-                            lending_record_id UUID NOT NULL REFERENCES lending_records(id) ON DELETE CASCADE,
-                            amount NUMERIC(19, 4) NOT NULL,
-                            currency_code VARCHAR(3) NOT NULL,
-                            occurred_on DATE NOT NULL,
-                            notes VARCHAR(500) NULL,
-                            created_at_utc TIMESTAMPTZ NOT NULL,
-                            updated_at_utc TIMESTAMPTZ NULL
-                        );
-                        CREATE INDEX IF NOT EXISTS ix_lending_payments_lending_record_id ON lending_payments (lending_record_id);
-                        """);
+                foreach (var sql in sqlStatements)
+                {
+                    try
+                    {
+                        await dbContext.Database.ExecuteSqlRawAsync(sql);
+                    }
+                    catch (Exception sqlEx)
+                    {
+                        app.Logger.LogWarning(sqlEx, "Schema migration statement skipped or failed: {Sql}", sql);
+                    }
+                }
                 }
                 catch (Exception sqlEx)
                 {

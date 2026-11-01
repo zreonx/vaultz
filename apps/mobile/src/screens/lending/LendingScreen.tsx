@@ -44,8 +44,9 @@ export const LendingScreen: React.FC = () => {
   const loadData = useCallback(async () => {
     try {
       const [sumRes, itemsRes] = await Promise.all([
-        lendingApi.getSummary(),
+        lendingApi.getSummary(activeWorkspace?.id),
         lendingApi.list({
+          accountId: activeWorkspace?.id,
           type: selectedTab === 'Lent' || selectedTab === 'Borrowed' ? selectedTab : undefined,
           status: selectedTab === 'Settled' ? 'Settled' : undefined,
         }),
@@ -57,7 +58,7 @@ export const LendingScreen: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [selectedTab]);
+  }, [activeWorkspace?.id, selectedTab]);
 
   useEffect(() => {
     loadData();

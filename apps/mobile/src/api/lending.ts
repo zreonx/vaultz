@@ -7,7 +7,7 @@ import {
 } from "@/types/api";
 
 export interface CreateLendingRequest {
-  accountId?: string;
+  accountId: string;
   type: LendingType | 'Lent' | 'Borrowed' | string;
   counterparty?: string;
   borrowerOrLenderName?: string;
@@ -55,24 +55,24 @@ export const lendingApi = {
 
     return {
       ...res,
-      totalLent: res.totalLentRemaining,
-      totalBorrowed: res.totalBorrowedRemaining,
+      totalLent: res.totalLentRemaining ?? 0,
+      totalBorrowed: res.totalBorrowedRemaining ?? 0,
       records: (res.records || []).map(mapLendingRecord),
     };
   },
 
-  async list(filter: { type?: string; status?: string } = {}): Promise<LendingRecordResponse[]> {
-    const summary = await lendingApi.getSummary();
+  async list(filter: { accountId?: string; type?: string; status?: string } = {}): Promise<LendingRecordResponse[]> {
+    const summary = await lendingApi.getSummary(filter.accountId);
     let records = summary.records || [];
 
     if (filter.type) {
       const typeLower = filter.type.toLowerCase();
-      records = records.filter((r) => r.typeName.toLowerCase().includes(typeLower));
+      records = records.filter((r) => (r.typeName || '').toLowerCase().includes(typeLower));
     }
 
     if (filter.status) {
       const statusLower = filter.status.toLowerCase();
-      records = records.filter((r) => r.statusName.toLowerCase().includes(statusLower));
+      records = records.filter((r) => (r.statusName || '').toLowerCase().includes(statusLower));
     }
 
     return records;
@@ -80,7 +80,7 @@ export const lendingApi = {
 
   async createRecord(data: CreateLendingRequest): Promise<LendingRecordResponse> {
     const payload = {
-      accountId: data.accountId || "00000000-0000-0000-0000-000000000000",
+      accountId: data.accountId,
       type: resolveLendingType(data.type),
       counterparty: data.counterparty || data.borrowerOrLenderName || "Contact",
       amount: data.amount ?? data.totalAmount ?? 0,

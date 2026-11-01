@@ -28,6 +28,10 @@ namespace Vaultz.Infrastructure.Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<Guid?>("AccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("account_id");
+
                     b.Property<Guid>("CategoryId")
                         .HasColumnType("uuid")
                         .HasColumnName("category_id");
@@ -68,9 +72,9 @@ namespace Vaultz.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("UserId", "Year", "Month", "CategoryId", "CurrencyCode")
+                    b.HasIndex("UserId", "Year", "Month", "CategoryId", "AccountId", "CurrencyCode")
                         .IsUnique()
-                        .HasDatabaseName("ux_budgets_user_period_category_currency");
+                        .HasDatabaseName("ux_budgets_user_period_category_account_currency");
 
                     b.ToTable("budgets", (string)null);
                 });
@@ -80,6 +84,10 @@ namespace Vaultz.Infrastructure.Persistence.Migrations
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
+
+                    b.Property<Guid?>("AccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("account_id");
 
                     b.Property<string>("ColorHex")
                         .IsRequired()
@@ -117,6 +125,9 @@ namespace Vaultz.Infrastructure.Persistence.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("UserId", "AccountId")
+                        .HasDatabaseName("ix_categories_user_id_account_id");
+
                     b.HasIndex("UserId", "Type")
                         .HasDatabaseName("ix_categories_user_id_type");
 
@@ -149,6 +160,12 @@ namespace Vaultz.Infrastructure.Persistence.Migrations
                         .HasColumnType("boolean")
                         .HasColumnName("is_archived");
 
+                    b.Property<bool>("IsDefault")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_default");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -173,6 +190,9 @@ namespace Vaultz.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("UserId", "IsArchived")
                         .HasDatabaseName("ix_accounts_user_id_is_archived");
+
+                    b.HasIndex("UserId", "IsDefault")
+                        .HasDatabaseName("ix_accounts_user_id_is_default");
 
                     b.ToTable("accounts", (string)null);
                 });
@@ -217,6 +237,22 @@ namespace Vaultz.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("destination_account_id");
 
+                    b.Property<decimal?>("DestinationAmount")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("numeric(19,4)")
+                        .HasColumnName("destination_amount");
+
+                    b.Property<string>("DestinationCurrencyCode")
+                        .HasMaxLength(3)
+                        .HasColumnType("character(3)")
+                        .HasColumnName("destination_currency_code")
+                        .IsFixedLength();
+
+                    b.Property<decimal?>("ExchangeRate")
+                        .HasPrecision(19, 6)
+                        .HasColumnType("numeric(19,6)")
+                        .HasColumnName("exchange_rate");
+
                     b.Property<string>("Notes")
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)")
@@ -252,6 +288,128 @@ namespace Vaultz.Infrastructure.Persistence.Migrations
                         .HasDatabaseName("ix_transactions_user_id_occurred_on");
 
                     b.ToTable("transactions", (string)null);
+                });
+
+            modelBuilder.Entity("Vaultz.Domain.Entities.LendingPayment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("numeric(19,4)")
+                        .HasColumnName("amount");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<string>("CurrencyCode")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("character(3)")
+                        .HasColumnName("currency_code")
+                        .IsFixedLength();
+
+                    b.Property<Guid>("LendingRecordId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("lending_record_id");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("notes");
+
+                    b.Property<DateOnly>("OccurredOn")
+                        .HasColumnType("date")
+                        .HasColumnName("occurred_on");
+
+                    b.Property<DateTimeOffset?>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LendingRecordId")
+                        .HasDatabaseName("ix_lending_payments_lending_record_id");
+
+                    b.ToTable("lending_payments", (string)null);
+                });
+
+            modelBuilder.Entity("Vaultz.Domain.Entities.LendingRecord", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("account_id");
+
+                    b.Property<string>("Counterparty")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("counterparty");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<string>("CurrencyCode")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("character(3)")
+                        .HasColumnName("currency_code")
+                        .IsFixedLength();
+
+                    b.Property<DateOnly?>("DueDate")
+                        .HasColumnType("date")
+                        .HasColumnName("due_date");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("notes");
+
+                    b.Property<decimal>("OriginalAmount")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("numeric(19,4)")
+                        .HasColumnName("original_amount");
+
+                    b.Property<decimal>("RemainingAmount")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("numeric(19,4)")
+                        .HasColumnName("remaining_amount");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer")
+                        .HasColumnName("status");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("integer")
+                        .HasColumnName("type");
+
+                    b.Property<DateTimeOffset?>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "AccountId")
+                        .HasDatabaseName("ix_lending_records_user_id_account_id");
+
+                    b.HasIndex("UserId", "Status")
+                        .HasDatabaseName("ix_lending_records_user_id_status");
+
+                    b.ToTable("lending_records", (string)null);
                 });
 
             modelBuilder.Entity("Vaultz.Domain.Entities.RecurringTransaction", b =>
@@ -338,6 +496,10 @@ namespace Vaultz.Infrastructure.Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<Guid?>("AccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("account_id");
+
                     b.Property<DateTimeOffset>("CreatedAtUtc")
                         .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at_utc");
@@ -383,6 +545,9 @@ namespace Vaultz.Infrastructure.Persistence.Migrations
 
                     b.HasIndex("UserId")
                         .HasDatabaseName("ix_savings_goals_user_id");
+
+                    b.HasIndex("UserId", "AccountId")
+                        .HasDatabaseName("ix_savings_goals_user_id_account_id");
 
                     b.ToTable("savings_goals", (string)null);
                 });
@@ -433,6 +598,20 @@ namespace Vaultz.Infrastructure.Persistence.Migrations
                         .HasDatabaseName("ux_users_email");
 
                     b.ToTable("users", (string)null);
+                });
+
+            modelBuilder.Entity("Vaultz.Domain.Entities.LendingPayment", b =>
+                {
+                    b.HasOne("Vaultz.Domain.Entities.LendingRecord", null)
+                        .WithMany("Payments")
+                        .HasForeignKey("LendingRecordId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Vaultz.Domain.Entities.LendingRecord", b =>
+                {
+                    b.Navigation("Payments");
                 });
 #pragma warning restore 612, 618
         }
