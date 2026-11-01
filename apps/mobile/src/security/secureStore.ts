@@ -70,6 +70,32 @@ export const secureStore = {
     await secureStore.removeToken();
     try {
       await SecureStore.deleteItemAsync(USER_KEY);
+      await SecureStore.deleteItemAsync(BIOMETRIC_ENABLED_KEY);
+      await SecureStore.deleteItemAsync(HIDE_BALANCE_KEY);
+    } catch {
+      // Ignore
+    }
+  },
+
+  async getItemAsync(key: string): Promise<string | null> {
+    try {
+      return await SecureStore.getItemAsync(key);
+    } catch {
+      return null;
+    }
+  },
+
+  async setItemAsync(key: string, value: string): Promise<void> {
+    try {
+      await SecureStore.setItemAsync(key, value);
+    } catch {
+      // Ignore
+    }
+  },
+
+  async deleteItemAsync(key: string): Promise<void> {
+    try {
+      await SecureStore.deleteItemAsync(key);
     } catch {
       // Ignore
     }

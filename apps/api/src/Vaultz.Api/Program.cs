@@ -34,19 +34,41 @@ builder.Services.AddOpenApi();
 // HealthChecks foundation
 builder.Services.AddHealthChecks();
 
-// Explicit CORS configuration for known frontend origins
+// Explicit CORS configuration for known frontend and mobile origins
 var allowedOrigins = builder.Configuration
     .GetSection("Cors:AllowedOrigins")
-    .Get<string[]>() ?? ["http://localhost:3000"];
+    .Get<string[]>() ?? ["http://localhost:3000", "http://localhost:8081", "http://localhost:19006"];
 
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("VaultzFrontend", policy =>
     {
-        policy.WithOrigins(allowedOrigins)
-              .AllowAnyHeader()
-              .AllowAnyMethod()
-              .AllowCredentials();
+        if (builder.Environment.IsDevelopment())
+        {
+            policy.SetIsOriginAllowed(origin =>
+            {
+                if (string.IsNullOrEmpty(origin)) return false;
+                if (allowedOrigins.Contains(origin)) return true;
+                if (Uri.TryCreate(origin, UriKind.Absolute, out var uri))
+                {
+                    return uri.Host == "localhost"
+                        || uri.Host == "127.0.0.1"
+                        || uri.Host.StartsWith("192.168.")
+                        || uri.Host.StartsWith("10.");
+                }
+                return false;
+            })
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials();
+        }
+        else
+        {
+            policy.WithOrigins(allowedOrigins)
+                  .AllowAnyHeader()
+                  .AllowAnyMethod()
+                  .AllowCredentials();
+        }
     });
 });
 

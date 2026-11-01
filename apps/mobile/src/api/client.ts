@@ -1,19 +1,42 @@
 import { Platform } from "react-native";
 import { secureStore } from "@/security/secureStore";
 
-// Default local dev URLs:
-// - Android Emulator uses 10.0.2.2 to access host machine localhost
-// - iOS Simulator and Web use localhost:5180
-const DEFAULT_API_BASE_URL = Platform.select({
-  android: "http://10.0.2.2:5180",
-  default: "http://localhost:5180",
-});
+// Dynamic default API base URL:
+// - Web: uses current window hostname (e.g. localhost or local IP) with port 5180
+// - Native Android / iOS: defaults to host machine LAN IP (192.168.254.194) or emulator loopback
+function getDefaultBaseUrl(): string {
+  if (Platform.OS === "web" && typeof window !== "undefined" && window.location) {
+    const host = window.location.hostname || "localhost";
+    return `http://${host}:5180`;
+  }
 
-let configuredApiBaseUrl = DEFAULT_API_BASE_URL;
+  // Native defaults:
+  // 192.168.254.194 allows physical mobile devices on the same Wi-Fi to connect to the host API
+  return "http://192.168.254.194:5180";
+}
+
+let configuredApiBaseUrl = getDefaultBaseUrl();
+
+// Try to load any previously saved custom API base URL from storage
+(async () => {
+  try {
+    const saved = await secureStore.getItemAsync?.("vaultz.custom_api_url");
+    if (saved) {
+      configuredApiBaseUrl = saved;
+    }
+  } catch {
+    // Ignore storage errors on startup
+  }
+})();
 
 export function setApiBaseUrl(url: string) {
   if (url) {
     configuredApiBaseUrl = url.replace(/\/+$/, "");
+    try {
+      secureStore.setItemAsync?.("vaultz.custom_api_url", configuredApiBaseUrl);
+    } catch {
+      // Ignore
+    }
   }
 }
 
