@@ -2,11 +2,12 @@ import React from "react";
 import {
   KeyboardAvoidingView,
   Platform,
-  SafeAreaView,
+  StatusBar as RNStatusBar,
   StyleSheet,
   View,
   ViewStyle,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { colors } from "@/theme/colors";
 
@@ -14,18 +15,48 @@ interface ScreenWrapperProps {
   children: React.ReactNode;
   style?: ViewStyle;
   disableKeyboardAvoid?: boolean;
+  includeBottomInset?: boolean;
+  includeTopInset?: boolean;
 }
 
 export function ScreenWrapper({
   children,
   style,
   disableKeyboardAvoid = false,
+  includeBottomInset = false,
+  includeTopInset = true,
 }: ScreenWrapperProps) {
+  const insets = useSafeAreaInsets();
+
+  // Top inset: guarantee safe clearance below notch / Dynamic Island / Android status bar
+  const topInset = includeTopInset
+    ? Math.max(
+        insets.top,
+        Platform.OS === "android" ? (RNStatusBar.currentHeight || 24) : 0
+      )
+    : 0;
+
+  // Bottom inset: guarantee safe clearance above Android 3-button nav or iOS home bar
+  const bottomInset = includeBottomInset
+    ? Math.max(insets.bottom, Platform.OS === "android" ? 16 : 0)
+    : 0;
+
   const content = (
-    <SafeAreaView style={[styles.container, style]}>
+    <View
+      style={[
+        styles.container,
+        {
+          paddingTop: topInset,
+          paddingBottom: bottomInset,
+          paddingLeft: insets.left,
+          paddingRight: insets.right,
+        },
+        style,
+      ]}
+    >
       <StatusBar style="light" />
       {children}
-    </SafeAreaView>
+    </View>
   );
 
   if (disableKeyboardAvoid) {

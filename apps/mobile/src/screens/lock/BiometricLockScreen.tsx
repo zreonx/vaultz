@@ -26,7 +26,7 @@ export const BiometricLockScreen: React.FC = () => {
   }, []);
 
   return (
-    <ScreenWrapper>
+    <ScreenWrapper includeBottomInset>
       <View style={styles.container}>
         <View style={styles.content}>
           <View style={styles.iconCircle}>

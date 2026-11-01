@@ -10,6 +10,7 @@ import {
   Platform,
   ScrollView,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors } from '@/theme/colors';
 import { typography, radius, spacing } from '@/theme/tokens';
@@ -32,10 +33,17 @@ export const ModalSheet: React.FC<ModalSheetProps> = ({
   children,
   maxHeightRatio = 0.85,
 }) => {
+  const insets = useSafeAreaInsets();
+
   const handleClose = () => {
     haptics.light();
     onClose();
   };
+
+  const bottomInset = Math.max(
+    insets.bottom,
+    Platform.OS === 'android' ? 20 : 16
+  );
 
   return (
     <Modal
@@ -50,7 +58,10 @@ export const ModalSheet: React.FC<ModalSheetProps> = ({
           <TouchableWithoutFeedback>
             <KeyboardAvoidingView
               behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-              style={[styles.sheetContainer, { maxHeight: `${Math.round(maxHeightRatio * 100)}%` }]}
+              style={[
+                styles.sheetContainer,
+                { maxHeight: `${Math.round(maxHeightRatio * 100)}%` },
+              ]}
             >
               {/* Top Handle Bar */}
               <View style={styles.handleContainer}>
@@ -77,7 +88,10 @@ export const ModalSheet: React.FC<ModalSheetProps> = ({
               {/* Content */}
               <ScrollView
                 style={styles.content}
-                contentContainerStyle={styles.scrollContent}
+                contentContainerStyle={[
+                  styles.scrollContent,
+                  { paddingBottom: spacing.lg + bottomInset },
+                ]}
                 keyboardShouldPersistTaps="handled"
                 showsVerticalScrollIndicator={false}
               >
@@ -147,6 +161,5 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: spacing.lg,
-    paddingBottom: spacing.xxl,
   },
 });

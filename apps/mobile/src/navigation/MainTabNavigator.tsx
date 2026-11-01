@@ -1,6 +1,7 @@
 import React from 'react';
 import { StyleSheet, Platform } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { DashboardScreen } from '@/screens/dashboard/DashboardScreen';
 import { AccountsScreen } from '@/screens/accounts/AccountsScreen';
@@ -8,7 +9,7 @@ import { TransactionsScreen } from '@/screens/transactions/TransactionsScreen';
 import { LendingScreen } from '@/screens/lending/LendingScreen';
 import { SettingsScreen } from '@/screens/settings/SettingsScreen';
 import { colors } from '@/theme/colors';
-import { typography, radius } from '@/theme/tokens';
+import { typography } from '@/theme/tokens';
 import { haptics } from '@/utils/haptics';
 
 export type MainTabParamList = {
@@ -22,11 +23,26 @@ export type MainTabParamList = {
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
 export const MainTabNavigator: React.FC = () => {
+  const insets = useSafeAreaInsets();
+
+  // Bottom padding to clear Android navigation buttons (back, home, recent) & iOS home bar
+  const bottomPadding = Math.max(
+    insets.bottom,
+    Platform.OS === 'android' ? 12 : 8
+  );
+  const tabHeight = 54 + bottomPadding;
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
-        tabBarStyle: styles.tabBar,
+        tabBarStyle: [
+          styles.tabBar,
+          {
+            height: tabHeight,
+            paddingBottom: bottomPadding,
+          },
+        ],
         tabBarActiveTintColor: colors.accent,
         tabBarInactiveTintColor: colors.textMuted,
         tabBarLabelStyle: styles.tabBarLabel,
@@ -94,9 +110,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderTopWidth: 1,
     borderTopColor: colors.border,
-    height: Platform.OS === 'ios' ? 88 : 64,
-    paddingTop: 8,
-    paddingBottom: Platform.OS === 'ios' ? 28 : 8,
+    paddingTop: 6,
   },
   tabBarLabel: {
     ...typography.caption,
