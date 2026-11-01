@@ -1,0 +1,34 @@
+{
+  "expo": {
+    "name": "Vaultz",
+    "slug": "vaultz-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "dark",
+    "jsEngine": "hermes",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.vaultz.mobile",
+      "jsEngine": "hermes"
+    },
+    "android": {
+      "package": "com.vaultz.mobile",
+      "jsEngine": "hermes",
+      "adaptiveIcon": {
+        "backgroundColor": "#0B0F17",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-secure-store",
+      "expo-local-authentication"
+    ]
+  }
+}
