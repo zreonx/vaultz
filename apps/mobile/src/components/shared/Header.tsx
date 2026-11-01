@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useWorkspace } from '@/context/WorkspaceContext';
 import { useAuth } from '@/context/AuthContext';
+import { useTutorial } from '@/context/TutorialContext';
 import { AccountPickerModal } from './AccountPickerModal';
 import { CreateAccountModal } from './CreateAccountModal';
 import { colors } from '@/theme/colors';
@@ -20,8 +21,11 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const { activeWorkspace, hideBalance, toggleHideBalance } = useWorkspace();
   const { user } = useAuth();
+  const { currentStep } = useTutorial();
   const [accountPickerVisible, setAccountPickerVisible] = useState(false);
   const [createAccountVisible, setCreateAccountVisible] = useState(false);
+
+  const isHighlighted = currentStep === 'workspace_intro';
 
   const handleToggleHide = () => {
     haptics.light();
@@ -51,7 +55,7 @@ export const Header: React.FC<HeaderProps> = ({
           <Text style={styles.brandTitle}>VAULTZ</Text>
           {showAccountPicker && (
             <TouchableOpacity
-              style={styles.workspacePill}
+              style={[styles.workspacePill, isHighlighted && styles.workspacePillHighlighted]}
               onPress={() => {
                 haptics.light();
                 setAccountPickerVisible(true);
@@ -138,6 +142,11 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     maxWidth: 160,
+  },
+  workspacePillHighlighted: {
+    borderColor: colors.accent,
+    backgroundColor: 'rgba(16, 185, 129, 0.15)',
+    borderWidth: 1.5,
   },
   statusDot: {
     width: 6,

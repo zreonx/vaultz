@@ -7,6 +7,7 @@ import { colors } from '@/theme/colors';
 import { typography, radius, spacing } from '@/theme/tokens';
 import { accountsApi } from '@/api/accounts';
 import { useWorkspace } from '@/context/WorkspaceContext';
+import { useTutorial } from '@/context/TutorialContext';
 import { haptics } from '@/utils/haptics';
 
 interface CreateAccountModalProps {
@@ -24,6 +25,7 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
   onSuccess,
 }) => {
   const { refreshAccounts, setActiveWorkspace } = useWorkspace();
+  const { currentStep, advanceToStep } = useTutorial();
   const [name, setName] = useState('');
   const [type, setType] = useState('Checking');
   const [currency, setCurrency] = useState('USD');
@@ -58,6 +60,9 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
       haptics.success();
       await refreshAccounts();
       setActiveWorkspace(newAcc);
+      if (currentStep === 'create_account') {
+        advanceToStep('workspace_intro');
+      }
       setName('');
       setInitialBalance('');
       onClose();

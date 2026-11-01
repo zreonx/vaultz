@@ -11,6 +11,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/context/AuthContext';
 import { useWorkspace } from '@/context/WorkspaceContext';
+import { useTutorial } from '@/context/TutorialContext';
 import { ScreenWrapper } from '@/components/ui/ScreenWrapper';
 import { Header } from '@/components/shared/Header';
 import { Card } from '@/components/ui/Card';
@@ -24,6 +25,7 @@ import { haptics } from '@/utils/haptics';
 export const SettingsScreen: React.FC = () => {
   const { user, isBiometricEnabled, setBiometricEnabled, logout } = useAuth();
   const { hideBalance, toggleHideBalance } = useWorkspace();
+  const { resetTutorial } = useTutorial();
   const [isUpdatingBio, setIsUpdatingBio] = useState(false);
 
   const handleBiometricToggle = async (value: boolean) => {
@@ -144,6 +146,33 @@ export const SettingsScreen: React.FC = () => {
               }}
             />
           </View>
+
+          <View style={styles.divider} />
+
+          {/* Replay Tutorial */}
+          <TouchableOpacity
+            style={styles.settingRow}
+            onPress={() => {
+              resetTutorial();
+              Alert.alert(
+                'Guided Tour Activated',
+                'The interactive walkthrough has been reset. Switch to the Overview tab to walk through creating an account and recording a transaction.'
+              );
+            }}
+          >
+            <View style={styles.settingLeft}>
+              <View style={styles.settingIcon}>
+                <Ionicons name="sparkles-outline" size={20} color={colors.accent} />
+              </View>
+              <View style={styles.settingLabels}>
+                <Text style={styles.settingTitle}>Replay In-App Tutorial</Text>
+                <Text style={styles.settingSubtitle}>
+                  Interactive walkthrough for accounts & transactions
+                </Text>
+              </View>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+          </TouchableOpacity>
         </Card>
 
         {/* Network & Infrastructure Section */}

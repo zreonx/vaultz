@@ -15,7 +15,10 @@ import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { CreateTransactionModal } from '@/screens/transactions/CreateTransactionModal';
+import { CreateAccountModal } from '@/components/shared/CreateAccountModal';
 import { CreateLendingModal } from '@/screens/lending/CreateLendingModal';
+import { TutorialBanner } from '@/components/tutorial/TutorialBanner';
+import { useTutorial } from '@/context/TutorialContext';
 import { dashboardApi } from '@/api/dashboard';
 import { transactionsApi } from '@/api/transactions';
 import { DashboardSummaryDto, TransactionDto, TransactionType } from '@/types/api';
@@ -31,6 +34,7 @@ interface DashboardScreenProps {
 
 export const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
   const { activeWorkspace, hideBalance, toggleHideBalance, refetchAll } = useWorkspace();
+  const { currentStep } = useTutorial();
   const [summary, setSummary] = useState<DashboardSummaryDto | null>(null);
   const [recentTransactions, setRecentTransactions] = useState<TransactionDto[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -40,6 +44,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) 
   const [txModalVisible, setTxModalVisible] = useState(false);
   const [txDefaultType, setTxDefaultType] = useState<'Expense' | 'Income' | 'Transfer'>('Expense');
   const [lendingModalVisible, setLendingModalVisible] = useState(false);
+  const [createAccountModalVisible, setCreateAccountModalVisible] = useState(false);
 
   const loadData = useCallback(async () => {
     try {
@@ -101,6 +106,12 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) 
         }
         showsVerticalScrollIndicator={false}
       >
+        {/* Interactive Guided Onboarding Banner */}
+        <TutorialBanner
+          onOpenCreateAccount={() => setCreateAccountModalVisible(true)}
+          onOpenCreateTransaction={() => openTxModal('Expense')}
+        />
+
         {/* Balance Card */}
         <Card style={styles.balanceCard}>
           <View style={styles.balanceHeader}>
@@ -171,7 +182,10 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) 
 
         <View style={styles.quickActionsGrid}>
           <TouchableOpacity
-            style={styles.actionBtn}
+            style={[
+              styles.actionBtn,
+              currentStep === 'record_transaction' && styles.actionBtnHighlighted,
+            ]}
             onPress={() => openTxModal('Expense')}
             activeOpacity={0.7}
           >
@@ -182,7 +196,10 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) 
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={styles.actionBtn}
+            style={[
+              styles.actionBtn,
+              currentStep === 'record_transaction' && styles.actionBtnHighlighted,
+            ]}
             onPress={() => openTxModal('Income')}
             activeOpacity={0.7}
           >
@@ -314,6 +331,12 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) 
         onClose={() => setLendingModalVisible(false)}
         onSuccess={loadData}
       />
+      {/* Create Account Modal for guided onboarding */}
+      <CreateAccountModal
+        visible={createAccountModalVisible}
+        onClose={() => setCreateAccountModalVisible(false)}
+        onSuccess={loadData}
+      />
     </ScreenWrapper>
   );
 };
@@ -420,6 +443,11 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.border,
+  },
+  actionBtnHighlighted: {
+    borderColor: colors.accent,
+    backgroundColor: 'rgba(16, 185, 129, 0.08)',
+    borderWidth: 1.5,
   },
   actionIconContainer: {
     width: 44,

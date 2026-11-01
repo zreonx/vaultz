@@ -4,6 +4,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from '@/context/AuthContext';
 import { WorkspaceProvider } from '@/context/WorkspaceContext';
+import { TutorialProvider } from '@/context/TutorialContext';
 import { RootNavigator } from '@/navigation/RootNavigator';
 
 const queryClient = new QueryClient({
@@ -21,8 +22,10 @@ export default function App() {
       <QueryClientProvider client={queryClient}>
         <AuthProvider>
           <WorkspaceProvider>
-            <StatusBar style="light" />
-            <RootNavigator />
+            <TutorialProvider>
+              <StatusBar style="light" />
+              <RootNavigator />
+            </TutorialProvider>
           </WorkspaceProvider>
         </AuthProvider>
       </QueryClientProvider>
