@@ -2,7 +2,7 @@
 
 **Vaultz** is a multi-user Personal Finance Management application for tracking financial accounts, income, expenses, account-to-account transfers, categories, budgets, savings goals, recurring transactions, and financial analytics—with strict user data isolation and exact decimal precision.
 
-> **Current Status:** `v0.1` — Repository AI Agent Harness & Project Foundation.
+> **Current Status:** `v0.1` — Personal Finance Management Platform & Project Foundation.
 
 ---
 
@@ -21,15 +21,10 @@
 
 ```text
 Vaultz/
-├── AGENTS.md                           # Root AI coding agent instructions
 ├── README.md                           # Project overview and quickstart guide
-├── .agent/
-│   ├── rules/                          # Architectural, backend, frontend, database, security & testing rules
-│   ├── workflows/                      # Feature development, bug fixing & code review workflows
-│   └── context/                        # Product overview and technical stack context
 ├── docs/
 │   ├── architecture/                   # System, frontend, backend & database design documentation
-│   ├── decisions/                      # Architecture Decision Records (ADR-001)
+│   ├── decisions/                      # Architecture Decision Records
 │   └── development/                    # Local setup guide and milestone roadmap
 ├── apps/
 │   ├── web/                            # Next.js App Router frontend application

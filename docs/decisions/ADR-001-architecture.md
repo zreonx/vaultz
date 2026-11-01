@@ -14,7 +14,7 @@ We need an architecture and technology stack that:
 1. Guarantees monetary accuracy, relational integrity, and multi-user data isolation.
 2. Keeps cognitive load and operational complexity low while the product is built iteratively across 10 milestones.
 3. Prevents tight coupling between domain logic, persistence details, and UI presentation.
-4. Enables AI coding agents and human engineers to develop, test, and review features in isolated, predictable slices.
+4. Enables engineers to develop, test, and review features in isolated, predictable slices.
 
 ---
 
@@ -50,7 +50,7 @@ We adopt the following architectural decisions for Vaultz:
 - **Minimal Indirection:** Avoiding MediatR and generic repositories keeps stack traces shallow and IDE navigation direct.
 
 ### Trade-offs & Mitigations
-- **Discipline Required on Module Boundaries:** Because all slices share `VaultzDbContext` in a monolith, engineers and AI agents must follow `.agent/rules/architecture.md` and `.agent/rules/database.md` so slices do not bypass domain invariants.
+- **Discipline Required on Module Boundaries:** Because all slices share `VaultzDbContext` in a monolith, engineers must follow architectural boundary and database rules so slices do not bypass domain invariants.
 - **Contract Synchronization:** Frontend TypeScript types and backend C# DTOs must stay aligned via `/api/v1` OpenAPI specifications and integration tests.
 
 ---

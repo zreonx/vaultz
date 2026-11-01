@@ -8,7 +8,7 @@ This document tracks the development milestones for Vaultz. Milestones are marke
 
 | # | Milestone | Status | Summary |
 | :- | :--- | :--- | :--- |
-| **1** | **Project Foundation** | **Completed** | AI agent harness (`.agent/`, `AGENTS.md`, `docs/`), Next.js frontend shell (`apps/web`), .NET 10 Clean + Vertical Slice backend foundation (`apps/api`), Docker PostgreSQL setup, and test suites. |
+| **1** | **Project Foundation** | **Completed** | Architecture blueprints and technical setup (`docs/`), Next.js frontend shell (`apps/web`), .NET 10 Clean + Vertical Slice backend foundation (`apps/api`), Docker PostgreSQL setup, and test suites. |
 | **2** | **Authentication & User Management** | **Completed** | ASP.NET Core Identity (`ApplicationUser`), `HttpOnly` cookie session authentication, `/api/v1/auth/{register,login,logout,me}`, `ICurrentUserService`, and `/login` + `/register` screens. |
 | **3** | **Account Management** | **Completed** | Create, list, and update user-owned financial accounts (`Checking`, `Savings`, `Cash`, `CreditCard`, `Investment`) with explicit ISO 4217 currency codes and `numeric(19,4)` balances. |
 | **4** | **Transactions (Income, Expenses, Transfers)** | **Completed** | Record, filter, update, and delete income, expense, and same-currency account-to-account transfers with atomic balance reconciliation (`ExecuteInTransactionAsync`). |
