@@ -52,7 +52,7 @@ export const transactionsApi = {
     const query = params.toString();
     const endpoint = query ? `/api/v1/transactions?${query}` : "/api/v1/transactions";
     const items = await apiClient<TransactionResponse[]>(endpoint);
-    return items.map((tx) => ({
+    return (items || []).map((tx) => ({
       ...tx,
       currency: tx.currencyCode,
       category: tx.categoryName || tx.description || 'Uncategorized',
@@ -65,14 +65,18 @@ export const transactionsApi = {
     if (filter.accountId) params.append("accountId", filter.accountId);
     const resolvedType = resolveTransactionType(filter.type);
     if (resolvedType !== undefined) params.append("type", String(resolvedType));
-    if (filter.searchTerm) params.append("search", filter.searchTerm);
-    if (filter.page) params.append("page", String(filter.page));
-    if (filter.pageSize) params.append("pageSize", String(filter.pageSize));
+    if (filter.searchTerm) {
+      params.append("search", filter.searchTerm);
+      params.append("searchTerm", filter.searchTerm);
+    }
+    params.append("page", String(filter.page || 1));
+    params.append("pageSize", String(filter.pageSize || 50));
 
     const query = params.toString();
-    const endpoint = query ? `/api/v1/transactions?${query}` : "/api/v1/transactions";
-    const items = await apiClient<TransactionResponse[]>(endpoint);
-    const mapped = (items || []).map((tx) => ({
+    const endpoint = `/api/v1/transactions/paged?${query}`;
+    const paged = await apiClient<PagedTransactionsResponse>(endpoint);
+
+    const items = (paged?.items || []).map((tx) => ({
       ...tx,
       currency: tx.currencyCode,
       category: tx.categoryName || tx.description || 'General',
@@ -80,13 +84,14 @@ export const transactionsApi = {
     }));
 
     return {
-      items: mapped,
-      page: filter.page || 1,
-      pageSize: filter.pageSize || 50,
-      totalCount: mapped.length,
-      totalPages: 1,
-      hasPreviousPage: false,
-      hasNextPage: false,
+      ...paged,
+      items,
+      totalCount: paged?.totalCount ?? items.length,
+      totalPages: paged?.totalPages ?? 1,
+      page: paged?.page ?? (filter.page || 1),
+      pageSize: paged?.pageSize ?? (filter.pageSize || 50),
+      hasPreviousPage: paged?.hasPreviousPage ?? false,
+      hasNextPage: paged?.hasNextPage ?? false,
     };
   },
 
@@ -98,7 +103,7 @@ export const transactionsApi = {
       type: resolveTransactionType(data.type) ?? TransactionType.Expense,
       amount: data.amount,
       destinationAmount: data.destinationAmount || null,
-      occurredOn: data.occurredOn || data.transactionDate || new Date().toISOString().split('T')[0],
+      occurredOn: (data.occurredOn || data.transactionDate || new Date().toISOString()).split('T')[0],
       description: data.description || data.category || 'Transaction',
       notes: data.notes || null,
     };
