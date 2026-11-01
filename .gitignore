@@ -39,3 +39,11 @@ Thumbs.db
 *.swp
 *.swo
 *~
+
+# AI & Agent Files
+.agent/
+.agents/
+AGENTS.md
+*Agent-Harness*.md
+*.agent
+.gemini/
