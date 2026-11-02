@@ -183,10 +183,34 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   const currentTourStep = useMemo(() => {
     if (currentStepIndex >= 0 && currentStepIndex < MOBILE_TOUR_STEPS.length) {
-      return MOBILE_TOUR_STEPS[currentStepIndex];
+      const baseStep = MOBILE_TOUR_STEPS[currentStepIndex];
+
+      if (baseStep.id === 'workspace_pill') {
+        const hasAccounts = accounts.length > 0;
+        return {
+          ...baseStep,
+          badge: hasAccounts ? 'ACCOUNT ISOLATION' : 'GETTING STARTED',
+          title: hasAccounts ? '1. Personal Account Containers' : '1. Create Your First Account',
+          description: hasAccounts
+            ? 'In Vaultz, every account operates in strict personal isolation with its own private currency and ledger. Tap below to create another container anytime.'
+            : 'In Vaultz, all finances are organized into isolated personal containers. Tap below to create your first account container (e.g. Main Checking, Cash, or Savings) right now!',
+          actionText: hasAccounts ? '+ Add Another Account' : '+ Create My First Account',
+          actionType: 'create_account' as const,
+        };
+      }
+
+      if (baseStep.id === 'quick_actions') {
+        return {
+          ...baseStep,
+          actionText: '+ Record First Transaction',
+          actionType: 'record_transaction' as const,
+        };
+      }
+
+      return baseStep;
     }
     return null;
-  }, [currentStepIndex]);
+  }, [currentStepIndex, accounts.length]);
 
   const activeTargetRect = useMemo(() => {
     if (!currentTourStep) return null;

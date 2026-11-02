@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { ModalSheet } from '@/components/ui/ModalSheet';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { useWorkspace } from '@/context/WorkspaceContext';
+import { useTutorial } from '@/context/TutorialContext';
 import { useTheme } from '@/context/ThemeContext';
 import { accountsApi } from '@/api/accounts';
 import { typography, radius, spacing } from '@/theme/tokens';
@@ -24,7 +26,8 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
   onClose,
   onSuccess,
 }) => {
-  const { refreshAccounts, setActiveWorkspace } = useWorkspace();
+  const { refreshAccounts, setActiveWorkspace, accounts } = useWorkspace();
+  const { isTourActive } = useTutorial();
   const { colors, isDark } = useTheme();
   const [name, setName] = useState('');
   const [type, setType] = useState('Checking');
@@ -80,6 +83,35 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
       subtitle="Add an isolated financial container"
     >
       <View style={styles.container}>
+        {(isTourActive || accounts.length === 0) && (
+          <View
+            style={[
+              styles.guidedBanner,
+              {
+                backgroundColor: colors.accentSoft,
+                borderColor: colors.accent,
+              },
+            ]}
+          >
+            <Ionicons
+              name="sparkles"
+              size={18}
+              color={colors.accent}
+              style={styles.guidedIcon}
+            />
+            <View style={styles.guidedTextContainer}>
+              <Text style={[styles.guidedBannerTitle, { color: colors.accent }]}>
+                {accounts.length === 0
+                  ? 'First Account Setup'
+                  : 'New Account Container'}
+              </Text>
+              <Text style={[styles.guidedBannerText, { color: colors.textSecondary }]}>
+                Give your account a clear name (e.g. Main Checking, Cash, or Savings), select your base currency, and optionally set your opening balance.
+              </Text>
+            </View>
+          </View>
+        )}
+
         {error && (
           <View
             style={[
@@ -220,6 +252,32 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
 const styles = StyleSheet.create({
   container: {
     paddingBottom: spacing.sm,
+  },
+  guidedBanner: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    borderWidth: 1,
+    borderRadius: radius.md,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+  },
+  guidedIcon: {
+    marginRight: 8,
+    marginTop: 2,
+  },
+  guidedTextContainer: {
+    flex: 1,
+  },
+  guidedBannerTitle: {
+    ...typography.label,
+    fontSize: 12,
+    fontWeight: '700',
+    marginBottom: 2,
+  },
+  guidedBannerText: {
+    ...typography.caption,
+    fontSize: 12,
+    lineHeight: 16,
   },
   errorBanner: {
     borderWidth: 1,

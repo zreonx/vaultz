@@ -20,9 +20,13 @@ const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 interface SpotlightTourModalProps {
   onActionTrigger?: (actionType: 'create_account' | 'record_transaction') => void;
+  isActionModalOpen?: boolean;
 }
 
-export const SpotlightTourModal: React.FC<SpotlightTourModalProps> = ({ onActionTrigger }) => {
+export const SpotlightTourModal: React.FC<SpotlightTourModalProps> = ({
+  onActionTrigger,
+  isActionModalOpen = false,
+}) => {
   const insets = useSafeAreaInsets();
   const { colors, isDark } = useTheme();
   const {
@@ -39,7 +43,7 @@ export const SpotlightTourModal: React.FC<SpotlightTourModalProps> = ({ onAction
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
-    if (!isTourActive) return;
+    if (!isTourActive || isActionModalOpen) return;
 
     const pulse = Animated.loop(
       Animated.sequence([
@@ -57,9 +61,9 @@ export const SpotlightTourModal: React.FC<SpotlightTourModalProps> = ({ onAction
     );
     pulse.start();
     return () => pulse.stop();
-  }, [isTourActive, pulseAnim]);
+  }, [isTourActive, isActionModalOpen, pulseAnim]);
 
-  if (!isTourActive || !currentTourStep) {
+  if (!isTourActive || !currentTourStep || isActionModalOpen) {
     return null;
   }
 

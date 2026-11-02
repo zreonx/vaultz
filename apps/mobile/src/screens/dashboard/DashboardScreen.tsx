@@ -19,6 +19,7 @@ import { FadeInView } from '@/components/ui/FadeInView';
 import { CreateTransactionModal } from '@/screens/transactions/CreateTransactionModal';
 import { CreateAccountModal } from '@/components/shared/CreateAccountModal';
 import { CreateLendingModal } from '@/screens/lending/CreateLendingModal';
+import { SpotlightTourModal } from '@/components/tutorial/SpotlightTourModal';
 import { useTutorial } from '@/context/TutorialContext';
 import { dashboardApi } from '@/api/dashboard';
 import { transactionsApi } from '@/api/transactions';
@@ -34,7 +35,7 @@ interface DashboardScreenProps {
 
 export const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
   const { activeWorkspace, hideBalance, toggleHideBalance, refetchAll } = useWorkspace();
-  const { registerTargetRect } = useTutorial();
+  const { registerTargetRect, isTourActive, currentStepIndex, nextStep } = useTutorial();
   const { colors, isDark } = useTheme();
   const [summary, setSummary] = useState<DashboardSummaryDto | null>(null);
   const [recentTransactions, setRecentTransactions] = useState<TransactionDto[]>([]);
@@ -428,7 +429,12 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) 
         visible={txModalVisible}
         onClose={() => setTxModalVisible(false)}
         defaultType={txDefaultType}
-        onSuccess={loadData}
+        onSuccess={() => {
+          loadData();
+          if (isTourActive && currentStepIndex === 2) {
+            nextStep();
+          }
+        }}
       />
 
       {/* Lending modal */}
@@ -442,7 +448,24 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) 
       <CreateAccountModal
         visible={createAccountModalVisible}
         onClose={() => setCreateAccountModalVisible(false)}
-        onSuccess={loadData}
+        onSuccess={() => {
+          loadData();
+          if (isTourActive && currentStepIndex === 0) {
+            nextStep();
+          }
+        }}
+      />
+
+      {/* Interactive Spotlight Guided Tour */}
+      <SpotlightTourModal
+        isActionModalOpen={txModalVisible || lendingModalVisible || createAccountModalVisible}
+        onActionTrigger={(action) => {
+          if (action === 'create_account') {
+            setCreateAccountModalVisible(true);
+          } else if (action === 'record_transaction') {
+            openTxModal('Expense');
+          }
+        }}
       />
     </ScreenWrapper>
   );
