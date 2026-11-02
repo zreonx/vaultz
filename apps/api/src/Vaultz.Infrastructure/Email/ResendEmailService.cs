@@ -188,6 +188,16 @@ public sealed class ResendEmailService : IEmailService
 
         try
         {
+            var recipient = toEmail;
+            var displaySubject = subject;
+
+            if (!string.IsNullOrWhiteSpace(_options.DevRedirectEmail) &&
+                !string.Equals(toEmail, _options.DevRedirectEmail, StringComparison.OrdinalIgnoreCase))
+            {
+                recipient = _options.DevRedirectEmail;
+                displaySubject = $"[Dev for {toEmail}] {subject}";
+            }
+
             var fromAddress = string.IsNullOrWhiteSpace(_options.FromName)
                 ? _options.FromEmail
                 : $"{_options.FromName} <{_options.FromEmail}>";
@@ -195,8 +205,8 @@ public sealed class ResendEmailService : IEmailService
             var payload = new
             {
                 from = fromAddress,
-                to = new[] { toEmail },
-                subject,
+                to = new[] { recipient },
+                subject = displaySubject,
                 html = htmlContent
             };
 
@@ -208,12 +218,13 @@ public sealed class ResendEmailService : IEmailService
             if (!response.IsSuccessStatusCode)
             {
                 var errorBody = await response.Content.ReadAsStringAsync(cancellationToken);
-                _logger.LogError("Failed to send email via Resend to {ToEmail}. StatusCode: {StatusCode}, Error: {ErrorBody}",
-                    toEmail, response.StatusCode, errorBody);
+                _logger.LogError("Failed to send email via Resend to {ToEmail} (routed to {Recipient}). StatusCode: {StatusCode}, Error: {ErrorBody}",
+                    toEmail, recipient, response.StatusCode, errorBody);
             }
             else
             {
-                _logger.LogInformation("Successfully dispatched security email via Resend to {ToEmail} (Subject: {Subject})", toEmail, subject);
+                _logger.LogInformation("Successfully dispatched security email via Resend to {ToEmail} (routed to {Recipient}, Subject: {Subject})",
+                    toEmail, recipient, displaySubject);
             }
         }
         catch (Exception ex)
