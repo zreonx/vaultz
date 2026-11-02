@@ -39,6 +39,7 @@ import {
 } from "@/components/ui/card";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -225,8 +226,9 @@ export function RecurringFeatureView() {
 
               <div className="space-y-1.5">
                 <Label htmlFor="rec-desc">Description</Label>
-                <Input
+                <Textarea
                   id="rec-desc"
+                  rows={2}
                   placeholder="Fiber Internet"
                   {...register("description")}
                 />

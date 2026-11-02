@@ -202,6 +202,8 @@ export const CreateLendingModal: React.FC<CreateLendingModalProps> = ({
           value={notes}
           onChangeText={setNotes}
           leftIcon="reader-outline"
+          multiline
+          numberOfLines={3}
         />
 
         <View style={styles.buttonRow}>

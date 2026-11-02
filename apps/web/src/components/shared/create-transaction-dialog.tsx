@@ -43,6 +43,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -553,8 +554,9 @@ export function CreateTransactionDialog({
           {/* Description */}
           <div className="space-y-1.5">
             <Label htmlFor="tx-desc">Description</Label>
-            <Input
+            <Textarea
               id="tx-desc"
+              rows={2}
               placeholder={
                 selectedType === TransactionType.Transfer
                   ? "e.g., Transfer to Savings"

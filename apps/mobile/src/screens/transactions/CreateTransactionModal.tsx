@@ -296,6 +296,8 @@ export const CreateTransactionModal: React.FC<CreateTransactionModalProps> = ({
           value={description}
           onChangeText={setDescription}
           leftIcon="reader-outline"
+          multiline
+          numberOfLines={3}
         />
 
         <View style={styles.buttonRow}>

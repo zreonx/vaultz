@@ -50,6 +50,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -628,8 +629,9 @@ export function LendingFeatureView() {
             {/* Notes */}
             <div className="space-y-1.5">
               <Label htmlFor="iou-notes">Notes / Reason (Optional)</Label>
-              <Input
+              <Textarea
                 id="iou-notes"
+                rows={2}
                 placeholder="e.g. Dinner bill, concert ticket"
                 value={createNotes}
                 onChange={(e) => setCreateNotes(e.target.value)}
@@ -733,8 +735,9 @@ export function LendingFeatureView() {
 
               <div className="space-y-1.5">
                 <Label htmlFor="pay-notes">Notes (Optional)</Label>
-                <Input
+                <Textarea
                   id="pay-notes"
+                  rows={2}
                   placeholder="e.g. Paid via cash or bank transfer"
                   value={paymentNotes}
                   onChange={(e) => setPaymentNotes(e.target.value)}

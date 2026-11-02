@@ -53,6 +53,7 @@ export const Input: React.FC<InputProps> = ({
       <View
         style={[
           styles.inputContainer,
+          props.multiline && styles.inputContainerMultiline,
           {
             backgroundColor: isFocused ? colors.surfaceSubtle : colors.surface,
             borderColor: error
@@ -70,17 +71,23 @@ export const Input: React.FC<InputProps> = ({
             color={
               error ? colors.danger : isFocused ? colors.accent : colors.textMuted
             }
-            style={styles.leftIcon}
+            style={[styles.leftIcon, props.multiline && styles.leftIconMultiline]}
           />
         )}
 
         <TextInput
-          style={[styles.input, { color: colors.textPrimary }, style]}
+          style={[
+            styles.input,
+            props.multiline && styles.inputMultiline,
+            { color: colors.textPrimary },
+            style,
+          ]}
           placeholderTextColor={colors.textMuted}
           secureTextEntry={isPassword && !showPassword}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
           selectionColor={colors.accent}
+          textAlignVertical={props.multiline ? 'top' : 'center'}
           {...props}
         />
 
@@ -140,8 +147,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     minHeight: 48,
   },
+  inputContainerMultiline: {
+    alignItems: 'flex-start',
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.sm,
+    minHeight: 88,
+  },
   leftIcon: {
     marginRight: spacing.sm,
+  },
+  leftIconMultiline: {
+    marginTop: 2,
   },
   rightIconButton: {
     padding: spacing.xs,
@@ -151,6 +167,10 @@ const styles = StyleSheet.create({
     flex: 1,
     ...typography.body,
     paddingVertical: spacing.sm,
+  },
+  inputMultiline: {
+    minHeight: 64,
+    paddingVertical: 0,
   },
   errorText: {
     ...typography.caption,

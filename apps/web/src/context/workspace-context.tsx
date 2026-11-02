@@ -42,6 +42,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { SearchableCurrencySelect } from "@/components/shared/searchable-currency-select";
 import {
@@ -722,8 +723,9 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
 
               <div className="space-y-1.5">
                 <Label htmlFor="transfer-desc">Note / Description</Label>
-                <Input
+                <Textarea
                   id="transfer-desc"
+                  rows={2}
                   placeholder="Transfer between accounts"
                   value={transferDescription}
                   onChange={(e) => setTransferDescription(e.target.value)}
