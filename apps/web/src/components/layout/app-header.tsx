@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   ChevronDown,
   Eye,
@@ -41,6 +41,7 @@ import { NotificationBell } from "@/components/layout/notification-bell";
 
 export function AppHeader() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const router = useRouter();
   const { data: user } = useCurrentUser();
   useExchangeRates();
@@ -72,6 +73,11 @@ export function AppHeader() {
     });
   };
 
+  const isTransactionsPage = pathname === "/transactions";
+  const accountParam = searchParams.get("account");
+  const isAccountScoped =
+    isTransactionsPage && Boolean(accountParam && accountParam !== "all");
+
   const activeNavItem =
     DASHBOARD_NAVIGATION.find((item) =>
       item.href === "/dashboard"
@@ -79,7 +85,11 @@ export function AppHeader() {
         : pathname.startsWith(item.href)
     ) ?? DASHBOARD_NAVIGATION[0];
 
-  const pageTitle = activeNavItem?.title ?? "Overview";
+  const pageTitle = isTransactionsPage
+    ? isAccountScoped
+      ? "Transactions"
+      : "Transaction History"
+    : activeNavItem?.title ?? "Overview";
 
   const initials = user?.fullName
     ? user.fullName
@@ -114,11 +124,11 @@ export function AppHeader() {
               </BreadcrumbList>
             </Breadcrumb>
 
-            {activeNavItem?.scope === "account" ? (
+            {activeNavItem?.scope === "account" || isAccountScoped ? (
               <span className="hidden sm:inline-flex items-center gap-1 rounded-md bg-[var(--accent-soft)] px-2 py-0.5 text-[11px] font-semibold text-[var(--accent)] border border-[var(--accent)]/20">
                 For {activeWorkspace?.name || "Selected Account"}
               </span>
-            ) : activeNavItem?.scope === "portfolio" ? (
+            ) : activeNavItem?.scope === "portfolio" || (isTransactionsPage && !isAccountScoped) ? (
               <span className="hidden sm:inline-flex items-center gap-1 rounded-md bg-[var(--surface-muted)] px-2 py-0.5 text-[11px] font-medium text-[var(--muted-foreground)] border border-[var(--border-subtle)]">
                 All accounts
               </span>

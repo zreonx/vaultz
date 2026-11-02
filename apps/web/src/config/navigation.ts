@@ -25,10 +25,10 @@ export const ALL_ACCOUNTS_NAVIGATION: NavItem[] = [
     scope: "portfolio",
   },
   {
-    title: "Transactions",
+    title: "Transaction History",
     href: "/transactions",
     status: "active",
-    description: "All income, expenses & transfers across accounts",
+    description: "Combined transaction history across all accounts",
     scope: "portfolio",
   },
   {
@@ -47,6 +47,13 @@ export const SHARED_NAVIGATION = ALL_ACCOUNTS_NAVIGATION;
  * Independent features scoped specifically to the currently selected active account.
  */
 export const ACCOUNT_NAVIGATION: NavItem[] = [
+  {
+    title: "Transactions",
+    href: "/transactions?scope=account",
+    status: "active",
+    description: "Record & view transactions for this account",
+    scope: "account",
+  },
   {
     title: "Budgets",
     href: "/budgets",

@@ -12,6 +12,7 @@ import {
   ArrowRight,
   ArrowUpRight,
   Globe,
+  Lock,
   Plus,
 } from "lucide-react";
 import { apiClient } from "@/lib/api/client";
@@ -94,6 +95,7 @@ interface CreateTransactionDialogProps {
   onOpenChange: (open: boolean) => void;
   defaultAccountId?: string;
   defaultType?: TransactionType;
+  lockAccount?: boolean;
 }
 
 export function CreateTransactionDialog({
@@ -101,6 +103,7 @@ export function CreateTransactionDialog({
   onOpenChange,
   defaultAccountId,
   defaultType = TransactionType.Expense,
+  lockAccount = false,
 }: CreateTransactionDialogProps) {
   const queryClient = useQueryClient();
   const { data: accounts = [] } = useAccounts();
@@ -271,10 +274,18 @@ export function CreateTransactionDialog({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Plus className="h-4 w-4 text-[var(--accent)]" />
-            Record Transaction
+            {selectedType === TransactionType.Transfer
+              ? "Transfer Funds"
+              : lockAccount && sourceAccount
+              ? `New Transaction for ${sourceAccount.name}`
+              : "Record Transaction"}
           </DialogTitle>
           <DialogDescription>
-            Record income, an expense, or an account-to-account transfer.
+            {selectedType === TransactionType.Transfer
+              ? "Move funds between accounts."
+              : lockAccount && sourceAccount
+              ? `Recording transaction directly against ${sourceAccount.name} (${sourceAccount.currencyCode}).`
+              : "Record income, an expense, or an account-to-account transfer."}
           </DialogDescription>
         </DialogHeader>
 
@@ -346,27 +357,39 @@ export function CreateTransactionDialog({
                   ? "Transfer From"
                   : "Account"}
               </Label>
-              <Controller
-                control={control}
-                name="accountId"
-                render={({ field }) => (
-                  <Select
-                    value={field.value || ""}
-                    onValueChange={field.onChange}
-                  >
-                    <SelectTrigger id="tx-account">
-                      <SelectValue placeholder="Select account" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {accounts.map((acc) => (
-                        <SelectItem key={acc.id} value={acc.id}>
-                          {acc.name} ({acc.currencyCode})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
-              />
+              {lockAccount && sourceAccount ? (
+                <div className="flex h-9 items-center justify-between rounded-xl border border-[var(--border)] bg-[var(--surface-muted)] px-3 text-xs">
+                  <div className="flex items-center gap-1.5 font-semibold text-[var(--foreground)] truncate">
+                    <Lock className="h-3 w-3 text-[var(--muted-foreground)] shrink-0" />
+                    <span className="truncate">{sourceAccount.name}</span>
+                  </div>
+                  <Badge variant="default" className="font-mono text-[10px] shrink-0">
+                    {sourceAccount.currencyCode}
+                  </Badge>
+                </div>
+              ) : (
+                <Controller
+                  control={control}
+                  name="accountId"
+                  render={({ field }) => (
+                    <Select
+                      value={field.value || ""}
+                      onValueChange={field.onChange}
+                    >
+                      <SelectTrigger id="tx-account">
+                        <SelectValue placeholder="Select account" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {accounts.map((acc) => (
+                          <SelectItem key={acc.id} value={acc.id}>
+                            {acc.name} ({acc.currencyCode})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+              )}
               {errors.accountId && (
                 <p className="text-xs text-[var(--danger)]">
                   {errors.accountId.message}

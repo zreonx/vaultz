@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   ArrowLeftRight,
   BarChart3,
@@ -57,6 +57,7 @@ const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   Overview: LayoutDashboard,
   Accounts: Wallet,
   Transactions: ArrowLeftRight,
+  "Transaction History": ArrowLeftRight,
   Categories: FolderKanban,
   Budgets: Target,
   "Savings Goals": PiggyBank,
@@ -68,6 +69,7 @@ const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
 
 export function AppSidebar() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const router = useRouter();
   const { state, isMobile, setOpenMobile } = useSidebar();
   const { data: user } = useCurrentUser();
@@ -224,8 +226,13 @@ export function AppSidebar() {
               {ALL_ACCOUNTS_NAVIGATION.map((item) => {
                 const Icon = ICONS[item.title] ?? LayoutDashboard;
                 const label = item.title;
+                const accountParam = searchParams.get("account");
+                const isCombinedTransactions =
+                  pathname === "/transactions" && (!accountParam || accountParam === "all");
                 const isActive =
-                  item.href === "/dashboard"
+                  item.href === "/transactions"
+                    ? isCombinedTransactions
+                    : item.href === "/dashboard"
                     ? pathname === "/dashboard"
                     : pathname.startsWith(item.href);
 
@@ -275,7 +282,21 @@ export function AppSidebar() {
               {ACCOUNT_NAVIGATION.map((item) => {
                 const Icon = ICONS[item.title] ?? LayoutDashboard;
                 const label = item.title;
-                const isActive = pathname.startsWith(item.href);
+                const accountParam = searchParams.get("account");
+                const isAccountTransactions =
+                  pathname === "/transactions" && Boolean(accountParam && accountParam !== "all");
+
+                const itemHref =
+                  item.title === "Transactions"
+                    ? activeWorkspace
+                      ? `/transactions?account=${activeWorkspace.id}`
+                      : "/transactions?scope=account"
+                    : item.href;
+
+                const isActive =
+                  item.title === "Transactions"
+                    ? isAccountTransactions
+                    : pathname.startsWith(item.href);
 
                 return (
                   <SidebarMenuItem key={item.title}>
@@ -285,7 +306,7 @@ export function AppSidebar() {
                       tooltip={`${label} (for ${activeWorkspace ? activeWorkspace.name : "selected account"})`}
                     >
                       <Link
-                        href={item.href}
+                        href={itemHref}
                         onClick={() => {
                           if (isMobile) setOpenMobile(false);
                         }}

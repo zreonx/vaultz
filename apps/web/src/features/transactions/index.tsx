@@ -212,7 +212,9 @@ export function TransactionsFeatureView() {
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div className="space-y-1">
           <div className="flex items-center gap-2.5 flex-wrap">
-            <h2 className="text-2xl font-semibold tracking-tight">Transactions</h2>
+            <h2 className="text-2xl font-semibold tracking-tight">
+              {scopedAccount ? "Transactions" : "Transaction History"}
+            </h2>
             {scopedAccount ? (
               <div className="flex items-center gap-1.5">
                 <Badge variant="default" className="text-xs font-medium">
@@ -235,25 +237,49 @@ export function TransactionsFeatureView() {
           </div>
           <p className="text-sm text-[var(--muted-foreground)]">
             {scopedAccount
-              ? `Filtered activity for ${scopedAccount.name} (${scopedAccount.currencyCode}).`
-              : "Review all income, expenses, and account-to-account transfers across your entire portfolio."}
+              ? `Record and review transaction activity directly for ${scopedAccount.name} (${scopedAccount.currencyCode}).`
+              : "Combined transaction history across all accounts. Every record identifies its owning account."}
           </p>
         </div>
 
-        <Button
-          type="button"
-          size="sm"
-          onClick={() =>
-            openCreateTransactionDialog(
-              undefined,
-              scopedAccount?.id ?? activeWorkspace?.id
-            )
-          }
-          className="gap-1.5"
-        >
-          <Plus className="h-3.5 w-3.5" />
-          Add Transaction
-        </Button>
+        {scopedAccount ? (
+          <Button
+            type="button"
+            size="sm"
+            onClick={() =>
+              openCreateTransactionDialog(
+                undefined,
+                scopedAccount.id,
+                true // Locked to this account
+              )
+            }
+            className="gap-1.5"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            Add Transaction
+          </Button>
+        ) : (
+          <Button
+            type="button"
+            size="sm"
+            onClick={() =>
+              openCreateTransactionDialog(
+                undefined,
+                activeWorkspace?.id,
+                true // Locked to active workspace
+              )
+            }
+            className="gap-1.5"
+            title={
+              activeWorkspace
+                ? `Record a transaction in ${activeWorkspace.name}`
+                : "Add Transaction"
+            }
+          >
+            <Plus className="h-3.5 w-3.5" />
+            Record in {activeWorkspace ? activeWorkspace.name : "Account"}
+          </Button>
+        )}
       </div>
 
       {/* Outside Table Toolbar: Search & Filter Tabs */}

@@ -66,7 +66,8 @@ interface WorkspaceContextValue {
   openTransferDialog: (fromWorkspaceId?: string, toWorkspaceId?: string) => void;
   openCreateTransactionDialog: (
     initialType?: TransactionType,
-    initialAccountId?: string
+    initialAccountId?: string,
+    lockAccount?: boolean
   ) => void;
 }
 
@@ -232,13 +233,19 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     TransactionType.Expense
   );
   const [txInitialAccountId, setTxInitialAccountId] = useState<string>("");
+  const [txLockAccount, setTxLockAccount] = useState<boolean>(false);
 
   const openCreateTransactionDialog = useCallback(
-    (initialType?: TransactionType, initialAccountId?: string) => {
+    (
+      initialType?: TransactionType,
+      initialAccountId?: string,
+      lockAccount: boolean = false
+    ) => {
       setTxInitialType(initialType ?? TransactionType.Expense);
       setTxInitialAccountId(
         initialAccountId ?? activeWorkspace?.id ?? workspaces[0]?.id ?? ""
       );
+      setTxLockAccount(lockAccount);
       setIsTransactionOpen(true);
     },
     [activeWorkspace, workspaces]
@@ -766,6 +773,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
         onOpenChange={setIsTransactionOpen}
         defaultAccountId={txInitialAccountId}
         defaultType={txInitialType}
+        lockAccount={txLockAccount}
       />
     </WorkspaceContext.Provider>
   );

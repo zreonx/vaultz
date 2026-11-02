@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeftRight,
@@ -59,6 +60,7 @@ export function useSetDefaultAccountMutation() {
 }
 
 export function AccountsFeatureView() {
+  const router = useRouter();
   const { data: user, isLoading: isAuthLoading } = useCurrentUser();
   const { data: accounts = [], isLoading } = useAccounts();
   const {
@@ -66,6 +68,7 @@ export function AccountsFeatureView() {
     setSelectedWorkspaceId,
     openCreateWorkspaceDialog,
     openTransferDialog,
+    openCreateTransactionDialog,
   } = useWorkspace();
   const setDefaultMutation = useSetDefaultAccountMutation();
   const [search, setSearch] = useState("");
@@ -248,6 +251,30 @@ export function AccountsFeatureView() {
                           Set Default
                         </Button>
                       )}
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() =>
+                          openCreateTransactionDialog(undefined, account.id, true)
+                        }
+                        title={`Record transaction in ${account.name}`}
+                        className="gap-1 text-xs"
+                      >
+                        <Plus className="h-3.5 w-3.5" />
+                        Add Tx
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => router.push(`/transactions?account=${account.id}`)}
+                        title={`View transactions for ${account.name}`}
+                        className="gap-1 text-xs"
+                      >
+                        <ArrowLeftRight className="h-3.5 w-3.5" />
+                        History
+                      </Button>
                       <Button
                         type="button"
                         variant="ghost"
