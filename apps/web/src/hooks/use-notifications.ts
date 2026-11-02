@@ -15,6 +15,37 @@ import { toast } from "@/components/ui/toast";
 import { useCurrentUser } from "@/hooks/use-auth";
 import type { NotificationItem, NotificationsListResponse } from "@/types/api";
 
+export interface NotificationPreferences {
+  budgetAlerts: boolean;
+  savingsMilestones: boolean;
+  transfers: boolean;
+  lendingReminders: boolean;
+  securityAlerts: boolean;
+  soundChime: boolean;
+}
+
+export const DEFAULT_NOTIFICATION_PREFERENCES: NotificationPreferences = {
+  budgetAlerts: true,
+  savingsMilestones: true,
+  transfers: true,
+  lendingReminders: true,
+  securityAlerts: true,
+  soundChime: true,
+};
+
+export const NOTIFICATION_PREFERENCES_KEY = "vaultz.notification_preferences";
+
+export function getStoredNotificationPreferences(): NotificationPreferences {
+  if (typeof window === "undefined") return DEFAULT_NOTIFICATION_PREFERENCES;
+  try {
+    const raw = window.localStorage.getItem(NOTIFICATION_PREFERENCES_KEY);
+    if (!raw) return DEFAULT_NOTIFICATION_PREFERENCES;
+    return { ...DEFAULT_NOTIFICATION_PREFERENCES, ...JSON.parse(raw) };
+  } catch {
+    return DEFAULT_NOTIFICATION_PREFERENCES;
+  }
+}
+
 function playNotificationChime() {
   if (typeof window === "undefined") return;
   try {
@@ -106,6 +137,14 @@ export function useNotifications() {
     },
   });
 
+  const clearAllNotificationsMutation = useMutation({
+    mutationFn: () =>
+      apiRequest<void>("/api/v1/notifications", { method: "DELETE" }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+    },
+  });
+
   const sendTestNotificationMutation = useMutation({
     mutationFn: () =>
       apiRequest<{ message: string }>("/api/v1/notifications/test", { method: "POST" }),
@@ -134,7 +173,18 @@ export function useNotifications() {
     connection.on("ReceiveNotification", (notification: NotificationItem) => {
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
 
-      playNotificationChime();
+      const prefs = getStoredNotificationPreferences();
+
+      // Filter by user preference
+      if (notification.type === "BudgetWarning" && !prefs.budgetAlerts) return;
+      if (notification.type === "SavingsGoalMilestone" && !prefs.savingsMilestones) return;
+      if (notification.type === "TransferCompleted" && !prefs.transfers) return;
+      if (notification.type === "LendingReminder" && !prefs.lendingReminders) return;
+      if (notification.type === "SecurityAlert" && !prefs.securityAlerts) return;
+
+      if (prefs.soundChime) {
+        playNotificationChime();
+      }
 
       if (notification.type === "SecurityAlert") {
         toast.warning(notification.title, {
@@ -202,6 +252,8 @@ export function useNotifications() {
     markAsRead: (id: string) => markAsReadMutation.mutate(id),
     markAllAsRead: () => markAllAsReadMutation.mutate(),
     deleteNotification: (id: string) => deleteNotificationMutation.mutate(id),
+    clearAll: () => clearAllNotificationsMutation.mutate(),
+    isClearing: clearAllNotificationsMutation.isPending,
     sendTestNotification: () => sendTestNotificationMutation.mutate(),
     isSendingTest: sendTestNotificationMutation.isPending,
   };

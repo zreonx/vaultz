@@ -14,7 +14,7 @@ export const ALL_ACCOUNTS_NAVIGATION: NavItem[] = [
     title: "Overview",
     href: "/dashboard",
     status: "active",
-    description: "Net worth, monthly cash flow & portfolio pacing",
+    description: "Net worth, monthly cash flow & financial pacing",
     scope: "portfolio",
   },
   {

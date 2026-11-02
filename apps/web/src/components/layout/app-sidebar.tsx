@@ -28,6 +28,7 @@ import {
 } from "@/config/navigation";
 import { useWorkspace } from "@/context/workspace-context";
 import { useCurrentUser, useLogoutMutation } from "@/hooks/use-auth";
+import { cn } from "@/lib/utils/cn";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -94,25 +95,20 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon" aria-label="Primary Sidebar Navigation">
-      <SidebarHeader className="border-b border-[var(--border-subtle)] pb-2.5">
-        {!isCollapsed && (
-          <div className="flex items-center justify-between px-2 pt-1 pb-1 text-[10px] font-semibold tracking-wider uppercase text-[var(--muted-foreground)]">
-            <span>Selected Account</span>
-            <span className="text-[10px] font-normal lowercase tracking-normal text-[var(--muted-foreground)]/80">
-              controls scoped pages
-            </span>
-          </div>
-        )}
+      <SidebarHeader className={cn("border-b border-[var(--border-subtle)]", isCollapsed ? "p-2 justify-center" : "p-3 pb-2.5")}>
         <SidebarMenu>
           <SidebarMenuItem>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <SidebarMenuButton
                   size="lg"
-                  className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-muted)]/60 hover:bg-[var(--surface-muted)] transition-all p-2"
+                  className={cn(
+                    "rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-muted)]/60 hover:bg-[var(--surface-muted)] transition-all",
+                    isCollapsed ? "h-10 w-10 p-0 justify-center mx-auto" : "p-2"
+                  )}
                   tooltip={
                     activeWorkspace
-                      ? `Selected Account: ${activeWorkspace.name} (${activeWorkspace.currencyCode}) - Click to switch`
+                      ? `${activeWorkspace.name} (${activeWorkspace.currencyCode})`
                       : "Switch Account"
                   }
                 >
@@ -149,7 +145,12 @@ export function AppSidebar() {
                 </SidebarMenuButton>
               </DropdownMenuTrigger>
 
-              <DropdownMenuContent side="bottom" align="start" className="w-72">
+              <DropdownMenuContent
+                side={isCollapsed ? "right" : "bottom"}
+                align="start"
+                sideOffset={isCollapsed ? 12 : 6}
+                className="w-72"
+              >
                 <DropdownMenuLabel className="flex items-center justify-between">
                   <div>
                     <div className="font-semibold text-xs">Switch Selected Account</div>
@@ -212,13 +213,8 @@ export function AppSidebar() {
       <SidebarContent>
         {/* GROUP 1: ALL ACCOUNTS */}
         <SidebarGroup data-tour="sidebar-nav">
-          <SidebarGroupLabel className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)] px-2">
-            <span>All accounts</span>
-            {!isCollapsed && (
-              <span className="text-[10px] font-normal lowercase tracking-normal text-[var(--muted-foreground)]/80">
-                portfolio-wide
-              </span>
-            )}
+          <SidebarGroupLabel className="text-[11px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)] px-2">
+            All accounts
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
@@ -339,13 +335,17 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter>
+      <SidebarFooter className={cn(isCollapsed && "p-2 justify-center")}>
         <SidebarMenu>
           <SidebarMenuItem>
             {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <SidebarMenuButton size="lg">
+                  <SidebarMenuButton
+                    size="lg"
+                    className={cn(isCollapsed && "h-10 w-10 p-0 justify-center mx-auto")}
+                    tooltip={isCollapsed ? user.fullName : undefined}
+                  >
                     <Avatar className="h-7 w-7 shrink-0 rounded-lg">
                       <AvatarFallback className="rounded-lg text-[11px]">
                         {initials}
@@ -366,7 +366,12 @@ export function AppSidebar() {
                     )}
                   </SidebarMenuButton>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent side="top" align="start" className="w-56">
+                <DropdownMenuContent
+                  side={isCollapsed ? "right" : "top"}
+                  align={isCollapsed ? "end" : "start"}
+                  sideOffset={isCollapsed ? 12 : 6}
+                  className="w-56"
+                >
                   <DropdownMenuLabel className="flex items-center justify-between">
                     <span>{user.fullName}</span>
                     <Badge variant="default" className="tabular-nums">

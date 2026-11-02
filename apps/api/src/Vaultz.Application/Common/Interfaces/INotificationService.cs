@@ -48,4 +48,8 @@ public interface INotificationService
         string userId,
         Guid notificationId,
         CancellationToken cancellationToken = default);
+
+    Task ClearAllNotificationsAsync(
+        string userId,
+        CancellationToken cancellationToken = default);
 }

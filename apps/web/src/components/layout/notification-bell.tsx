@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   ArrowRightLeft,
@@ -8,7 +9,7 @@ import {
   Check,
   CheckCheck,
   HandCoins,
-  Send,
+  Settings,
   ShieldAlert,
   Sparkles,
   Target,
@@ -65,12 +66,11 @@ export function NotificationBell() {
   const {
     notifications,
     unreadCount,
-    isConnected,
     markAsRead,
     markAllAsRead,
     deleteNotification,
-    sendTestNotification,
-    isSendingTest,
+    clearAll,
+    isClearing,
   } = useNotifications();
 
   const handleNotificationClick = (notification: NotificationItem) => {
@@ -119,18 +119,6 @@ export function NotificationBell() {
           </div>
 
           <div className="flex items-center gap-1.5">
-            <div
-              className="flex items-center gap-1 text-[10px] text-[var(--muted-foreground)] px-2 py-0.5 rounded-full bg-[var(--surface-muted)]"
-              title={isConnected ? "Real-time SignalR active" : "Reconnecting to live notifications..."}
-            >
-              <span
-                className={`h-1.5 w-1.5 rounded-full ${
-                  isConnected ? "bg-emerald-500 animate-pulse" : "bg-amber-400"
-                }`}
-              />
-              <span>{isConnected ? "Live" : "Connecting"}</span>
-            </div>
-
             {unreadCount > 0 && (
               <Button
                 variant="ghost"
@@ -139,7 +127,8 @@ export function NotificationBell() {
                 className="h-7 px-2 text-xs text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
                 title="Mark all as read"
               >
-                <CheckCheck className="h-3.5 w-3.5" />
+                <CheckCheck className="h-3.5 w-3.5 mr-1" />
+                Mark all read
               </Button>
             )}
           </div>
@@ -227,20 +216,31 @@ export function NotificationBell() {
 
         {/* Footer */}
         <div className="flex items-center justify-between p-2.5 border-t border-[var(--border)] bg-[var(--surface-muted)]/20">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => sendTestNotification()}
-            disabled={isSendingTest}
-            className="h-7 text-[11px] gap-1.5 text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
-          >
-            <Send className="h-3 w-3" />
-            {isSendingTest ? "Sending..." : "Send test"}
-          </Button>
+          {notifications.length > 0 ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => clearAll()}
+              disabled={isClearing}
+              className="h-7 text-[11px] gap-1.5 text-[var(--danger)] hover:text-[var(--danger)] hover:bg-[var(--danger-soft)]"
+            >
+              <Trash2 className="h-3 w-3" />
+              {isClearing ? "Clearing..." : "Clear"}
+            </Button>
+          ) : (
+            <span className="text-[11px] text-[var(--muted-foreground)]">
+              No notifications
+            </span>
+          )}
 
-          <span className="text-[10px] text-[var(--muted-foreground)]">
-            Powered by SignalR
-          </span>
+          <Link
+            href="/settings?tab=notifications"
+            onClick={() => setIsOpen(false)}
+            className="text-[11px] text-[var(--muted-foreground)] hover:text-[var(--foreground)] flex items-center gap-1 transition-colors px-2 py-1 rounded-md hover:bg-[var(--surface)]"
+          >
+            <Settings className="h-3 w-3" />
+            Preferences
+          </Link>
         </div>
       </PopoverContent>
     </Popover>

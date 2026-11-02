@@ -40,6 +40,12 @@ public sealed class NotificationHandlers
         await _notificationService.DeleteNotificationAsync(userId, id, cancellationToken);
     }
 
+    public async Task ClearAllAsync(CancellationToken cancellationToken = default)
+    {
+        var userId = _currentUser.GetRequiredUserId();
+        await _notificationService.ClearAllNotificationsAsync(userId, cancellationToken);
+    }
+
     public async Task SendTestNotificationAsync(CancellationToken cancellationToken = default)
     {
         var userId = _currentUser.GetRequiredUserId();

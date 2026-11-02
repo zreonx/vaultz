@@ -88,17 +88,20 @@ public sealed class LendingHandlers
     private readonly ICurrentUserService _currentUser;
     private readonly IValidator<CreateLendingRecordCommand> _createValidator;
     private readonly IValidator<RecordLendingPaymentCommand> _paymentValidator;
+    private readonly INotificationService? _notificationService;
 
     public LendingHandlers(
         IVaultzDbContext dbContext,
         ICurrentUserService currentUser,
         IValidator<CreateLendingRecordCommand> createValidator,
-        IValidator<RecordLendingPaymentCommand> paymentValidator)
+        IValidator<RecordLendingPaymentCommand> paymentValidator,
+        INotificationService? notificationService = null)
     {
         _dbContext = dbContext;
         _currentUser = currentUser;
         _createValidator = createValidator;
         _paymentValidator = paymentValidator;
+        _notificationService = notificationService;
     }
 
     public async Task<LendingSummaryResponse> GetLendingSummaryAsync(
@@ -241,6 +244,18 @@ public sealed class LendingHandlers
             }
 
             await _dbContext.SaveChangesAsync(ct);
+
+            if (_notificationService != null)
+            {
+                var action = record.Type == LendingType.Lent ? "lent to" : "borrowed from";
+                await _notificationService.SendAsync(
+                    userId,
+                    "New IOU Recorded",
+                    $"Recorded {record.OriginalAmount:N2} {record.CurrencyCode} {action} {record.Counterparty}.",
+                    NotificationType.LendingReminder,
+                    actionUrl: "/lending",
+                    cancellationToken: ct);
+            }
         }, cancellationToken);
 
         return new LendingRecordResponse(
@@ -309,6 +324,30 @@ public sealed class LendingHandlers
             }
 
             await _dbContext.SaveChangesAsync(ct);
+
+            if (_notificationService != null && payment != null)
+            {
+                if (record.Status == LendingStatus.Settled)
+                {
+                    await _notificationService.SendAsync(
+                        userId,
+                        "IOU Settled! 🤝",
+                        $"The loan with {record.Counterparty} has been completely settled ({record.OriginalAmount:N2} {record.CurrencyCode}).",
+                        NotificationType.LendingReminder,
+                        actionUrl: "/lending",
+                        cancellationToken: ct);
+                }
+                else
+                {
+                    await _notificationService.SendAsync(
+                        userId,
+                        "IOU Payment Logged",
+                        $"Recorded repayment of {payment.Amount:N2} {record.CurrencyCode} for {record.Counterparty}. Remaining balance: {record.RemainingAmount:N2} {record.CurrencyCode}.",
+                        NotificationType.LendingReminder,
+                        actionUrl: "/lending",
+                        cancellationToken: ct);
+                }
+            }
         }, cancellationToken);
 
         return new LendingPaymentResponse(

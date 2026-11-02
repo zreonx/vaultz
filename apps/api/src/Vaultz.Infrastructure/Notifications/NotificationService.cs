@@ -131,4 +131,19 @@ public sealed class NotificationService : INotificationService
             await _dbContext.SaveChangesAsync(cancellationToken);
         }
     }
+
+    public async Task ClearAllNotificationsAsync(
+        string userId,
+        CancellationToken cancellationToken = default)
+    {
+        var notifications = await _dbContext.Notifications
+            .Where(n => n.UserId == userId)
+            .ToListAsync(cancellationToken);
+
+        if (notifications.Count != 0)
+        {
+            _dbContext.Notifications.RemoveRange(notifications);
+            await _dbContext.SaveChangesAsync(cancellationToken);
+        }
+    }
 }

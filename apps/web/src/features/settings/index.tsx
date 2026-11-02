@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
+  Bell,
   CheckCircle2,
   Compass,
   ExternalLink,
@@ -16,6 +17,7 @@ import {
   Mail,
   RefreshCw,
   RotateCcw,
+  Send,
   ShieldAlert,
   ShieldCheck,
   SlidersHorizontal,
@@ -25,6 +27,13 @@ import {
   User,
   Wallet,
 } from "lucide-react";
+import {
+  type NotificationPreferences,
+  DEFAULT_NOTIFICATION_PREFERENCES,
+  NOTIFICATION_PREFERENCES_KEY,
+  getStoredNotificationPreferences,
+  useNotifications,
+} from "@/hooks/use-notifications";
 import { TwoFactorSecurityCard } from "./components/TwoFactorSecurityCard";
 import { ThemeToggle } from "@/components/shared/theme-toggle";
 import { useTutorial } from "@/context/tutorial-context";
@@ -99,16 +108,54 @@ export function SettingsFeature() {
       ? "security"
       : searchParams.get("tab") === "privacy"
         ? "privacy"
-        : "profile";
+        : searchParams.get("tab") === "notifications"
+          ? "notifications"
+          : "profile";
 
   const [activeTab, setActiveTab] = useState<string>(initialTab);
 
   useEffect(() => {
     const tabParam = searchParams.get("tab");
-    if (tabParam === "security" || tabParam === "privacy" || tabParam === "profile") {
+    if (
+      tabParam === "security" ||
+      tabParam === "privacy" ||
+      tabParam === "profile" ||
+      tabParam === "notifications"
+    ) {
       setActiveTab(tabParam);
     }
   }, [searchParams]);
+
+  // Notification Preferences state
+  const { sendTestNotification, isSendingTest } = useNotifications();
+  const [notifPreferences, setNotifPreferences] = useState<NotificationPreferences>(
+    DEFAULT_NOTIFICATION_PREFERENCES
+  );
+  const [notifSaved, setNotifSaved] = useState<boolean>(false);
+
+  useEffect(() => {
+    setNotifPreferences(getStoredNotificationPreferences());
+  }, []);
+
+  const updateNotifPreference = <K extends keyof NotificationPreferences>(
+    key: K,
+    value: NotificationPreferences[K]
+  ) => {
+    setNotifPreferences((prev) => {
+      const next = { ...prev, [key]: value };
+      try {
+        window.localStorage.setItem(
+          NOTIFICATION_PREFERENCES_KEY,
+          JSON.stringify(next)
+        );
+      } catch {
+        // Storage failover
+      }
+      return next;
+    });
+    setNotifSaved(true);
+    setTimeout(() => setNotifSaved(false), 3000);
+  };
 
   const { data: user } = useCurrentUser();
   const updateProfileMutation = useUpdateProfileMutation();
@@ -346,9 +393,13 @@ export function SettingsFeature() {
             <Lock className="h-3.5 w-3.5" />
             Password &amp; Security
           </TabsTrigger>
+          <TabsTrigger value="notifications" className="gap-1.5">
+            <Bell className="h-3.5 w-3.5" />
+            Notifications
+          </TabsTrigger>
           <TabsTrigger value="privacy" className="gap-1.5">
             <SlidersHorizontal className="h-3.5 w-3.5" />
-            Privacy &amp; Alerts
+            Privacy &amp; Safety
           </TabsTrigger>
         </TabsList>
 
@@ -953,7 +1004,160 @@ export function SettingsFeature() {
         </div>
       </TabsContent>
 
-        {/* TAB 3: PRIVACY & ALERTS */}
+        {/* TAB 3: NOTIFICATIONS */}
+        <TabsContent value="notifications" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div>
+                  <CardTitle>Notification Preferences</CardTitle>
+                  <CardDescription>
+                    Choose which activities trigger instant live notifications and audio alerts.
+                  </CardDescription>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => sendTestNotification()}
+                  disabled={isSendingTest}
+                  className="gap-1.5 text-xs shrink-0"
+                >
+                  <Send className="h-3.5 w-3.5 text-[var(--accent)]" />
+                  {isSendingTest ? "Dispatching..." : "Send Test Alert"}
+                </Button>
+              </div>
+            </CardHeader>
+
+            <CardContent className="space-y-5">
+              {/* Budget Alerts */}
+              <div className="flex items-center justify-between gap-4 rounded-xl border border-[var(--border-subtle)] p-4">
+                <div className="space-y-0.5">
+                  <Label htmlFor="pref-notif-budget" className="text-sm font-medium">
+                    Budget Spending Warnings
+                  </Label>
+                  <p className="text-xs text-[var(--muted-foreground)]">
+                    Receive alerts when spending in any category reaches 85% or exceeds your monthly limit.
+                  </p>
+                </div>
+                <Switch
+                  id="pref-notif-budget"
+                  checked={notifPreferences.budgetAlerts}
+                  onCheckedChange={(checked) =>
+                    updateNotifPreference("budgetAlerts", checked)
+                  }
+                />
+              </div>
+
+              {/* Savings Milestones */}
+              <div className="flex items-center justify-between gap-4 rounded-xl border border-[var(--border-subtle)] p-4">
+                <div className="space-y-0.5">
+                  <Label htmlFor="pref-notif-savings" className="text-sm font-medium">
+                    Savings Goal Milestones
+                  </Label>
+                  <p className="text-xs text-[var(--muted-foreground)]">
+                    Celebrate milestones and get notified when you reach 100% of your savings targets.
+                  </p>
+                </div>
+                <Switch
+                  id="pref-notif-savings"
+                  checked={notifPreferences.savingsMilestones}
+                  onCheckedChange={(checked) =>
+                    updateNotifPreference("savingsMilestones", checked)
+                  }
+                />
+              </div>
+
+              {/* Account Transfers */}
+              <div className="flex items-center justify-between gap-4 rounded-xl border border-[var(--border-subtle)] p-4">
+                <div className="space-y-0.5">
+                  <Label htmlFor="pref-notif-transfers" className="text-sm font-medium">
+                    Account-to-Account Transfers
+                  </Label>
+                  <p className="text-xs text-[var(--muted-foreground)]">
+                    Receive confirmation when funds are moved between your accounts or across currencies.
+                  </p>
+                </div>
+                <Switch
+                  id="pref-notif-transfers"
+                  checked={notifPreferences.transfers}
+                  onCheckedChange={(checked) =>
+                    updateNotifPreference("transfers", checked)
+                  }
+                />
+              </div>
+
+              {/* Lending & IOUs */}
+              <div className="flex items-center justify-between gap-4 rounded-xl border border-[var(--border-subtle)] p-4">
+                <div className="space-y-0.5">
+                  <Label htmlFor="pref-notif-lending" className="text-sm font-medium">
+                    Lending &amp; IOU Reminders
+                  </Label>
+                  <p className="text-xs text-[var(--muted-foreground)]">
+                    Get notified when personal loan repayments are logged or when a loan is fully settled.
+                  </p>
+                </div>
+                <Switch
+                  id="pref-notif-lending"
+                  checked={notifPreferences.lendingReminders}
+                  onCheckedChange={(checked) =>
+                    updateNotifPreference("lendingReminders", checked)
+                  }
+                />
+              </div>
+
+              {/* Security Alerts */}
+              <div className="flex items-center justify-between gap-4 rounded-xl border border-[var(--border-subtle)] p-4">
+                <div className="space-y-0.5">
+                  <Label htmlFor="pref-notif-security" className="text-sm font-medium">
+                    Security &amp; Account Protection
+                  </Label>
+                  <p className="text-xs text-[var(--muted-foreground)]">
+                    High-priority alerts for password updates, two-factor authentication changes, and new logins.
+                  </p>
+                </div>
+                <Switch
+                  id="pref-notif-security"
+                  checked={notifPreferences.securityAlerts}
+                  onCheckedChange={(checked) =>
+                    updateNotifPreference("securityAlerts", checked)
+                  }
+                />
+              </div>
+
+              {/* Sound Chime */}
+              <div className="flex items-center justify-between gap-4 rounded-xl border border-[var(--border-subtle)] p-4">
+                <div className="space-y-0.5">
+                  <Label htmlFor="pref-notif-sound" className="text-sm font-medium">
+                    Audio Chime Tone
+                  </Label>
+                  <p className="text-xs text-[var(--muted-foreground)]">
+                    Play a gentle dual-frequency chime when an alert is received while viewing the app.
+                  </p>
+                </div>
+                <Switch
+                  id="pref-notif-sound"
+                  checked={notifPreferences.soundChime}
+                  onCheckedChange={(checked) =>
+                    updateNotifPreference("soundChime", checked)
+                  }
+                />
+              </div>
+
+              {notifSaved && (
+                <Alert variant="default">
+                  <CheckCircle2 className="h-4 w-4 text-[var(--accent)]" />
+                  <AlertTitle>Preferences saved</AlertTitle>
+                  <AlertDescription>
+                    Your notification alert settings have been updated and are active.
+                  </AlertDescription>
+                </Alert>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* TAB 4: PRIVACY & SAFETY */}
         <TabsContent value="privacy" className="space-y-6">
           <Card>
             <CardHeader>

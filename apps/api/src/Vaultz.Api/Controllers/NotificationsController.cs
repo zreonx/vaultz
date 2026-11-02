@@ -56,6 +56,14 @@ public sealed class NotificationsController : ControllerBase
         return NoContent();
     }
 
+    [HttpDelete]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public async Task<IActionResult> ClearAll(CancellationToken cancellationToken = default)
+    {
+        await _handlers.ClearAllAsync(cancellationToken);
+        return NoContent();
+    }
+
     [HttpPost("test")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> SendTestNotification(CancellationToken cancellationToken = default)

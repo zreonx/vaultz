@@ -377,6 +377,53 @@ public sealed class TransactionHandlers
                     actionUrl: "/transactions",
                     cancellationToken: ct);
             }
+            else if (_notificationService != null && created.Type == TransactionType.Expense && command.CategoryId.HasValue)
+            {
+                var startOfMonth = new DateOnly(created.OccurredOn.Year, created.OccurredOn.Month, 1);
+                var endOfMonth = startOfMonth.AddMonths(1).AddDays(-1);
+
+                var budget = await _dbContext.Budgets
+                    .AsNoTracking()
+                    .FirstOrDefaultAsync(b =>
+                        b.UserId == userId &&
+                        b.CategoryId == command.CategoryId.Value &&
+                        (b.AccountId == null || b.AccountId == sourceAccount.Id), ct);
+
+                if (budget != null)
+                {
+                    var totalSpent = await _dbContext.Transactions
+                        .Where(t =>
+                            t.UserId == userId &&
+                            t.CategoryId == command.CategoryId.Value &&
+                            t.Type == TransactionType.Expense &&
+                            t.OccurredOn >= startOfMonth &&
+                            t.OccurredOn <= endOfMonth)
+                        .SumAsync(t => (decimal?)t.Amount, ct) ?? 0m;
+
+                    var catName = categoryMap.TryGetValue(command.CategoryId.Value, out var c) ? c.Name : "Category";
+
+                    if (totalSpent >= budget.LimitAmount)
+                    {
+                        await _notificationService.SendAsync(
+                            userId,
+                            "Budget Limit Exceeded! ⚠️",
+                            $"Monthly spending for '{catName}' is {totalSpent:N2} {sourceAccount.CurrencyCode}, exceeding your budget of {budget.LimitAmount:N2} {sourceAccount.CurrencyCode}.",
+                            NotificationType.BudgetWarning,
+                            actionUrl: "/budgets",
+                            cancellationToken: ct);
+                    }
+                    else if (totalSpent >= budget.LimitAmount * 0.85m)
+                    {
+                        await _notificationService.SendAsync(
+                            userId,
+                            "Budget Warning (85% Reached)",
+                            $"You have spent {totalSpent:N2} of your {budget.LimitAmount:N2} {sourceAccount.CurrencyCode} limit for '{catName}'.",
+                            NotificationType.BudgetWarning,
+                            actionUrl: "/budgets",
+                            cancellationToken: ct);
+                    }
+                }
+            }
         }, cancellationToken);
 
         return MapToResponse(created!, accountMap, categoryMap);

@@ -231,7 +231,7 @@ export function TransactionsFeatureView() {
               </div>
             ) : (
               <Badge variant="neutral" className="text-xs font-normal">
-                All accounts (Portfolio-wide)
+                All accounts
               </Badge>
             )}
           </div>
@@ -307,9 +307,6 @@ export function TransactionsFeatureView() {
               <SelectItem value="all">
                 <div className="flex items-center gap-2 font-medium">
                   <span>All Accounts</span>
-                  <Badge variant="neutral" className="text-[10px] px-1 py-0">
-                    Portfolio
-                  </Badge>
                 </div>
               </SelectItem>
               {workspaces.map((acc) => (
