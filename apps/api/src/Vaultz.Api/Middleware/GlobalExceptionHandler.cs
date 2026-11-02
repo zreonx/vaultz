@@ -40,8 +40,9 @@ public sealed class GlobalExceptionHandler : IExceptionHandler
             {
                 Status = StatusCodes.Status400BadRequest,
                 Title = "Validation failed",
-                Detail = "One or more validation errors occurred.",
-                Type = "https://tools.ietf.org/html/rfc9110#section-15.5.1"
+                Detail = validationException.Errors.Values.SelectMany(x => x).FirstOrDefault() ?? "One or more validation errors occurred.",
+                Type = "https://tools.ietf.org/html/rfc9110#section-15.5.1",
+                Extensions = { ["errors"] = validationException.Errors }
             },
             UnauthorizedAppException unauthorizedException => new ProblemDetails
             {
