@@ -21,11 +21,18 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   const { activeWorkspace, hideBalance, toggleHideBalance } = useWorkspace();
   const { user } = useAuth();
-  const { currentStep } = useTutorial();
+  const { registerTargetRect } = useTutorial();
   const [accountPickerVisible, setAccountPickerVisible] = useState(false);
   const [createAccountVisible, setCreateAccountVisible] = useState(false);
+  const pillRef = React.useRef<any>(null);
 
-  const isHighlighted = currentStep === 'workspace_intro';
+  const handlePillLayout = () => {
+    pillRef.current?.measureInWindow((x: number, y: number, width: number, height: number) => {
+      if (width > 0 && height > 0) {
+        registerTargetRect('workspace_pill', { x, y, width, height });
+      }
+    });
+  };
 
   const handleToggleHide = () => {
     haptics.light();
@@ -55,7 +62,9 @@ export const Header: React.FC<HeaderProps> = ({
           <Text style={styles.brandTitle}>VAULTZ</Text>
           {showAccountPicker && (
             <TouchableOpacity
-              style={[styles.workspacePill, isHighlighted && styles.workspacePillHighlighted]}
+              ref={pillRef}
+              onLayout={handlePillLayout}
+              style={styles.workspacePill}
               onPress={() => {
                 haptics.light();
                 setAccountPickerVisible(true);

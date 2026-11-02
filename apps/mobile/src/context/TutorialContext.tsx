@@ -4,22 +4,66 @@ import { useAuth } from './AuthContext';
 import { useWorkspace } from './WorkspaceContext';
 import { haptics } from '@/utils/haptics';
 
-export type TutorialStep =
-  | 'create_account'       // Step 1: Guided creation of first account
-  | 'workspace_intro'      // Step 2: Explaining account scoping & switcher
-  | 'record_transaction'   // Step 3: Guided first transaction
-  | 'completed';           // Step 4: Celebration & finish
+export interface ElementRect {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
+
+export interface MobileTourStep {
+  id: string;
+  badge: string;
+  title: string;
+  description: string;
+  actionText?: string;
+  actionType?: 'create_account' | 'record_transaction';
+}
+
+export const MOBILE_TOUR_STEPS: MobileTourStep[] = [
+  {
+    id: 'workspace_pill',
+    badge: 'ACCOUNT ISOLATION',
+    title: '1. Personal Account Containers',
+    description:
+      'In Vaultz, every account operates in strict personal isolation. Each container has its own private currency and ledger so balances never get mixed up. Tap here anytime to switch accounts.',
+  },
+  {
+    id: 'balance_card',
+    badge: 'ACTIVE SCOPING',
+    title: '2. Scoped Net Balance & Cash Flow',
+    description:
+      'This card shows your live balance and monthly cash flow strictly scoped to the active account. Tap the eye icon to instantly hide sensitive numbers.',
+  },
+  {
+    id: 'quick_actions',
+    badge: 'LOG REAL ACTIVITY',
+    title: '3. Record Real Transactions',
+    description:
+      "Tap 'Expense' or 'Income' to quickly record activity. Vaultz immediately recalculates your cash flow, net balance, and spending pace in real time.",
+    actionText: '+ Log Expense',
+    actionType: 'record_transaction',
+  },
+  {
+    id: 'bottom_tabs',
+    badge: 'FINANCIAL TOOLKIT',
+    title: '4. Full Financial Toolkit',
+    description:
+      'Access your entire personal finance toolkit from the bottom bar: manage all Accounts, inspect Activity logs, track debts with IOUs, or replay this tour anytime in Settings.',
+  },
+];
 
 interface TutorialContextValue {
-  isTutorialActive: boolean;
-  currentStep: TutorialStep | null;
-  stepNumber: number;
-  totalSteps: number;
-  startTutorial: () => void;
-  advanceToStep: (step: TutorialStep) => void;
-  completeTutorial: () => void;
-  skipTutorial: () => void;
-  resetTutorial: () => void;
+  isTourActive: boolean;
+  currentStepIndex: number;
+  currentTourStep: MobileTourStep | null;
+  totalTourSteps: number;
+  nextStep: () => void;
+  prevStep: () => void;
+  skipTour: () => void;
+  resetTour: () => void;
+  registerTargetRect: (id: string, rect: ElementRect) => void;
+  activeTargetRect: ElementRect | null;
 }
 
 const TutorialContext = createContext<TutorialContextValue | null>(null);
@@ -30,20 +74,25 @@ export function useTutorial() {
   return ctx;
 }
 
-const STORAGE_KEY = 'vaultz_tutorial_completed_v1';
+const STORAGE_KEY = 'vaultz_spotlight_tour_mobile_v2';
 
 export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { isAuthenticated, user } = useAuth();
   const { accounts, isLoading: accountsLoading } = useWorkspace();
-  const [currentStep, setCurrentStep] = useState<TutorialStep | null>(null);
+  const [currentStepIndex, setCurrentStepIndex] = useState<number>(-1);
   const [hasCompleted, setHasCompleted] = useState<boolean | null>(null);
+  const [targetRects, setTargetRects] = useState<Record<string, ElementRect>>({});
+
+  const userStorageKey = useMemo(() => {
+    return user?.id ? `${STORAGE_KEY}_${user.id}` : STORAGE_KEY;
+  }, [user?.id]);
 
   // Load completion state from secure storage
   useEffect(() => {
     let isMounted = true;
     (async () => {
       try {
-        const val = await secureStore.getItemAsync(STORAGE_KEY);
+        const val = await secureStore.getItemAsync(userStorageKey);
         if (isMounted) {
           setHasCompleted(val === 'true');
         }
@@ -54,87 +103,118 @@ export const TutorialProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return () => {
       isMounted = false;
     };
-  }, [user?.id]);
+  }, [userStorageKey]);
 
-  // Trigger tutorial for brand new user with 0 accounts or first time
+  // Automatically trigger spotlight tour for first time user after layout settles
   useEffect(() => {
     if (!isAuthenticated || accountsLoading || hasCompleted === null) return;
 
-    if (!hasCompleted) {
-      if (accounts.length === 0) {
-        setCurrentStep('create_account');
-      } else if (!currentStep) {
-        setCurrentStep('workspace_intro');
-      }
+    if (!hasCompleted && currentStepIndex === -1) {
+      const timer = setTimeout(() => {
+        setCurrentStepIndex(0);
+      }, 700);
+      return () => clearTimeout(timer);
     }
-  }, [isAuthenticated, accountsLoading, hasCompleted, accounts.length, currentStep]);
+  }, [isAuthenticated, accountsLoading, hasCompleted, currentStepIndex]);
 
-  const advanceToStep = useCallback((step: TutorialStep) => {
+  const registerTargetRect = useCallback((id: string, rect: ElementRect) => {
+    if (rect.width > 0 && rect.height > 0) {
+      setTargetRects((prev) => {
+        const existing = prev[id];
+        if (
+          existing &&
+          Math.abs(existing.x - rect.x) < 2 &&
+          Math.abs(existing.y - rect.y) < 2 &&
+          Math.abs(existing.width - rect.width) < 2 &&
+          Math.abs(existing.height - rect.height) < 2
+        ) {
+          return prev;
+        }
+        return { ...prev, [id]: rect };
+      });
+    }
+  }, []);
+
+  const nextStep = useCallback(async () => {
     haptics.selection();
-    setCurrentStep(step);
+    setCurrentStepIndex((prev) => {
+      if (prev + 1 >= MOBILE_TOUR_STEPS.length) {
+        haptics.success();
+        (async () => {
+          try {
+            await secureStore.setItemAsync(userStorageKey, 'true');
+          } catch {
+            // Ignore
+          }
+        })();
+        setHasCompleted(true);
+        return -1;
+      }
+      return prev + 1;
+    });
+  }, [userStorageKey]);
+
+  const prevStep = useCallback(() => {
+    haptics.selection();
+    setCurrentStepIndex((prev) => Math.max(0, prev - 1));
   }, []);
 
-  const completeTutorial = useCallback(async () => {
-    haptics.success();
-    setCurrentStep(null);
-    setHasCompleted(true);
-    await secureStore.setItemAsync(STORAGE_KEY, 'true');
-  }, []);
-
-  const skipTutorial = useCallback(async () => {
+  const skipTour = useCallback(async () => {
     haptics.light();
-    setCurrentStep(null);
+    setCurrentStepIndex(-1);
     setHasCompleted(true);
-    await secureStore.setItemAsync(STORAGE_KEY, 'true');
-  }, []);
-
-  const resetTutorial = useCallback(async () => {
-    haptics.medium();
-    await secureStore.deleteItemAsync(STORAGE_KEY);
-    setHasCompleted(false);
-    setCurrentStep(accounts.length === 0 ? 'create_account' : 'workspace_intro');
-  }, [accounts.length]);
-
-  const startTutorial = useCallback(() => {
-    haptics.light();
-    setCurrentStep('create_account');
-  }, []);
-
-  const stepNumber = useMemo(() => {
-    switch (currentStep) {
-      case 'create_account':
-        return 1;
-      case 'workspace_intro':
-        return 2;
-      case 'record_transaction':
-        return 3;
-      case 'completed':
-        return 4;
-      default:
-        return 0;
+    try {
+      await secureStore.setItemAsync(userStorageKey, 'true');
+    } catch {
+      // Ignore
     }
-  }, [currentStep]);
+  }, [userStorageKey]);
+
+  const resetTour = useCallback(async () => {
+    haptics.medium();
+    try {
+      await secureStore.deleteItemAsync(userStorageKey);
+    } catch {
+      // Ignore
+    }
+    setHasCompleted(false);
+    setCurrentStepIndex(0);
+  }, [userStorageKey]);
+
+  const currentTourStep = useMemo(() => {
+    if (currentStepIndex >= 0 && currentStepIndex < MOBILE_TOUR_STEPS.length) {
+      return MOBILE_TOUR_STEPS[currentStepIndex];
+    }
+    return null;
+  }, [currentStepIndex]);
+
+  const activeTargetRect = useMemo(() => {
+    if (!currentTourStep) return null;
+    return targetRects[currentTourStep.id] || null;
+  }, [currentTourStep, targetRects]);
 
   const value = useMemo(
     () => ({
-      isTutorialActive: currentStep !== null,
-      currentStep,
-      stepNumber,
-      totalSteps: 3,
-      startTutorial,
-      advanceToStep,
-      completeTutorial,
-      skipTutorial,
-      resetTutorial,
+      isTourActive: currentStepIndex >= 0,
+      currentStepIndex,
+      currentTourStep,
+      totalTourSteps: MOBILE_TOUR_STEPS.length,
+      nextStep,
+      prevStep,
+      skipTour,
+      resetTour,
+      registerTargetRect,
+      activeTargetRect,
     }),
     [
-      currentStep,
-      stepNumber,
-      startTutorial,
-      advanceToStep,
-      completeTutorial,
-      skipTutorial,
-      resetTutorial,
+      currentStepIndex,
+      currentTourStep,
+      nextStep,
+      prevStep,
+      skipTour,
+      resetTour,
+      registerTargetRect,
+      activeTargetRect,
     ]
   );
 

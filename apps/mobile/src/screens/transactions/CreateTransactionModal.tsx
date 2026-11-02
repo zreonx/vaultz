@@ -7,7 +7,6 @@ import { colors } from '@/theme/colors';
 import { typography, radius, spacing } from '@/theme/tokens';
 import { transactionsApi } from '@/api/transactions';
 import { useWorkspace } from '@/context/WorkspaceContext';
-import { useTutorial } from '@/context/TutorialContext';
 import { haptics } from '@/utils/haptics';
 
 interface CreateTransactionModalProps {
@@ -30,7 +29,6 @@ export const CreateTransactionModal: React.FC<CreateTransactionModalProps> = ({
   onSuccess,
 }) => {
   const { activeWorkspace, accounts, refetchAll } = useWorkspace();
-  const { currentStep, advanceToStep } = useTutorial();
   const [type, setType] = useState<'Expense' | 'Income' | 'Transfer'>(defaultType);
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState(COMMON_CATEGORIES[defaultType][0]);
@@ -82,9 +80,6 @@ export const CreateTransactionModal: React.FC<CreateTransactionModalProps> = ({
 
       haptics.success();
       await refetchAll();
-      if (currentStep === 'record_transaction') {
-        advanceToStep('completed');
-      }
       setAmount('');
       setDescription('');
       onClose();

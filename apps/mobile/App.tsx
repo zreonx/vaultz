@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from '@/context/AuthContext';
 import { WorkspaceProvider } from '@/context/WorkspaceContext';
 import { TutorialProvider } from '@/context/TutorialContext';
+import { SpotlightTourModal } from '@/components/tutorial/SpotlightTourModal';
 import { RootNavigator } from '@/navigation/RootNavigator';
 
 const queryClient = new QueryClient({
@@ -25,6 +26,7 @@ export default function App() {
             <TutorialProvider>
               <StatusBar style="light" />
               <RootNavigator />
+              <SpotlightTourModal />
             </TutorialProvider>
           </WorkspaceProvider>
         </AuthProvider>

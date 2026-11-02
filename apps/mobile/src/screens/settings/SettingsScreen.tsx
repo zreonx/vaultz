@@ -25,7 +25,7 @@ import { haptics } from '@/utils/haptics';
 export const SettingsScreen: React.FC = () => {
   const { user, isBiometricEnabled, setBiometricEnabled, logout } = useAuth();
   const { hideBalance, toggleHideBalance } = useWorkspace();
-  const { resetTutorial } = useTutorial();
+  const { resetTour } = useTutorial();
   const [isUpdatingBio, setIsUpdatingBio] = useState(false);
 
   const handleBiometricToggle = async (value: boolean) => {
@@ -153,10 +153,10 @@ export const SettingsScreen: React.FC = () => {
           <TouchableOpacity
             style={styles.settingRow}
             onPress={() => {
-              resetTutorial();
+              resetTour();
               Alert.alert(
                 'Guided Tour Activated',
-                'The interactive walkthrough has been reset. Switch to the Overview tab to walk through creating an account and recording a transaction.'
+                'The spotlight walkthrough has been reset. Switch to the Overview tab to view the guided tour.'
               );
             }}
           >

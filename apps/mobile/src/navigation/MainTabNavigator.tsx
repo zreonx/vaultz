@@ -1,8 +1,9 @@
-import React from 'react';
-import { StyleSheet, Platform } from 'react-native';
+import React, { useEffect } from 'react';
+import { StyleSheet, Platform, Dimensions } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useTutorial } from '@/context/TutorialContext';
 import { DashboardScreen } from '@/screens/dashboard/DashboardScreen';
 import { AccountsScreen } from '@/screens/accounts/AccountsScreen';
 import { TransactionsScreen } from '@/screens/transactions/TransactionsScreen';
@@ -24,6 +25,7 @@ const Tab = createBottomTabNavigator<MainTabParamList>();
 
 export const MainTabNavigator: React.FC = () => {
   const insets = useSafeAreaInsets();
+  const { registerTargetRect } = useTutorial();
 
   // Bottom padding to clear Android navigation buttons (back, home, recent) & iOS home bar
   const bottomPadding = Math.max(
@@ -31,6 +33,16 @@ export const MainTabNavigator: React.FC = () => {
     Platform.OS === 'android' ? 12 : 8
   );
   const tabHeight = 54 + bottomPadding;
+  const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
+
+  useEffect(() => {
+    registerTargetRect('bottom_tabs', {
+      x: 0,
+      y: screenHeight - tabHeight,
+      width: screenWidth,
+      height: tabHeight,
+    });
+  }, [registerTargetRect, screenHeight, screenWidth, tabHeight]);
 
   return (
     <Tab.Navigator

@@ -17,7 +17,6 @@ import { Skeleton } from '@/components/ui/Skeleton';
 import { CreateTransactionModal } from '@/screens/transactions/CreateTransactionModal';
 import { CreateAccountModal } from '@/components/shared/CreateAccountModal';
 import { CreateLendingModal } from '@/screens/lending/CreateLendingModal';
-import { TutorialBanner } from '@/components/tutorial/TutorialBanner';
 import { useTutorial } from '@/context/TutorialContext';
 import { dashboardApi } from '@/api/dashboard';
 import { transactionsApi } from '@/api/transactions';
@@ -34,11 +33,30 @@ interface DashboardScreenProps {
 
 export const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
   const { activeWorkspace, hideBalance, toggleHideBalance, refetchAll } = useWorkspace();
-  const { currentStep } = useTutorial();
+  const { registerTargetRect } = useTutorial();
   const [summary, setSummary] = useState<DashboardSummaryDto | null>(null);
   const [recentTransactions, setRecentTransactions] = useState<TransactionDto[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+
+  const balanceCardRef = React.useRef<any>(null);
+  const quickActionsRef = React.useRef<any>(null);
+
+  const handleBalanceCardLayout = () => {
+    balanceCardRef.current?.measureInWindow((x: number, y: number, width: number, height: number) => {
+      if (width > 0 && height > 0) {
+        registerTargetRect('balance_card', { x, y, width, height });
+      }
+    });
+  };
+
+  const handleQuickActionsLayout = () => {
+    quickActionsRef.current?.measureInWindow((x: number, y: number, width: number, height: number) => {
+      if (width > 0 && height > 0) {
+        registerTargetRect('quick_actions', { x, y, width, height });
+      }
+    });
+  };
 
   // Modals state
   const [txModalVisible, setTxModalVisible] = useState(false);
@@ -106,86 +124,83 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) 
         }
         showsVerticalScrollIndicator={false}
       >
-        {/* Interactive Guided Onboarding Banner */}
-        <TutorialBanner
-          onOpenCreateAccount={() => setCreateAccountModalVisible(true)}
-          onOpenCreateTransaction={() => openTxModal('Expense')}
-        />
-
         {/* Balance Card */}
-        <Card style={styles.balanceCard}>
-          <View style={styles.balanceHeader}>
-            <Text style={styles.balanceLabel}>
-              {activeWorkspace ? `${activeWorkspace.name.toUpperCase()} BALANCE` : 'TOTAL NET BALANCE'}
-            </Text>
-            <TouchableOpacity
-              onPress={() => {
-                haptics.light();
-                toggleHideBalance();
-              }}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-            >
-              <Ionicons
-                name={hideBalance ? 'eye-off-outline' : 'eye-outline'}
-                size={18}
-                color={colors.textSecondary}
-              />
-            </TouchableOpacity>
-          </View>
-
-          {isLoading ? (
-            <Skeleton width={180} height={36} style={{ marginVertical: 8 }} />
-          ) : (
-            <Text style={styles.balanceValue}>
-              {hideBalance ? '••••••••' : formatMoney(balance, currency)}
-            </Text>
-          )}
-
-          {/* Monthly Inflow / Outflow Summary */}
-          <View style={styles.statsRow}>
-            <View style={styles.statItem}>
-              <View style={styles.statIconBadge}>
-                <Ionicons name="arrow-down-outline" size={14} color={colors.accent} />
-              </View>
-              <View>
-                <Text style={styles.statLabel}>Income this month</Text>
-                <Text style={styles.statIncome}>
-                  {hideBalance
-                    ? '••••'
-                    : formatMoney(summary?.monthlyIncome ?? 0, currency)}
-                </Text>
-              </View>
+        <View ref={balanceCardRef} onLayout={handleBalanceCardLayout}>
+          <Card style={styles.balanceCard}>
+            <View style={styles.balanceHeader}>
+              <Text style={styles.balanceLabel}>
+                {activeWorkspace ? `${activeWorkspace.name.toUpperCase()} BALANCE` : 'TOTAL NET BALANCE'}
+              </Text>
+              <TouchableOpacity
+                onPress={() => {
+                  haptics.light();
+                  toggleHideBalance();
+                }}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Ionicons
+                  name={hideBalance ? 'eye-off-outline' : 'eye-outline'}
+                  size={18}
+                  color={colors.textSecondary}
+                />
+              </TouchableOpacity>
             </View>
 
-            <View style={styles.statDivider} />
+            {isLoading ? (
+              <Skeleton width={180} height={36} style={{ marginVertical: 8 }} />
+            ) : (
+              <Text style={styles.balanceValue}>
+                {hideBalance ? '••••••••' : formatMoney(balance, currency)}
+              </Text>
+            )}
 
-            <View style={styles.statItem}>
-              <View style={[styles.statIconBadge, { backgroundColor: 'rgba(239, 68, 68, 0.1)' }]}>
-                <Ionicons name="arrow-up-outline" size={14} color={colors.danger} />
+            {/* Monthly Inflow / Outflow Summary */}
+            <View style={styles.statsRow}>
+              <View style={styles.statItem}>
+                <View style={styles.statIconBadge}>
+                  <Ionicons name="arrow-down-outline" size={14} color={colors.accent} />
+                </View>
+                <View>
+                  <Text style={styles.statLabel}>Income this month</Text>
+                  <Text style={styles.statIncome}>
+                    {hideBalance
+                      ? '••••'
+                      : formatMoney(summary?.monthlyIncome ?? 0, currency)}
+                  </Text>
+                </View>
               </View>
-              <View>
-                <Text style={styles.statLabel}>Spent this month</Text>
-                <Text style={styles.statExpense}>
-                  {hideBalance
-                    ? '••••'
-                    : formatMoney(summary?.monthlyExpenses ?? 0, currency)}
-                </Text>
+
+              <View style={styles.statDivider} />
+
+              <View style={styles.statItem}>
+                <View style={[styles.statIconBadge, { backgroundColor: 'rgba(239, 68, 68, 0.12)' }]}>
+                  <Ionicons name="arrow-up-outline" size={14} color={colors.danger} />
+                </View>
+                <View>
+                  <Text style={styles.statLabel}>Spent this month</Text>
+                  <Text style={styles.statExpense}>
+                    {hideBalance
+                      ? '••••'
+                      : formatMoney(summary?.monthlyExpenses ?? 0, currency)}
+                  </Text>
+                </View>
               </View>
             </View>
-          </View>
-        </Card>
+          </Card>
+        </View>
 
         {/* Quick Actions */}
         <View style={styles.sectionHeader}>
           <Text style={styles.sectionTitle}>QUICK ACTIONS</Text>
         </View>
 
-        <View style={styles.quickActionsGrid}>
+        <View
+          ref={quickActionsRef}
+          onLayout={handleQuickActionsLayout}
+          style={styles.quickActionsGrid}
+        >
           <TouchableOpacity
-            style={[
-              styles.actionBtn,
-              currentStep === 'record_transaction' && styles.actionBtnHighlighted,
-            ]}
+            style={styles.actionBtn}
             onPress={() => openTxModal('Expense')}
             activeOpacity={0.7}
           >
@@ -196,10 +211,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) 
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[
-              styles.actionBtn,
-              currentStep === 'record_transaction' && styles.actionBtnHighlighted,
-            ]}
+            style={styles.actionBtn}
             onPress={() => openTxModal('Income')}
             activeOpacity={0.7}
           >
