@@ -3,42 +3,45 @@ export interface NavItem {
   href: string;
   status: "active" | "planned";
   description: string;
-  scope?: "shared" | "account" | "system";
+  scope?: "portfolio" | "account" | "system" | "shared";
 }
 
 /**
- * Shared features that encompass all accounts across the entire portfolio.
+ * Portfolio-wide features that show all accounts across the entire portfolio.
  */
-export const SHARED_NAVIGATION: NavItem[] = [
+export const ALL_ACCOUNTS_NAVIGATION: NavItem[] = [
   {
     title: "Overview",
     href: "/dashboard",
     status: "active",
     description: "Net worth, monthly cash flow & portfolio pacing",
-    scope: "shared",
+    scope: "portfolio",
   },
   {
     title: "Accounts",
     href: "/accounts",
     status: "active",
     description: "Checking, savings, cash & credit card balances",
-    scope: "shared",
+    scope: "portfolio",
   },
   {
     title: "Transactions",
     href: "/transactions",
     status: "active",
     description: "All income, expenses & transfers across accounts",
-    scope: "shared",
+    scope: "portfolio",
   },
   {
     title: "Reports",
     href: "/reports",
     status: "active",
     description: "Cash flow insights, category breakdowns & exports",
-    scope: "shared",
+    scope: "portfolio",
   },
 ];
+
+/** Backwards-compatible alias */
+export const SHARED_NAVIGATION = ALL_ACCOUNTS_NAVIGATION;
 
 /**
  * Independent features scoped specifically to the currently selected active account.

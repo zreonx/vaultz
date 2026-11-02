@@ -9,6 +9,7 @@ import {
   AlertCircle,
   ArrowDownLeft,
   ArrowLeftRight,
+  ArrowRight,
   ArrowUpRight,
   Globe,
   Plus,
@@ -29,6 +30,7 @@ import {
   type TransactionResponse,
 } from "@/types/api";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DatePicker } from "@/components/ui/date-picker";
 import {
@@ -543,6 +545,100 @@ export function CreateTransactionDialog({
               <p className="text-xs text-[var(--danger)]">
                 {errors.description.message}
               </p>
+            )}
+          </div>
+
+          {/* Prominent Account Scope & Destination Callout before saving */}
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-muted)]/70 p-3 space-y-2">
+            <div className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)]">
+              <span>Account Impact Summary</span>
+              <Badge
+                variant={
+                  selectedType === TransactionType.Income
+                    ? "default"
+                    : selectedType === TransactionType.Transfer
+                    ? "neutral"
+                    : "warning"
+                }
+                className="text-[10px] uppercase font-bold"
+              >
+                {selectedType === TransactionType.Transfer
+                  ? "Transfer"
+                  : selectedType === TransactionType.Income
+                  ? "Income Deposit"
+                  : "Expense Debit"}
+              </Badge>
+            </div>
+
+            {selectedType === TransactionType.Transfer ? (
+              <div className="space-y-1.5 pt-0.5">
+                <div className="grid grid-cols-[1fr,auto,1fr] items-center gap-2 text-xs">
+                  {/* Source Account */}
+                  <div className="rounded-lg border border-[var(--border-subtle)] bg-[var(--surface)] p-2">
+                    <div className="text-[10px] text-[var(--muted-foreground)] font-medium">From Account</div>
+                    <div className="font-semibold truncate text-[var(--foreground)]">
+                      {sourceAccount?.name || "Select source"}
+                    </div>
+                    <div className="text-[10px] font-mono text-[var(--muted-foreground)]">
+                      {sourceAccount?.currencyCode}
+                    </div>
+                  </div>
+
+                  <ArrowRight className="h-4 w-4 text-primary shrink-0" />
+
+                  {/* Destination Account - PROMINENT */}
+                  <div className="rounded-lg border-2 border-primary/60 bg-primary/10 p-2 shadow-sm">
+                    <div className="text-[10px] text-primary font-bold uppercase tracking-wider">
+                      To Destination
+                    </div>
+                    <div className="font-bold truncate text-[var(--foreground)] text-sm">
+                      {destAccount?.name ? (
+                        destAccount.name
+                      ) : (
+                        <span className="text-red-500 italic">Select Destination</span>
+                      )}
+                    </div>
+                    <div className="text-[10px] font-mono font-semibold text-primary">
+                      {destAccount?.currencyCode || "—"}
+                    </div>
+                  </div>
+                </div>
+
+                {destAccount ? (
+                  <p className="text-[11px] text-[var(--muted-foreground)] text-center pt-0.5">
+                    Funds will be deposited directly into{" "}
+                    <strong className="text-[var(--foreground)]">{destAccount.name}</strong>.
+                  </p>
+                ) : (
+                  <p className="text-[11px] text-red-500 font-medium text-center pt-0.5">
+                    ⚠️ Select a destination account to complete this transfer.
+                  </p>
+                )}
+              </div>
+            ) : selectedType === TransactionType.Income ? (
+              <div className="flex items-center justify-between gap-2 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface)] p-2.5 text-xs">
+                <div>
+                  <div className="text-[10px] text-[var(--muted-foreground)] font-medium">Target Account (Deposit To)</div>
+                  <div className="font-semibold text-sm text-[var(--foreground)]">
+                    {sourceAccount?.name || "Select account"}
+                  </div>
+                </div>
+                <Badge variant="default" className="font-mono text-xs">
+                  {sourceAccount?.currencyCode}
+                </Badge>
+              </div>
+            ) : (
+              <div className="flex items-center justify-between gap-2 rounded-lg border border-[var(--border-subtle)] bg-[var(--surface)] p-2.5 text-xs">
+                <div>
+                  <div className="text-[10px] text-[var(--muted-foreground)] font-medium">Source Account (Deduct From)</div>
+                  <div className="font-semibold text-sm text-[var(--foreground)]">
+                    {sourceAccount?.name || "Select account"}
+                  </div>
+                </div>
+                <Badge variant="warning" className="font-mono text-xs">
+                  {sourceAccount?.currencyCode}
+                </Badge>
+              </div>
             )}
           </div>
 

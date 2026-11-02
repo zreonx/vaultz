@@ -724,6 +724,23 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
                 />
               </div>
 
+              {toWorkspace && (
+                <div className="rounded-xl border-2 border-primary/50 bg-primary/10 p-3 space-y-1">
+                  <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-primary">
+                    <span>Destination Account</span>
+                    <Badge variant="default" className="font-mono text-[10px]">
+                      {toWorkspace.currencyCode}
+                    </Badge>
+                  </div>
+                  <div className="text-sm font-bold text-[var(--foreground)]">
+                    {toWorkspace.name}
+                  </div>
+                  <div className="text-[11px] text-[var(--muted-foreground)]">
+                    Funds will be deposited directly into <strong>{toWorkspace.name}</strong>.
+                  </div>
+                </div>
+              )}
+
               <DialogFooter>
                 <Button
                   type="button"

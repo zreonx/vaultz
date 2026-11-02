@@ -114,6 +114,16 @@ export function AppHeader() {
               </BreadcrumbList>
             </Breadcrumb>
 
+            {activeNavItem?.scope === "account" ? (
+              <span className="hidden sm:inline-flex items-center gap-1 rounded-md bg-[var(--accent-soft)] px-2 py-0.5 text-[11px] font-semibold text-[var(--accent)] border border-[var(--accent)]/20">
+                For {activeWorkspace?.name || "Selected Account"}
+              </span>
+            ) : activeNavItem?.scope === "portfolio" ? (
+              <span className="hidden sm:inline-flex items-center gap-1 rounded-md bg-[var(--surface-muted)] px-2 py-0.5 text-[11px] font-medium text-[var(--muted-foreground)] border border-[var(--border-subtle)]">
+                All accounts
+              </span>
+            ) : null}
+
             {activeWorkspace && (
               <button
                 type="button"

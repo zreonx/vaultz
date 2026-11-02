@@ -5,7 +5,6 @@ import {
   ArrowLeft,
   ArrowRight,
   CheckCircle2,
-  Compass,
   Sparkles,
   X,
 } from "lucide-react";

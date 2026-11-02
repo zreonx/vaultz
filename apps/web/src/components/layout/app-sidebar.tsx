@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 import {
   ACCOUNT_NAVIGATION,
-  SHARED_NAVIGATION,
+  ALL_ACCOUNTS_NAVIGATION,
   SYSTEM_NAVIGATION,
 } from "@/config/navigation";
 import { useWorkspace } from "@/context/workspace-context";
@@ -93,39 +93,54 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon" aria-label="Primary Sidebar Navigation">
-      <SidebarHeader>
+      <SidebarHeader className="border-b border-[var(--border-subtle)] pb-2.5">
+        {!isCollapsed && (
+          <div className="flex items-center justify-between px-2 pt-1 pb-1 text-[10px] font-semibold tracking-wider uppercase text-[var(--muted-foreground)]">
+            <span>Selected Account</span>
+            <span className="text-[10px] font-normal lowercase tracking-normal text-[var(--muted-foreground)]/80">
+              controls scoped pages
+            </span>
+          </div>
+        )}
         <SidebarMenu>
           <SidebarMenuItem>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <SidebarMenuButton
                   size="lg"
+                  className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-muted)]/60 hover:bg-[var(--surface-muted)] transition-all p-2"
                   tooltip={
                     activeWorkspace
-                      ? `${activeWorkspace.name} (${activeWorkspace.currencyCode})`
+                      ? `Selected Account: ${activeWorkspace.name} (${activeWorkspace.currencyCode}) - Click to switch`
                       : "Switch Account"
                   }
                 >
-                  <Avatar className="h-8 w-8 shrink-0 rounded-xl">
-                    <AvatarFallback className="rounded-xl bg-[var(--accent)] text-xs font-semibold text-[var(--accent-foreground)]">
+                  <Avatar className="h-8 w-8 shrink-0 rounded-lg">
+                    <AvatarFallback className="rounded-lg bg-primary text-xs font-bold text-primary-foreground">
                       {activeWorkspace
-                        ? activeWorkspace.currencyCode.slice(0, 2)
+                        ? activeWorkspace.currencyCode.slice(0, 3)
                         : "VZ"}
                     </AvatarFallback>
                   </Avatar>
                   {!isCollapsed && (
                     <>
                       <div className="grid flex-1 text-left text-xs leading-tight">
-                        <span className="truncate font-semibold tracking-tight">
+                        <span className="truncate font-semibold tracking-tight text-[var(--foreground)]">
                           {activeWorkspace
                             ? activeWorkspace.name
                             : "Select Account"}
                         </span>
-                        <span className="truncate text-[11px] text-[var(--muted-foreground)]">
-                          {activeWorkspace
-                            ? `${activeWorkspace.currencyCode} · ${activeWorkspace.typeName}`
-                            : "Personal Account"}
-                        </span>
+                        <div className="flex items-center gap-1.5 text-[11px] text-[var(--muted-foreground)] mt-0.5">
+                          <Badge
+                            variant="neutral"
+                            className="px-1 py-0 text-[10px] font-mono h-3.5 leading-none"
+                          >
+                            {activeWorkspace?.currencyCode ?? "USD"}
+                          </Badge>
+                          <span className="truncate">
+                            {activeWorkspace?.typeName ?? "Personal Account"}
+                          </span>
+                        </div>
                       </div>
                       <ChevronsUpDown className="ml-auto h-4 w-4 shrink-0 text-[var(--muted-foreground)]" />
                     </>
@@ -133,9 +148,14 @@ export function AppSidebar() {
                 </SidebarMenuButton>
               </DropdownMenuTrigger>
 
-              <DropdownMenuContent side="bottom" align="start" className="w-64">
+              <DropdownMenuContent side="bottom" align="start" className="w-72">
                 <DropdownMenuLabel className="flex items-center justify-between">
-                  <span>Accounts</span>
+                  <div>
+                    <div className="font-semibold text-xs">Switch Selected Account</div>
+                    <div className="text-[10px] font-normal text-[var(--muted-foreground)]">
+                      Controls Budgets, Savings, IOUs, Recurring &amp; Categories
+                    </div>
+                  </div>
                   <Badge variant="neutral" className="tabular-nums">
                     {workspaces.length}
                   </Badge>
@@ -157,7 +177,7 @@ export function AppSidebar() {
                           </span>
                           <Badge
                             variant="default"
-                            className="px-1.5 py-0 text-[10px] tabular-nums"
+                            className="px-1.5 py-0 text-[10px] tabular-nums font-mono"
                           >
                             {ws.currencyCode}
                           </Badge>
@@ -189,19 +209,19 @@ export function AppSidebar() {
       </SidebarHeader>
 
       <SidebarContent>
-        {/* GROUP 1: ALL ACCOUNTS / PORTFOLIO */}
+        {/* GROUP 1: ALL ACCOUNTS */}
         <SidebarGroup data-tour="sidebar-nav">
           <SidebarGroupLabel className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)] px-2">
-            <span>Portfolio</span>
+            <span>All accounts</span>
             {!isCollapsed && (
               <span className="text-[10px] font-normal lowercase tracking-normal text-[var(--muted-foreground)]/80">
-                all accounts
+                portfolio-wide
               </span>
             )}
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {SHARED_NAVIGATION.map((item) => {
+              {ALL_ACCOUNTS_NAVIGATION.map((item) => {
                 const Icon = ICONS[item.title] ?? LayoutDashboard;
                 const label = item.title;
                 const isActive =
@@ -233,13 +253,13 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* GROUP 2: ACTIVE ACCOUNT SCOPE */}
+        {/* GROUP 2: FOR [ACCOUNT NAME] */}
         <SidebarGroup className="pt-2">
-          <SidebarGroupLabel className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)] px-2">
-            <span className="truncate">
+          <SidebarGroupLabel className="flex items-center justify-between text-[11px] font-semibold tracking-wider text-[var(--foreground)] px-2">
+            <span className="truncate uppercase font-bold text-[var(--accent)]">
               {activeWorkspace && !isCollapsed
-                ? activeWorkspace.name
-                : "Active Account"}
+                ? `For ${activeWorkspace.name}`
+                : "For Selected Account"}
             </span>
             {!isCollapsed && activeWorkspace && (
               <Badge
@@ -262,7 +282,7 @@ export function AppSidebar() {
                     <SidebarMenuButton
                       asChild
                       isActive={isActive}
-                      tooltip={`${label}${activeWorkspace ? ` (${activeWorkspace.name})` : ""}`}
+                      tooltip={`${label} (for ${activeWorkspace ? activeWorkspace.name : "selected account"})`}
                     >
                       <Link
                         href={item.href}

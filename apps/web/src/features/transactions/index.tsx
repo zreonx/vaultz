@@ -8,6 +8,7 @@ import {
   MoreHorizontal,
   Plus,
   Trash2,
+  Wallet,
 } from "lucide-react";
 import { apiClient } from "@/lib/api/client";
 import { formatRecordedTime, formatTableDate } from "@/lib/utils/date";
@@ -36,6 +37,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Table,
   TableBody,
   TableCell,
@@ -49,7 +57,8 @@ export const TRANSACTIONS_QUERY_KEY = ["transactions"] as const;
 
 export function TransactionsFeatureView() {
   const { data: user, isLoading: isAuthLoading } = useCurrentUser();
-  const { activeWorkspace, openCreateTransactionDialog } = useWorkspace();
+  const { workspaces, activeWorkspace, openCreateTransactionDialog } =
+    useWorkspace();
   const queryClient = useQueryClient();
   const router = useRouter();
   const pathname = usePathname();
@@ -58,6 +67,12 @@ export function TransactionsFeatureView() {
   const urlSearch = searchParams.get("search") || "";
   const urlFilter = searchParams.get("filter") || "all";
   const urlPage = Math.max(1, Number(searchParams.get("page")) || 1);
+  const urlAccount = searchParams.get("account") || "all";
+
+  const scopedAccount =
+    urlAccount !== "all"
+      ? workspaces.find((w) => w.id === urlAccount) ?? null
+      : null;
 
   const [searchQuery, setSearchQuery] = useState(urlSearch);
   const pageSize = 10;
@@ -72,6 +87,7 @@ export function TransactionsFeatureView() {
       search?: string | null;
       filter?: string | null;
       page?: number | null;
+      account?: string | null;
     }) => {
       const params = new URLSearchParams(searchParams.toString());
 
@@ -99,6 +115,14 @@ export function TransactionsFeatureView() {
         }
       }
 
+      if (updates.account !== undefined) {
+        if (updates.account && updates.account !== "all") {
+          params.set("account", updates.account);
+        } else {
+          params.delete("account");
+        }
+      }
+
       const queryString = params.toString();
       const targetUrl = queryString ? `${pathname}?${queryString}` : pathname;
       router.push(targetUrl, { scroll: false });
@@ -121,7 +145,7 @@ export function TransactionsFeatureView() {
     queryKey: [
       ...TRANSACTIONS_QUERY_KEY,
       "paged",
-      activeWorkspace?.id,
+      urlAccount,
       urlFilter,
       urlSearch,
       urlPage,
@@ -141,8 +165,8 @@ export function TransactionsFeatureView() {
         pageSize: String(pageSize),
       });
 
-      if (activeWorkspace?.id) {
-        params.append("accountId", activeWorkspace.id);
+      if (urlAccount && urlAccount !== "all") {
+        params.append("accountId", urlAccount);
       }
       if (typeNum !== undefined) {
         params.append("type", String(typeNum));
@@ -187,18 +211,44 @@ export function TransactionsFeatureView() {
       {/* Header */}
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div className="space-y-1">
-          <h2 className="text-2xl font-semibold tracking-tight">Transactions</h2>
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <h2 className="text-2xl font-semibold tracking-tight">Transactions</h2>
+            {scopedAccount ? (
+              <div className="flex items-center gap-1.5">
+                <Badge variant="default" className="text-xs font-medium">
+                  For {scopedAccount.name} ({scopedAccount.currencyCode})
+                </Badge>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => updateQueryParams({ account: "all", page: 1 })}
+                  className="h-6 px-1.5 text-xs text-[var(--accent)] hover:underline"
+                >
+                  View all accounts
+                </Button>
+              </div>
+            ) : (
+              <Badge variant="neutral" className="text-xs font-normal">
+                All accounts (Portfolio-wide)
+              </Badge>
+            )}
+          </div>
           <p className="text-sm text-[var(--muted-foreground)]">
-            {activeWorkspace
-              ? `Transaction activity and history for ${activeWorkspace.name} (${activeWorkspace.currencyCode}).`
-              : "Record income, expenses, and account transfers."}
+            {scopedAccount
+              ? `Filtered activity for ${scopedAccount.name} (${scopedAccount.currencyCode}).`
+              : "Review all income, expenses, and account-to-account transfers across your entire portfolio."}
           </p>
         </div>
 
         <Button
           type="button"
           size="sm"
-          onClick={() => openCreateTransactionDialog()}
+          onClick={() =>
+            openCreateTransactionDialog(
+              undefined,
+              scopedAccount?.id ?? activeWorkspace?.id
+            )
+          }
           className="gap-1.5"
         >
           <Plus className="h-3.5 w-3.5" />
@@ -208,12 +258,50 @@ export function TransactionsFeatureView() {
 
       {/* Outside Table Toolbar: Search & Filter Tabs */}
       <DataTableToolbar>
-        <DataTableSearch
-          value={searchQuery}
-          onChange={setSearchQuery}
-          onClear={() => updateQueryParams({ search: null, page: 1 })}
-          placeholder="Search description, notes, or category..."
-        />
+        <div className="flex flex-1 items-center gap-2.5 flex-wrap">
+          <DataTableSearch
+            value={searchQuery}
+            onChange={setSearchQuery}
+            onClear={() => updateQueryParams({ search: null, page: 1 })}
+            placeholder="Search description, notes, or category..."
+          />
+
+          {/* Account Scope Switcher */}
+          <Select
+            value={urlAccount}
+            onValueChange={(val) =>
+              updateQueryParams({ account: val, page: 1 })
+            }
+          >
+            <SelectTrigger className="h-9 w-[190px] text-xs rounded-xl bg-[var(--surface)] border-[var(--border)] shrink-0">
+              <Wallet className="h-3.5 w-3.5 mr-1.5 text-[var(--muted-foreground)] shrink-0" />
+              <SelectValue placeholder="Scope" />
+            </SelectTrigger>
+            <SelectContent align="start">
+              <SelectItem value="all">
+                <div className="flex items-center gap-2 font-medium">
+                  <span>All Accounts</span>
+                  <Badge variant="neutral" className="text-[10px] px-1 py-0">
+                    Portfolio
+                  </Badge>
+                </div>
+              </SelectItem>
+              {workspaces.map((acc) => (
+                <SelectItem key={acc.id} value={acc.id}>
+                  <div className="flex items-center gap-2">
+                    <span className="truncate max-w-[120px]">{acc.name}</span>
+                    <Badge
+                      variant="default"
+                      className="text-[10px] px-1.5 py-0 font-mono"
+                    >
+                      {acc.currencyCode}
+                    </Badge>
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
 
         <Tabs
           value={urlFilter}
@@ -337,13 +425,19 @@ export function TransactionsFeatureView() {
                     )}
                   </TableCell>
                   <TableCell>
-                    <div className="font-medium">{tx.description}</div>
-                    <div className="text-xs text-[var(--muted-foreground)]">
-                      {tx.accountName}
-                      {tx.destinationAccountName
-                        ? ` → ${tx.destinationAccountName}`
-                        : ""}
-                      {tx.categoryName ? ` · ${tx.categoryName}` : ""}
+                    <div className="font-medium text-[var(--foreground)]">{tx.description}</div>
+                    <div className="flex items-center gap-1.5 flex-wrap mt-0.5 text-xs text-[var(--muted-foreground)]">
+                      <span className="inline-flex items-center gap-1 rounded bg-[var(--surface-muted)] px-1.5 py-0.5 text-[11px] font-medium text-[var(--foreground)] border border-[var(--border-subtle)]">
+                        <Wallet className="h-2.5 w-2.5 text-[var(--muted-foreground)]" />
+                        {tx.accountName}
+                        {tx.destinationAccountName && (
+                          <>
+                            <ArrowLeftRight className="h-2.5 w-2.5 text-primary" />
+                            <span className="font-semibold text-primary">{tx.destinationAccountName}</span>
+                          </>
+                        )}
+                      </span>
+                      {tx.categoryName && <span>· {tx.categoryName}</span>}
                     </div>
                   </TableCell>
                   <TableCell>
