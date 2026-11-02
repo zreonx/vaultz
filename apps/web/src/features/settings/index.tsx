@@ -89,7 +89,7 @@ const PREFERENCES_STORAGE_KEY = "vaultz.security_preferences";
 export function SettingsFeature() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { resetTutorial } = useTutorial();
+  const { resetTour } = useTutorial();
   const initialTab =
     searchParams.get("tab") === "security"
       ? "security"
@@ -1025,7 +1025,7 @@ export function SettingsFeature() {
                   variant="outline"
                   size="sm"
                   onClick={() => {
-                    resetTutorial();
+                    resetTour();
                     router.push("/dashboard");
                   }}
                   className="gap-2"

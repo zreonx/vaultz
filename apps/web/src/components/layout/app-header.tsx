@@ -115,6 +115,7 @@ export function AppHeader() {
             {activeWorkspace && (
               <button
                 type="button"
+                data-tour="header-balance-pill"
                 onClick={toggleHideBalance}
                 title={isBalanceHidden ? "Show balance" : "Hide balance"}
                 aria-label={isBalanceHidden ? "Show balance" : "Hide balance"}

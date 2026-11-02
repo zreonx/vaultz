@@ -4,6 +4,7 @@ import { AppSidebar } from "@/components/layout/app-sidebar";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { WorkspaceProvider } from "@/context/workspace-context";
 import { TutorialProvider } from "@/context/tutorial-context";
+import { SpotlightTour } from "@/components/tutorial/spotlight-tour";
 
 export default function DashboardLayout({
   children,
@@ -14,6 +15,7 @@ export default function DashboardLayout({
     <PrivateRouteGuard>
       <WorkspaceProvider>
         <TutorialProvider>
+          <SpotlightTour />
           <SidebarProvider>
             <AppSidebar />
             <SidebarInset>

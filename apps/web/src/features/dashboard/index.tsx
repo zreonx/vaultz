@@ -14,8 +14,6 @@ import { apiClient } from "@/lib/api/client";
 import { formatRecordedTime, formatTableDate } from "@/lib/utils/date";
 import { formatMoney } from "@/lib/utils/currency";
 import { useWorkspace } from "@/context/workspace-context";
-import { useTutorial } from "@/context/tutorial-context";
-import { TutorialBanner } from "@/components/tutorial/tutorial-banner";
 import { useCurrentUser } from "@/hooks/use-auth";
 import { DataTableShell } from "@/components/shared/data-table";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -55,7 +53,6 @@ export function DashboardOverviewFeature() {
     openTransferDialog,
     openCreateTransactionDialog,
   } = useWorkspace();
-  const { currentStep } = useTutorial();
 
   const queryUrl = activeWorkspace?.id
     ? `/api/v1/dashboard?baseCurrency=${activeCurrencyCode}&accountId=${activeWorkspace.id}`
@@ -71,9 +68,6 @@ export function DashboardOverviewFeature() {
 
   return (
     <div className="space-y-8">
-      {/* Interactive Onboarding Tutorial Banner */}
-      <TutorialBanner />
-
       {/* Header */}
       <section className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div className="space-y-1">
@@ -108,12 +102,9 @@ export function DashboardOverviewFeature() {
           <Button
             type="button"
             size="sm"
+            data-tour="add-transaction-btn"
             onClick={() => openCreateTransactionDialog()}
-            className={`gap-1.5 transition-all duration-300 ${
-              currentStep === "record_transaction"
-                ? "ring-2 ring-[var(--accent)] ring-offset-2 ring-offset-[var(--background)] shadow-lg shadow-[var(--accent)]/30 animate-pulse bg-[var(--accent)] text-[var(--accent-foreground)]"
-                : ""
-            }`}
+            className="gap-1.5"
           >
             <Plus className="h-3.5 w-3.5" />
             Add Transaction
@@ -123,11 +114,8 @@ export function DashboardOverviewFeature() {
 
       {/* Accounts Switcher Bar */}
       <section
-        className={`space-y-3 rounded-2xl transition-all duration-300 ${
-          currentStep === "workspace_intro" || currentStep === "create_account"
-            ? "p-4 -m-4 ring-2 ring-[var(--accent)] bg-[var(--accent)]/5 shadow-md shadow-[var(--accent)]/10"
-            : ""
-        }`}
+        data-tour="accounts-bar"
+        className="space-y-3 rounded-2xl transition-all duration-300"
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -137,7 +125,7 @@ export function DashboardOverviewFeature() {
             </h3>
           </div>
           <div className="flex items-center gap-2">
-            <Button asChild variant="ghost" size="sm">
+            <Button asChild variant="ghost" size="sm" data-tour="manage-accounts-btn">
               <Link href="/accounts">
                 Manage Accounts <ArrowRight className="h-3.5 w-3.5" />
               </Link>
