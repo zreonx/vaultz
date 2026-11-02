@@ -1,7 +1,8 @@
 import React from "react";
-import { Pressable, StyleProp, StyleSheet, View, ViewStyle } from "react-native";
-import { colors } from "@/theme/colors";
+import { StyleProp, StyleSheet, View, ViewStyle } from "react-native";
+import { useTheme } from "@/context/ThemeContext";
 import { radii, spacing } from "@/theme/tokens";
+import { PressableScale } from "./PressableScale";
 
 interface CardProps {
   children: React.ReactNode;
@@ -16,6 +17,8 @@ export function Card({
   onPress,
   variant = "surface",
 }: CardProps) {
+  const { colors, isDark } = useTheme();
+
   const getBackgroundColor = () => {
     switch (variant) {
       case "active":
@@ -33,45 +36,27 @@ export function Card({
     return colors.border;
   };
 
+  const cardStyle: ViewStyle = {
+    backgroundColor: getBackgroundColor(),
+    borderColor: getBorderColor(),
+    borderWidth: 1,
+    borderRadius: radii.lg,
+    padding: spacing.base,
+    // Subtle elevation shadow in light mode for crisp depth
+    shadowColor: isDark ? "#000000" : "#1C1B18",
+    shadowOffset: { width: 0, height: isDark ? 2 : 1 },
+    shadowOpacity: isDark ? 0.35 : 0.05,
+    shadowRadius: isDark ? 8 : 4,
+    elevation: isDark ? 2 : 1,
+  };
+
   if (onPress) {
     return (
-      <Pressable
-        onPress={onPress}
-        style={({ pressed }) => [
-          styles.card,
-          {
-            backgroundColor: getBackgroundColor(),
-            borderColor: getBorderColor(),
-            opacity: pressed ? 0.9 : 1,
-          },
-          style,
-        ]}
-      >
+      <PressableScale onPress={onPress} style={[cardStyle, style]}>
         {children}
-      </Pressable>
+      </PressableScale>
     );
   }
 
-  return (
-    <View
-      style={[
-        styles.card,
-        {
-          backgroundColor: getBackgroundColor(),
-          borderColor: getBorderColor(),
-        },
-        style,
-      ]}
-    >
-      {children}
-    </View>
-  );
+  return <View style={[cardStyle, style]}>{children}</View>;
 }
-
-const styles = StyleSheet.create({
-  card: {
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    padding: spacing.base,
-  },
-});

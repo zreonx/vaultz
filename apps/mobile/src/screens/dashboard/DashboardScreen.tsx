@@ -9,11 +9,14 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useWorkspace } from '@/context/WorkspaceContext';
+import { useTheme } from '@/context/ThemeContext';
 import { ScreenWrapper } from '@/components/ui/ScreenWrapper';
 import { Header } from '@/components/shared/Header';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Skeleton } from '@/components/ui/Skeleton';
+import { PressableScale } from '@/components/ui/PressableScale';
+import { FadeInView } from '@/components/ui/FadeInView';
 import { CreateTransactionModal } from '@/screens/transactions/CreateTransactionModal';
 import { CreateAccountModal } from '@/components/shared/CreateAccountModal';
 import { CreateLendingModal } from '@/screens/lending/CreateLendingModal';
@@ -34,6 +37,7 @@ interface DashboardScreenProps {
 export const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
   const { activeWorkspace, hideBalance, toggleHideBalance, refetchAll } = useWorkspace();
   const { registerTargetRect } = useTutorial();
+  const { colors, isDark } = useTheme();
   const [summary, setSummary] = useState<DashboardSummaryDto | null>(null);
   const [recentTransactions, setRecentTransactions] = useState<TransactionDto[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -124,209 +128,214 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) 
         }
         showsVerticalScrollIndicator={false}
       >
-        {/* Balance Card */}
-        <View ref={balanceCardRef} onLayout={handleBalanceCardLayout}>
-          <Card style={styles.balanceCard}>
-            <View style={styles.balanceHeader}>
-              <Text style={styles.balanceLabel}>
-                {activeWorkspace ? `${activeWorkspace.name.toUpperCase()} BALANCE` : 'TOTAL NET BALANCE'}
-              </Text>
-              <TouchableOpacity
-                onPress={() => {
-                  haptics.light();
-                  toggleHideBalance();
-                }}
-                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-              >
-                <Ionicons
-                  name={hideBalance ? 'eye-off-outline' : 'eye-outline'}
-                  size={18}
-                  color={colors.textSecondary}
-                />
-              </TouchableOpacity>
-            </View>
-
-            {isLoading ? (
-              <Skeleton width={180} height={36} style={{ marginVertical: 8 }} />
-            ) : (
-              <Text style={styles.balanceValue}>
-                {hideBalance ? '••••••••' : formatMoney(balance, currency)}
-              </Text>
-            )}
-
-            {/* Monthly Inflow / Outflow Summary */}
-            <View style={styles.statsRow}>
-              <View style={styles.statItem}>
-                <View style={styles.statIconBadge}>
-                  <Ionicons name="arrow-down-outline" size={14} color={colors.accent} />
-                </View>
-                <View>
-                  <Text style={styles.statLabel}>Income this month</Text>
-                  <Text style={styles.statIncome}>
-                    {hideBalance
-                      ? '••••'
-                      : formatMoney(summary?.monthlyIncome ?? 0, currency)}
-                  </Text>
-                </View>
-              </View>
-
-              <View style={styles.statDivider} />
-
-              <View style={styles.statItem}>
-                <View style={[styles.statIconBadge, { backgroundColor: 'rgba(239, 68, 68, 0.12)' }]}>
-                  <Ionicons name="arrow-up-outline" size={14} color={colors.danger} />
-                </View>
-                <View>
-                  <Text style={styles.statLabel}>Spent this month</Text>
-                  <Text style={styles.statExpense}>
-                    {hideBalance
-                      ? '••••'
-                      : formatMoney(summary?.monthlyExpenses ?? 0, currency)}
-                  </Text>
-                </View>
-              </View>
-            </View>
-          </Card>
-        </View>
-
-        {/* Quick Actions */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>QUICK ACTIONS</Text>
-        </View>
-
-        <View
-          ref={quickActionsRef}
-          onLayout={handleQuickActionsLayout}
-          style={styles.quickActionsGrid}
-        >
-          <TouchableOpacity
-            style={styles.actionBtn}
-            onPress={() => openTxModal('Expense')}
-            activeOpacity={0.7}
-          >
-            <View style={[styles.actionIconContainer, { backgroundColor: 'rgba(239, 68, 68, 0.12)' }]}>
-              <Ionicons name="remove-circle-outline" size={22} color={colors.danger} />
-            </View>
-            <Text style={styles.actionText}>Expense</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.actionBtn}
-            onPress={() => openTxModal('Income')}
-            activeOpacity={0.7}
-          >
-            <View style={[styles.actionIconContainer, { backgroundColor: colors.accentMuted }]}>
-              <Ionicons name="add-circle-outline" size={22} color={colors.accent} />
-            </View>
-            <Text style={styles.actionText}>Income</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.actionBtn}
-            onPress={() => openTxModal('Transfer')}
-            activeOpacity={0.7}
-          >
-            <View style={[styles.actionIconContainer, { backgroundColor: 'rgba(59, 130, 246, 0.12)' }]}>
-              <Ionicons name="swap-horizontal-outline" size={22} color="#60A5FA" />
-            </View>
-            <Text style={styles.actionText}>Transfer</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.actionBtn}
-            onPress={openLendingModal}
-            activeOpacity={0.7}
-          >
-            <View style={[styles.actionIconContainer, { backgroundColor: 'rgba(245, 158, 11, 0.12)' }]}>
-              <Ionicons name="people-outline" size={22} color={colors.warning} />
-            </View>
-            <Text style={styles.actionText}>IOU / Loan</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Recent Activity */}
-        <View style={styles.sectionHeaderWithAction}>
-          <Text style={styles.sectionTitle}>RECENT ACTIVITY</Text>
-          <TouchableOpacity
-            onPress={() => {
-              haptics.light();
-              navigation.navigate('Transactions');
-            }}
-          >
-            <Text style={styles.viewAllText}>View All</Text>
-          </TouchableOpacity>
-        </View>
-
-        {isLoading ? (
-          <Card>
-            <Skeleton height={32} style={{ marginBottom: 12 }} />
-            <Skeleton height={32} style={{ marginBottom: 12 }} />
-            <Skeleton height={32} />
-          </Card>
-        ) : recentTransactions.length === 0 ? (
-          <Card style={styles.emptyCard}>
-            <Ionicons name="receipt-outline" size={32} color={colors.textDisabled} />
-            <Text style={styles.emptyTitle}>No transactions recorded</Text>
-            <Text style={styles.emptySubtitle}>Use the quick actions above to log your first transaction.</Text>
-          </Card>
-        ) : (
-          <Card style={{ padding: 0 }}>
-            {recentTransactions.map((tx, idx) => {
-              const isExpense = tx.type === TransactionType.Expense || tx.typeName === 'Expense';
-              const isIncome = tx.type === TransactionType.Income || tx.typeName === 'Income';
-              const isLast = idx === recentTransactions.length - 1;
-
-              return (
-                <View
-                  key={tx.id}
-                  style={[styles.txRow, !isLast && styles.txRowBorder]}
+        {/* Balance Card with Fade-Slide Entry */}
+        <FadeInView delay={50} translateY={14}>
+          <View ref={balanceCardRef} onLayout={handleBalanceCardLayout}>
+            <Card style={styles.balanceCard}>
+              <View style={styles.balanceHeader}>
+                <Text style={[styles.balanceLabel, { color: colors.textSecondary }]}>
+                  {activeWorkspace ? `${activeWorkspace.name.toUpperCase()} BALANCE` : 'TOTAL NET BALANCE'}
+                </Text>
+                <TouchableOpacity
+                  onPress={() => {
+                    haptics.light();
+                    toggleHideBalance();
+                  }}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 >
-                  <View style={styles.txIconContainer}>
-                    <Ionicons
-                      name={
-                        isExpense
-                          ? 'arrow-up-circle-outline'
-                          : isIncome
-                          ? 'arrow-down-circle-outline'
-                          : 'swap-horizontal-outline'
-                      }
-                      size={20}
-                      color={
-                        isExpense
-                          ? colors.danger
-                          : isIncome
-                          ? colors.accent
-                          : '#60A5FA'
-                      }
-                    />
-                  </View>
+                  <Ionicons
+                    name={hideBalance ? 'eye-off-outline' : 'eye-outline'}
+                    size={18}
+                    color={colors.textSecondary}
+                  />
+                </TouchableOpacity>
+              </View>
 
-                  <View style={styles.txDetails}>
-                    <Text style={styles.txCategory} numberOfLines={1}>
-                      {tx.category}
-                    </Text>
-                    <Text style={styles.txMeta} numberOfLines={1}>
-                      {formatDate(tx.transactionDate)}
-                      {tx.description ? ` • ${tx.description}` : ''}
+              {isLoading ? (
+                <Skeleton width={180} height={36} style={{ marginVertical: 8 }} />
+              ) : (
+                <Text style={[styles.balanceValue, { color: colors.textPrimary }]}>
+                  {hideBalance ? '••••••••' : formatMoney(balance, currency)}
+                </Text>
+              )}
+
+              {/* Monthly Inflow / Outflow Summary */}
+              <View style={styles.statsRow}>
+                <View style={styles.statItem}>
+                  <View style={[styles.statIconBadge, { backgroundColor: colors.accentSoft }]}>
+                    <Ionicons name="arrow-down-outline" size={14} color={colors.accent} />
+                  </View>
+                  <View>
+                    <Text style={[styles.statLabel, { color: colors.textMuted }]}>Income this month</Text>
+                    <Text style={[styles.statIncome, { color: colors.accent }]}>
+                      {hideBalance
+                        ? '••••'
+                        : formatMoney(summary?.monthlyIncome ?? 0, currency)}
                     </Text>
                   </View>
+                </View>
 
-                  <Text
+                <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
+
+                <View style={styles.statItem}>
+                  <View style={[styles.statIconBadge, { backgroundColor: colors.dangerSoft }]}>
+                    <Ionicons name="arrow-up-outline" size={14} color={colors.danger} />
+                  </View>
+                  <View>
+                    <Text style={[styles.statLabel, { color: colors.textMuted }]}>Spent this month</Text>
+                    <Text style={[styles.statExpense, { color: colors.danger }]}>
+                      {hideBalance
+                        ? '••••'
+                        : formatMoney(summary?.monthlyExpenses ?? 0, currency)}
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            </Card>
+          </View>
+        </FadeInView>
+
+        {/* Quick Actions with Tactile Spring Press */}
+        <FadeInView delay={140} translateY={14}>
+          <View style={styles.sectionHeader}>
+            <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>QUICK ACTIONS</Text>
+          </View>
+
+          <View
+            ref={quickActionsRef}
+            onLayout={handleQuickActionsLayout}
+            style={styles.quickActionsGrid}
+          >
+            <PressableScale
+              style={[styles.actionBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
+              onPress={() => openTxModal('Expense')}
+            >
+              <View style={[styles.actionIconContainer, { backgroundColor: colors.dangerSoft }]}>
+                <Ionicons name="remove-circle-outline" size={22} color={colors.danger} />
+              </View>
+              <Text style={[styles.actionText, { color: colors.textPrimary }]}>Expense</Text>
+            </PressableScale>
+
+            <PressableScale
+              style={[styles.actionBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
+              onPress={() => openTxModal('Income')}
+            >
+              <View style={[styles.actionIconContainer, { backgroundColor: colors.accentSoft }]}>
+                <Ionicons name="add-circle-outline" size={22} color={colors.accent} />
+              </View>
+              <Text style={[styles.actionText, { color: colors.textPrimary }]}>Income</Text>
+            </PressableScale>
+
+            <PressableScale
+              style={[styles.actionBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
+              onPress={() => openTxModal('Transfer')}
+            >
+              <View style={[styles.actionIconContainer, { backgroundColor: 'rgba(59, 130, 246, 0.12)' }]}>
+                <Ionicons name="swap-horizontal-outline" size={22} color="#60A5FA" />
+              </View>
+              <Text style={[styles.actionText, { color: colors.textPrimary }]}>Transfer</Text>
+            </PressableScale>
+
+            <PressableScale
+              style={[styles.actionBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
+              onPress={openLendingModal}
+            >
+              <View style={[styles.actionIconContainer, { backgroundColor: colors.warningSoft }]}>
+                <Ionicons name="people-outline" size={22} color={colors.warning} />
+              </View>
+              <Text style={[styles.actionText, { color: colors.textPrimary }]}>IOU / Loan</Text>
+            </PressableScale>
+          </View>
+        </FadeInView>
+
+        {/* Recent Activity with Fade-In Animation */}
+        <FadeInView delay={220} translateY={14}>
+          <View style={styles.sectionHeaderWithAction}>
+            <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>RECENT ACTIVITY</Text>
+            <TouchableOpacity
+              onPress={() => {
+                haptics.light();
+                navigation.navigate('Transactions');
+              }}
+            >
+              <Text style={[styles.viewAllText, { color: colors.accent }]}>View All</Text>
+            </TouchableOpacity>
+          </View>
+
+          {isLoading ? (
+            <Card>
+              <Skeleton height={32} style={{ marginBottom: 12 }} />
+              <Skeleton height={32} style={{ marginBottom: 12 }} />
+              <Skeleton height={32} />
+            </Card>
+          ) : recentTransactions.length === 0 ? (
+            <Card style={styles.emptyCard}>
+              <Ionicons name="receipt-outline" size={32} color={colors.textDisabled} />
+              <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>No transactions recorded</Text>
+              <Text style={[styles.emptySubtitle, { color: colors.textMuted }]}>Use the quick actions above to log your first transaction.</Text>
+            </Card>
+          ) : (
+            <Card style={{ padding: 0 }}>
+              {recentTransactions.map((tx, idx) => {
+                const isExpense = tx.type === TransactionType.Expense || tx.typeName === 'Expense';
+                const isIncome = tx.type === TransactionType.Income || tx.typeName === 'Income';
+                const isLast = idx === recentTransactions.length - 1;
+
+                return (
+                  <View
+                    key={tx.id}
                     style={[
-                      styles.txAmount,
-                      isExpense && styles.txAmountExpense,
-                      isIncome && styles.txAmountIncome,
+                      styles.txRow,
+                      !isLast && { borderBottomWidth: 1, borderBottomColor: colors.border },
                     ]}
                   >
-                    {hideBalance
-                      ? '••••'
-                      : `${isExpense ? '-' : isIncome ? '+' : ''}${formatMoney(tx.amount, tx.currency)}`}
-                  </Text>
-                </View>
-              );
-            })}
-          </Card>
-        )}
+                    <View style={styles.txIconContainer}>
+                      <Ionicons
+                        name={
+                          isExpense
+                            ? 'arrow-up-circle-outline'
+                            : isIncome
+                            ? 'arrow-down-circle-outline'
+                            : 'swap-horizontal-outline'
+                        }
+                        size={20}
+                        color={
+                          isExpense
+                            ? colors.danger
+                            : isIncome
+                            ? colors.accent
+                            : '#60A5FA'
+                        }
+                      />
+                    </View>
+
+                    <View style={styles.txDetails}>
+                      <Text style={[styles.txCategory, { color: colors.textPrimary }]} numberOfLines={1}>
+                        {tx.category}
+                      </Text>
+                      <Text style={[styles.txMeta, { color: colors.textMuted }]} numberOfLines={1}>
+                        {formatDate(tx.transactionDate)}
+                        {tx.description ? ` • ${tx.description}` : ''}
+                      </Text>
+                    </View>
+
+                    <Text
+                      style={[
+                        styles.txAmount,
+                        isExpense && { color: colors.danger },
+                        isIncome && { color: colors.accent },
+                      ]}
+                    >
+                      {hideBalance
+                        ? '••••'
+                        : `${isExpense ? '-' : isIncome ? '+' : ''}${formatMoney(tx.amount, tx.currency)}`}
+                    </Text>
+                  </View>
+                );
+              })}
+            </Card>
+          )}
+        </FadeInView>
       </ScrollView>
 
       {/* Transaction creation modal */}

@@ -5,3 +5,5 @@ export * from './Badge';
 export * from './ModalSheet';
 export * from './Skeleton';
 export * from './ScreenWrapper';
+export * from './PressableScale';
+export * from './FadeInView';

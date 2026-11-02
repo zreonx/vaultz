@@ -11,6 +11,8 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTutorial } from '@/context/TutorialContext';
+import { useTheme } from '@/context/ThemeContext';
+import { PressableScale } from '@/components/ui';
 import { colors } from '@/theme/colors';
 import { typography, radius, spacing } from '@/theme/tokens';
 
@@ -22,6 +24,7 @@ interface SpotlightTourModalProps {
 
 export const SpotlightTourModal: React.FC<SpotlightTourModalProps> = ({ onActionTrigger }) => {
   const insets = useSafeAreaInsets();
+  const { colors, isDark } = useTheme();
   const {
     isTourActive,
     currentStepIndex,
@@ -177,6 +180,8 @@ export const SpotlightTourModal: React.FC<SpotlightTourModalProps> = ({ onAction
                   left: activeTargetRect.x - 6,
                   width: activeTargetRect.width + 12,
                   height: activeTargetRect.height + 12,
+                  borderColor: colors.accent,
+                  shadowColor: colors.accent,
                   transform: [{ scale: pulseAnim }],
                 },
               ]}
@@ -191,7 +196,12 @@ export const SpotlightTourModal: React.FC<SpotlightTourModalProps> = ({ onAction
         <View
           style={[
             styles.popoverCard,
-            { width: cardWidth, marginHorizontal: cardMarginHorizontal },
+            {
+              backgroundColor: colors.surface,
+              borderColor: colors.border,
+              width: cardWidth,
+              marginHorizontal: cardMarginHorizontal,
+            },
             isCentered && styles.centeredCard,
             popoverTop !== null && { top: popoverTop },
             popoverBottom !== null && { bottom: popoverBottom },
@@ -199,9 +209,9 @@ export const SpotlightTourModal: React.FC<SpotlightTourModalProps> = ({ onAction
         >
           {/* Header Row */}
           <View style={styles.cardHeader}>
-            <View style={styles.badgeWrapper}>
-              <View style={styles.pulseDot} />
-              <Text style={styles.badgeText}>
+            <View style={[styles.badgeWrapper, { backgroundColor: colors.accentMuted }]}>
+              <View style={[styles.pulseDot, { backgroundColor: colors.accent }]} />
+              <Text style={[styles.badgeText, { color: colors.accent }]}>
                 STEP {currentStepIndex + 1} OF {totalTourSteps}: {currentTourStep.badge}
               </Text>
             </View>
@@ -210,28 +220,33 @@ export const SpotlightTourModal: React.FC<SpotlightTourModalProps> = ({ onAction
               onPress={skipTour}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
-              <Text style={styles.skipBtnText}>Skip Tour</Text>
+              <Text style={[styles.skipBtnText, { color: colors.textMuted }]}>Skip Tour</Text>
             </TouchableOpacity>
           </View>
 
           {/* Body Content */}
-          <Text style={styles.cardTitle}>{currentTourStep.title}</Text>
-          <Text style={styles.cardDesc}>{currentTourStep.description}</Text>
+          <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>{currentTourStep.title}</Text>
+          <Text style={[styles.cardDesc, { color: colors.textSecondary }]}>{currentTourStep.description}</Text>
 
           {/* Optional Action Button */}
           {currentTourStep.actionText && (
-            <TouchableOpacity
-              style={styles.actionBtn}
+            <PressableScale
+              style={[
+                styles.actionBtn,
+                {
+                  borderColor: isDark ? 'rgba(71, 153, 128, 0.35)' : 'rgba(42, 107, 88, 0.25)',
+                  backgroundColor: isDark ? 'rgba(71, 153, 128, 0.12)' : 'rgba(42, 107, 88, 0.08)',
+                },
+              ]}
               onPress={handleAction}
-              activeOpacity={0.8}
             >
               <Ionicons name="sparkles-outline" size={15} color={colors.accent} />
-              <Text style={styles.actionBtnText}>{currentTourStep.actionText}</Text>
-            </TouchableOpacity>
+              <Text style={[styles.actionBtnText, { color: colors.accent }]}>{currentTourStep.actionText}</Text>
+            </PressableScale>
           )}
 
           {/* Footer Controls */}
-          <View style={styles.cardFooter}>
+          <View style={[styles.cardFooter, { borderTopColor: colors.borderSubtle }]}>
             {/* Step Dots */}
             <View style={styles.dotsRow}>
               {Array.from({ length: totalTourSteps }).map((_, i) => (
@@ -239,7 +254,9 @@ export const SpotlightTourModal: React.FC<SpotlightTourModalProps> = ({ onAction
                   key={i}
                   style={[
                     styles.dot,
-                    i === currentStepIndex ? styles.activeDot : styles.inactiveDot,
+                    i === currentStepIndex
+                      ? { width: 14, backgroundColor: colors.accent }
+                      : { width: 4, backgroundColor: colors.border },
                   ]}
                 />
               ))}
@@ -263,27 +280,27 @@ export const SpotlightTourModal: React.FC<SpotlightTourModalProps> = ({ onAction
                 <Text
                   style={[
                     styles.backBtnText,
-                    currentStepIndex === 0 && styles.disabledBtnText,
+                    { color: colors.textSecondary },
+                    currentStepIndex === 0 && { color: colors.textMuted },
                   ]}
                 >
                   Back
                 </Text>
               </TouchableOpacity>
 
-              <TouchableOpacity
+              <PressableScale
                 onPress={nextStep}
-                style={styles.nextBtn}
-                activeOpacity={0.8}
+                style={[styles.nextBtn, { backgroundColor: colors.accent }]}
               >
-                <Text style={styles.nextBtnText}>
+                <Text style={[styles.nextBtnText, { color: colors.accentForeground }]}>
                   {isLastStep ? 'Finish' : 'Next'}
                 </Text>
                 <Ionicons
                   name={isLastStep ? 'checkmark' : 'chevron-forward'}
                   size={16}
-                  color="#101413"
+                  color={colors.accentForeground}
                 />
-              </TouchableOpacity>
+              </PressableScale>
             </View>
           </View>
         </View>

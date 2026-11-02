@@ -1,16 +1,15 @@
 import React from "react";
 import {
   ActivityIndicator,
-  Pressable,
   StyleSheet,
   Text,
   TextStyle,
   ViewStyle,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { colors } from "@/theme/colors";
+import { useTheme } from "@/context/ThemeContext";
 import { radii, spacing, typography } from "@/theme/tokens";
-import { hapticFeedback } from "@/utils/haptics";
+import { PressableScale } from "./PressableScale";
 
 export type ButtonVariant = "primary" | "secondary" | "danger" | "ghost";
 export type ButtonSize = "sm" | "md" | "lg";
@@ -40,37 +39,28 @@ export function Button({
   icon,
   leftIcon,
 }: ButtonProps) {
-  const handlePress = () => {
-    if (disabled || isLoading) return;
-    hapticFeedback.light();
-    onPress();
-  };
+  const { colors } = useTheme();
 
-  const getVariantStyle = (pressed: boolean): ViewStyle => {
-    const opacity = pressed ? 0.85 : 1;
+  const getVariantStyle = (): ViewStyle => {
     switch (variant) {
       case "secondary":
         return {
           backgroundColor: colors.surfaceSubtle,
           borderColor: colors.border,
           borderWidth: 1,
-          opacity,
         };
       case "danger":
         return {
           backgroundColor: colors.danger,
-          opacity,
         };
       case "ghost":
         return {
-          backgroundColor: pressed ? colors.surfaceSubtle : "transparent",
-          opacity,
+          backgroundColor: "transparent",
         };
       case "primary":
       default:
         return {
           backgroundColor: colors.accent,
-          opacity,
         };
     }
   };
@@ -109,18 +99,18 @@ export function Button({
         return colors.white;
       case "primary":
       default:
-        return colors.background; // Dark text on emerald background
+        return colors.accentForeground;
     }
   };
 
   return (
-    <Pressable
-      onPress={handlePress}
+    <PressableScale
+      onPress={onPress}
       disabled={disabled || isLoading}
-      style={({ pressed }) => [
+      style={[
         styles.base,
         getSizeStyle(),
-        getVariantStyle(pressed),
+        getVariantStyle(),
         disabled && styles.disabled,
         style,
       ]}
@@ -128,7 +118,7 @@ export function Button({
       {isLoading ? (
         <ActivityIndicator
           size="small"
-          color={variant === "primary" ? colors.background : colors.accent}
+          color={variant === "primary" ? colors.accentForeground : colors.accent}
         />
       ) : (
         <>
@@ -152,7 +142,7 @@ export function Button({
           </Text>
         </>
       )}
-    </Pressable>
+    </PressableScale>
   );
 }
 

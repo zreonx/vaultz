@@ -1,7 +1,9 @@
 @import "tailwindcss";
 
-:root {
-  /* Soft, warm minimalist palette — easy on the eyes */
+:root,
+[data-theme="light"],
+.light {
+  /* Soft, warm minimalist light palette — easy on the eyes */
   --background: #f6f5f2;
   --foreground: #1c1b18;
   --surface: #fdfcfb;
@@ -19,10 +21,31 @@
   --radius-sm: 0.5rem;
   --radius-md: 0.75rem;
   --radius-lg: 1rem;
+  color-scheme: light;
+}
+
+[data-theme="dark"],
+.dark {
+  /* Dark graphite & calm emerald palette */
+  --background: #121417;
+  --foreground: #ecebe6;
+  --surface: #181b1f;
+  --surface-muted: #1f2328;
+  --border: #272b31;
+  --border-subtle: #202429;
+  --muted-foreground: #96938c;
+  --accent: #479980;
+  --accent-foreground: #101413;
+  --accent-soft: #192924;
+  --warning: #d99b43;
+  --warning-soft: #292116;
+  --danger: #e06c6c;
+  --danger-soft: #2b1919;
+  color-scheme: dark;
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-theme="light"]):not(.light) {
     --background: #121417;
     --foreground: #ecebe6;
     --surface: #181b1f;
@@ -37,6 +60,7 @@
     --warning-soft: #292116;
     --danger: #e06c6c;
     --danger-soft: #2b1919;
+    color-scheme: dark;
   }
 }
 

@@ -9,6 +9,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
+import { useTheme } from "@/context/ThemeContext";
 import { colors } from "@/theme/colors";
 
 interface ScreenWrapperProps {
@@ -27,6 +28,7 @@ export function ScreenWrapper({
   includeTopInset = true,
 }: ScreenWrapperProps) {
   const insets = useSafeAreaInsets();
+  const { colors, isDark } = useTheme();
 
   // Top inset: guarantee safe clearance below notch / Dynamic Island / Android status bar
   const topInset = includeTopInset
@@ -46,6 +48,7 @@ export function ScreenWrapper({
       style={[
         styles.container,
         {
+          backgroundColor: colors.background,
           paddingTop: topInset,
           paddingBottom: bottomInset,
           paddingLeft: insets.left,
@@ -54,7 +57,7 @@ export function ScreenWrapper({
         style,
       ]}
     >
-      <StatusBar style="light" />
+      <StatusBar style={isDark ? "light" : "dark"} />
       {children}
     </View>
   );

@@ -36,6 +36,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { DASHBOARD_NAVIGATION } from "@/config/navigation";
+import { ThemeToggle } from "@/components/shared/theme-toggle";
 
 export function AppHeader() {
   const pathname = usePathname();
@@ -143,8 +144,9 @@ export function AppHeader() {
           </div>
         </div>
 
-        {/* Right: User Menu */}
+        {/* Right: Theme Toggle + User Menu */}
         <div className="flex shrink-0 items-center gap-2">
+          <ThemeToggle />
           {user ? (
             <>
               <DropdownMenu>

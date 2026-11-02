@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { colors } from '@/theme/colors';
+import { useTheme } from '@/context/ThemeContext';
 import { typography, radius, spacing } from '@/theme/tokens';
 import { haptics } from '@/utils/haptics';
 
@@ -34,6 +34,7 @@ export const ModalSheet: React.FC<ModalSheetProps> = ({
   maxHeightRatio = 0.85,
 }) => {
   const insets = useSafeAreaInsets();
+  const { colors, isDark } = useTheme();
 
   const handleClose = () => {
     haptics.light();
@@ -60,20 +61,42 @@ export const ModalSheet: React.FC<ModalSheetProps> = ({
               behavior={Platform.OS === 'ios' ? 'padding' : undefined}
               style={[
                 styles.sheetContainer,
-                { maxHeight: `${Math.round(maxHeightRatio * 100)}%` },
+                {
+                  backgroundColor: colors.surface,
+                  borderColor: colors.border,
+                  maxHeight: `${Math.round(maxHeightRatio * 100)}%`,
+                },
               ]}
             >
               {/* Top Handle Bar */}
               <View style={styles.handleContainer}>
-                <View style={styles.handle} />
+                <View
+                  style={[
+                    styles.handle,
+                    { backgroundColor: isDark ? colors.borderLight : colors.border },
+                  ]}
+                />
               </View>
 
               {/* Header */}
               {(title || subtitle) && (
-                <View style={styles.header}>
+                <View
+                  style={[
+                    styles.header,
+                    { borderBottomColor: colors.border },
+                  ]}
+                >
                   <View style={styles.headerTextContainer}>
-                    {title && <Text style={styles.title}>{title}</Text>}
-                    {subtitle && <Text style={styles.subtitle}>{subtitle}</Text>}
+                    {title && (
+                      <Text style={[styles.title, { color: colors.textPrimary }]}>
+                        {title}
+                      </Text>
+                    )}
+                    {subtitle && (
+                      <Text style={[styles.subtitle, { color: colors.textMuted }]}>
+                        {subtitle}
+                      </Text>
+                    )}
                   </View>
                   <TouchableOpacity
                     style={styles.closeButton}
@@ -112,11 +135,9 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   sheetContainer: {
-    backgroundColor: colors.surface,
     borderTopLeftRadius: radius.xl,
     borderTopRightRadius: radius.xl,
     borderWidth: 1,
-    borderColor: colors.border,
     borderBottomWidth: 0,
     width: '100%',
   },
@@ -129,7 +150,6 @@ const styles = StyleSheet.create({
     width: 36,
     height: 4,
     borderRadius: radius.full,
-    backgroundColor: colors.borderLight,
   },
   header: {
     flexDirection: 'row',
@@ -138,18 +158,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
   },
   headerTextContainer: {
     flex: 1,
   },
   title: {
     ...typography.title,
-    color: colors.textPrimary,
   },
   subtitle: {
     ...typography.caption,
-    color: colors.textMuted,
     marginTop: 2,
   },
   closeButton: {

@@ -20,9 +20,11 @@ import {
   SlidersHorizontal,
   Sparkles,
   Star,
+  Sun,
   User,
   Wallet,
 } from "lucide-react";
+import { ThemeToggle } from "@/components/shared/theme-toggle";
 import { useTutorial } from "@/context/tutorial-context";
 import {
   useChangePasswordMutation,
@@ -441,6 +443,31 @@ export function SettingsFeature() {
                       </Button>
                     </div>
                   </form>
+                </CardContent>
+              </Card>
+
+              {/* Appearance & Theme Card */}
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="flex items-center gap-2">
+                        <Sun className="h-4 w-4 text-[var(--accent)]" />
+                        Appearance &amp; Theme
+                      </CardTitle>
+                      <CardDescription>
+                        Choose your interface theme: soft warm minimalist Light mode, deep graphite Dark mode, or match your system.
+                      </CardDescription>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-[var(--muted-foreground)]">
+                      Color Theme Preference
+                    </span>
+                    <ThemeToggle variant="segmented" />
+                  </div>
                 </CardContent>
               </Card>
 

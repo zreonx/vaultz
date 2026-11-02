@@ -12,11 +12,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/context/AuthContext';
 import { useWorkspace } from '@/context/WorkspaceContext';
 import { useTutorial } from '@/context/TutorialContext';
+import { useTheme, type ThemeMode } from '@/context/ThemeContext';
 import { ScreenWrapper } from '@/components/ui/ScreenWrapper';
 import { Header } from '@/components/shared/Header';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { PressableScale } from '@/components/ui/PressableScale';
 import { getApiBaseUrl } from '@/api/client';
 import { colors } from '@/theme/colors';
 import { typography, radius, spacing } from '@/theme/tokens';
@@ -26,6 +28,7 @@ export const SettingsScreen: React.FC = () => {
   const { user, isBiometricEnabled, setBiometricEnabled, logout } = useAuth();
   const { hideBalance, toggleHideBalance } = useWorkspace();
   const { resetTour } = useTutorial();
+  const { themeMode, setThemeMode, colors, isDark } = useTheme();
   const [isUpdatingBio, setIsUpdatingBio] = useState(false);
 
   const handleBiometricToggle = async (value: boolean) => {
@@ -86,8 +89,78 @@ export const SettingsScreen: React.FC = () => {
           <Badge label="Authenticated" variant="success" />
         </Card>
 
+        {/* Appearance & Theme Section */}
+        <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>APPEARANCE & THEME</Text>
+        <Card style={styles.settingGroup}>
+          <View style={styles.themeRow}>
+            <View style={styles.settingLeft}>
+              <View style={[styles.settingIcon, { backgroundColor: colors.accentSoft }]}>
+                <Ionicons
+                  name={isDark ? 'moon-outline' : 'sunny-outline'}
+                  size={20}
+                  color={colors.accent}
+                />
+              </View>
+              <View style={styles.settingLabels}>
+                <Text style={[styles.settingTitle, { color: colors.textPrimary }]}>Interface Theme</Text>
+                <Text style={[styles.settingSubtitle, { color: colors.textMuted }]}>
+                  {themeMode === 'system'
+                    ? `System Auto (${isDark ? 'Dark' : 'Light'})`
+                    : themeMode === 'light'
+                    ? 'Warm Minimalist Light'
+                    : 'Deep Graphite Dark'}
+                </Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Theme Segmented Switcher */}
+          <View style={[styles.themeSegmentContainer, { backgroundColor: isDark ? colors.surfaceSubtle : colors.surfaceMuted, borderColor: colors.border }]}>
+            {(
+              [
+                { mode: 'light', label: 'Light', icon: 'sunny-outline' },
+                { mode: 'dark', label: 'Dark', icon: 'moon-outline' },
+                { mode: 'system', label: 'System', icon: 'phone-portrait-outline' },
+              ] as const
+            ).map((opt) => {
+              const isActive = themeMode === opt.mode;
+              return (
+                <PressableScale
+                  key={opt.mode}
+                  onPress={() => setThemeMode(opt.mode)}
+                  style={[
+                    styles.themeSegmentBtn,
+                    isActive && [
+                      styles.themeSegmentActive,
+                      {
+                        backgroundColor: colors.surface,
+                        borderColor: colors.border,
+                        shadowColor: isDark ? '#000' : '#1C1B18',
+                      },
+                    ],
+                  ]}
+                >
+                  <Ionicons
+                    name={opt.icon as any}
+                    size={15}
+                    color={isActive ? colors.accent : colors.textMuted}
+                  />
+                  <Text
+                    style={[
+                      styles.themeSegmentText,
+                      { color: isActive ? colors.textPrimary : colors.textMuted },
+                    ]}
+                  >
+                    {opt.label}
+                  </Text>
+                </PressableScale>
+              );
+            })}
+          </View>
+        </Card>
+
         {/* Security Section */}
-        <Text style={styles.sectionTitle}>SECURITY & PRIVACY</Text>
+        <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>SECURITY & PRIVACY</Text>
         <Card style={styles.settingGroup}>
           {/* Biometrics */}
           <View style={styles.settingRow}>
@@ -278,6 +351,41 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingVertical: spacing.xs,
+  },
+  themeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.sm,
+  },
+  themeSegmentContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    padding: 3,
+    gap: 4,
+  },
+  themeSegmentBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 8,
+    borderRadius: radius.md,
+    gap: 5,
+  },
+  themeSegmentActive: {
+    borderWidth: 1,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  themeSegmentText: {
+    ...typography.caption,
+    fontSize: 12,
+    fontWeight: '600',
   },
   settingLeft: {
     flexDirection: 'row',

@@ -2,6 +2,7 @@ import React from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ThemeProvider, useTheme } from '@/context/ThemeContext';
 import { AuthProvider } from '@/context/AuthContext';
 import { WorkspaceProvider } from '@/context/WorkspaceContext';
 import { TutorialProvider } from '@/context/TutorialContext';
@@ -17,19 +18,29 @@ const queryClient = new QueryClient({
   },
 });
 
+function AppContent() {
+  const { isDark } = useTheme();
+
+  return (
+    <AuthProvider>
+      <WorkspaceProvider>
+        <TutorialProvider>
+          <StatusBar style={isDark ? "light" : "dark"} />
+          <RootNavigator />
+          <SpotlightTourModal />
+        </TutorialProvider>
+      </WorkspaceProvider>
+    </AuthProvider>
+  );
+}
+
 export default function App() {
   return (
     <SafeAreaProvider>
       <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <WorkspaceProvider>
-            <TutorialProvider>
-              <StatusBar style="light" />
-              <RootNavigator />
-              <SpotlightTourModal />
-            </TutorialProvider>
-          </WorkspaceProvider>
-        </AuthProvider>
+        <ThemeProvider>
+          <AppContent />
+        </ThemeProvider>
       </QueryClientProvider>
     </SafeAreaProvider>
   );

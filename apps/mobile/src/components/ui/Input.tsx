@@ -8,7 +8,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { colors } from '@/theme/colors';
+import { useTheme } from '@/context/ThemeContext';
 import { typography, radius, spacing } from '@/theme/tokens';
 import { haptics } from '@/utils/haptics';
 
@@ -33,6 +33,7 @@ export const Input: React.FC<InputProps> = ({
   style,
   ...props
 }) => {
+  const { colors } = useTheme();
   const [isFocused, setIsFocused] = useState(false);
   const [showPassword, setShowPassword] = useState(!isPassword);
 
@@ -43,27 +44,39 @@ export const Input: React.FC<InputProps> = ({
 
   return (
     <View style={styles.container}>
-      {label && <Text style={styles.label}>{label}</Text>}
+      {label && (
+        <Text style={[styles.label, { color: colors.textSecondary }]}>
+          {label}
+        </Text>
+      )}
 
       <View
         style={[
           styles.inputContainer,
-          isFocused && styles.inputFocused,
-          error ? styles.inputError : null,
+          {
+            backgroundColor: isFocused ? colors.surfaceSubtle : colors.surface,
+            borderColor: error
+              ? colors.danger
+              : isFocused
+              ? colors.accent
+              : colors.border,
+          },
         ]}
       >
         {leftIcon && (
           <Ionicons
             name={leftIcon}
             size={18}
-            color={error ? colors.danger : isFocused ? colors.accent : colors.textMuted}
+            color={
+              error ? colors.danger : isFocused ? colors.accent : colors.textMuted
+            }
             style={styles.leftIcon}
           />
         )}
 
         <TextInput
-          style={[styles.input, style]}
-          placeholderTextColor={colors.textDisabled}
+          style={[styles.input, { color: colors.textPrimary }, style]}
+          placeholderTextColor={colors.textMuted}
           secureTextEntry={isPassword && !showPassword}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
@@ -96,9 +109,13 @@ export const Input: React.FC<InputProps> = ({
       </View>
 
       {error ? (
-        <Text style={styles.errorText}>{error}</Text>
+        <Text style={[styles.errorText, { color: colors.danger }]}>
+          {error}
+        </Text>
       ) : hint ? (
-        <Text style={styles.hintText}>{hint}</Text>
+        <Text style={[styles.hintText, { color: colors.textMuted }]}>
+          {hint}
+        </Text>
       ) : null}
     </View>
   );
@@ -111,7 +128,6 @@ const styles = StyleSheet.create({
   },
   label: {
     ...typography.label,
-    color: colors.textSecondary,
     marginBottom: spacing.xs,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -119,19 +135,10 @@ const styles = StyleSheet.create({
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: colors.border,
     borderRadius: radius.md,
     paddingHorizontal: spacing.md,
     minHeight: 48,
-  },
-  inputFocused: {
-    borderColor: colors.accent,
-    backgroundColor: colors.surfaceHover,
-  },
-  inputError: {
-    borderColor: colors.danger,
   },
   leftIcon: {
     marginRight: spacing.sm,
@@ -143,17 +150,14 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     ...typography.body,
-    color: colors.textPrimary,
     paddingVertical: spacing.sm,
   },
   errorText: {
     ...typography.caption,
-    color: colors.danger,
     marginTop: 4,
   },
   hintText: {
     ...typography.caption,
-    color: colors.textMuted,
     marginTop: 4,
   },
 });

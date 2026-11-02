@@ -1,12 +1,13 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useWorkspace } from '@/context/WorkspaceContext';
 import { useAuth } from '@/context/AuthContext';
 import { useTutorial } from '@/context/TutorialContext';
+import { useTheme } from '@/context/ThemeContext';
 import { AccountPickerModal } from './AccountPickerModal';
 import { CreateAccountModal } from './CreateAccountModal';
-import { colors } from '@/theme/colors';
+import { PressableScale } from '@/components/ui/PressableScale';
 import { typography, radius, spacing } from '@/theme/tokens';
 import { haptics } from '@/utils/haptics';
 
@@ -22,9 +23,32 @@ export const Header: React.FC<HeaderProps> = ({
   const { activeWorkspace, hideBalance, toggleHideBalance } = useWorkspace();
   const { user } = useAuth();
   const { registerTargetRect } = useTutorial();
+  const { colors, isDark } = useTheme();
   const [accountPickerVisible, setAccountPickerVisible] = useState(false);
   const [createAccountVisible, setCreateAccountVisible] = useState(false);
   const pillRef = React.useRef<any>(null);
+
+  // Status dot breathing pulse animation
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    const pulse = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 0.4,
+          duration: 1200,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 1200,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    pulse.start();
+    return () => pulse.stop();
+  }, [pulseAnim]);
 
   const handlePillLayout = () => {
     pillRef.current?.measureInWindow((x: number, y: number, width: number, height: number) => {
@@ -56,30 +80,53 @@ export const Header: React.FC<HeaderProps> = ({
 
   return (
     <>
-      <View style={styles.header}>
+      <View
+        style={[
+          styles.header,
+          {
+            backgroundColor: colors.background,
+            borderBottomColor: colors.border,
+          },
+        ]}
+      >
         {/* Left Side: App Brand / Title */}
         <View style={styles.leftContainer}>
-          <Text style={styles.brandTitle}>VAULTZ</Text>
+          <Text style={[styles.brandTitle, { color: colors.accent }]}>VAULTZ</Text>
           {showAccountPicker && (
-            <TouchableOpacity
-              ref={pillRef}
-              onLayout={handlePillLayout}
-              style={styles.workspacePill}
-              onPress={() => {
-                haptics.light();
-                setAccountPickerVisible(true);
-              }}
-              activeOpacity={0.7}
-            >
-              <View style={styles.statusDot} />
-              <Text style={styles.workspaceName} numberOfLines={1}>
-                {activeWorkspace?.name || 'Select Account'}
-              </Text>
-              <Ionicons name="chevron-down" size={14} color={colors.textSecondary} />
-            </TouchableOpacity>
+            <View ref={pillRef} onLayout={handlePillLayout}>
+              <PressableScale
+                style={[
+                  styles.workspacePill,
+                  {
+                    backgroundColor: isDark ? colors.surfaceSubtle : colors.surfaceMuted,
+                    borderColor: colors.border,
+                  },
+                ]}
+                onPress={() => {
+                  haptics.light();
+                  setAccountPickerVisible(true);
+                }}
+              >
+                <Animated.View
+                  style={[
+                    styles.statusDot,
+                    { backgroundColor: colors.accent, opacity: pulseAnim },
+                  ]}
+                />
+                <Text
+                  style={[styles.workspaceName, { color: colors.textPrimary }]}
+                  numberOfLines={1}
+                >
+                  {activeWorkspace?.name || 'Select Account'}
+                </Text>
+                <Ionicons name="chevron-down" size={13} color={colors.textSecondary} />
+              </PressableScale>
+            </View>
           )}
           {title && !showAccountPicker && (
-            <Text style={styles.screenTitle}>{title}</Text>
+            <Text style={[styles.screenTitle, { color: colors.textPrimary }]}>
+              {title}
+            </Text>
           )}
         </View>
 
@@ -97,8 +144,18 @@ export const Header: React.FC<HeaderProps> = ({
             />
           </TouchableOpacity>
 
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{getInitials(user?.email, user?.fullName)}</Text>
+          <View
+            style={[
+              styles.avatar,
+              {
+                backgroundColor: isDark ? colors.surfaceSubtle : colors.surfaceMuted,
+                borderColor: colors.border,
+              },
+            ]}
+          >
+            <Text style={[styles.avatarText, { color: colors.textPrimary }]}>
+              {getInitials(user?.email, user?.fullName)}
+            </Text>
           </View>
         </View>
       </View>
@@ -125,8 +182,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-    backgroundColor: colors.background,
   },
   leftContainer: {
     flexDirection: 'row',
@@ -138,42 +193,31 @@ const styles = StyleSheet.create({
     ...typography.label,
     fontWeight: '800',
     letterSpacing: 1.5,
-    color: colors.accent,
     marginRight: spacing.sm,
   },
   workspacePill: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.surfaceHover,
     paddingHorizontal: spacing.sm,
     paddingVertical: 5,
     borderRadius: radius.full,
     borderWidth: 1,
-    borderColor: colors.border,
-    maxWidth: 160,
-  },
-  workspacePillHighlighted: {
-    borderColor: colors.accent,
-    backgroundColor: 'rgba(16, 185, 129, 0.15)',
-    borderWidth: 1.5,
+    maxWidth: 165,
   },
   statusDot: {
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: colors.accent,
     marginRight: 6,
   },
   workspaceName: {
     ...typography.caption,
-    color: colors.textPrimary,
     fontWeight: '600',
     marginRight: 4,
     maxWidth: 110,
   },
   screenTitle: {
     ...typography.title,
-    color: colors.textPrimary,
     marginLeft: spacing.xs,
   },
   rightContainer: {
@@ -188,16 +232,13 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: colors.surfaceHover,
     borderWidth: 1,
-    borderColor: colors.borderLight,
     alignItems: 'center',
     justifyContent: 'center',
   },
   avatarText: {
     ...typography.caption,
     fontWeight: '700',
-    color: colors.textPrimary,
     fontSize: 11,
   },
 });
