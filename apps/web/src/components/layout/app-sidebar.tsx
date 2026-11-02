@@ -21,7 +21,11 @@ import {
   User,
   Wallet,
 } from "lucide-react";
-import { DASHBOARD_NAVIGATION } from "@/config/navigation";
+import {
+  ACCOUNT_NAVIGATION,
+  SHARED_NAVIGATION,
+  SYSTEM_NAVIGATION,
+} from "@/config/navigation";
 import { useWorkspace } from "@/context/workspace-context";
 import { useCurrentUser, useLogoutMutation } from "@/hooks/use-auth";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -185,17 +189,109 @@ export function AppSidebar() {
       </SidebarHeader>
 
       <SidebarContent>
+        {/* GROUP 1: ALL ACCOUNTS / PORTFOLIO */}
         <SidebarGroup data-tour="sidebar-nav">
-          <SidebarGroupLabel>Menu</SidebarGroupLabel>
+          <SidebarGroupLabel className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)] px-2">
+            <span>Portfolio</span>
+            {!isCollapsed && (
+              <span className="text-[10px] font-normal lowercase tracking-normal text-[var(--muted-foreground)]/80">
+                all accounts
+              </span>
+            )}
+          </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {DASHBOARD_NAVIGATION.map((item) => {
+              {SHARED_NAVIGATION.map((item) => {
                 const Icon = ICONS[item.title] ?? LayoutDashboard;
                 const label = item.title;
                 const isActive =
                   item.href === "/dashboard"
                     ? pathname === "/dashboard"
                     : pathname.startsWith(item.href);
+
+                return (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={isActive}
+                      tooltip={`${label} (All Accounts)`}
+                    >
+                      <Link
+                        href={item.href}
+                        onClick={() => {
+                          if (isMobile) setOpenMobile(false);
+                        }}
+                      >
+                        <Icon className="h-4 w-4 shrink-0" />
+                        {!isCollapsed && <span>{label}</span>}
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        {/* GROUP 2: ACTIVE ACCOUNT SCOPE */}
+        <SidebarGroup className="pt-2">
+          <SidebarGroupLabel className="flex items-center justify-between text-[11px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)] px-2">
+            <span className="truncate">
+              {activeWorkspace && !isCollapsed
+                ? activeWorkspace.name
+                : "Active Account"}
+            </span>
+            {!isCollapsed && activeWorkspace && (
+              <Badge
+                variant="default"
+                className="text-[10px] px-1.5 py-0 font-mono font-medium"
+              >
+                {activeWorkspace.currencyCode}
+              </Badge>
+            )}
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {ACCOUNT_NAVIGATION.map((item) => {
+                const Icon = ICONS[item.title] ?? LayoutDashboard;
+                const label = item.title;
+                const isActive = pathname.startsWith(item.href);
+
+                return (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton
+                      asChild
+                      isActive={isActive}
+                      tooltip={`${label}${activeWorkspace ? ` (${activeWorkspace.name})` : ""}`}
+                    >
+                      <Link
+                        href={item.href}
+                        onClick={() => {
+                          if (isMobile) setOpenMobile(false);
+                        }}
+                      >
+                        <Icon className="h-4 w-4 shrink-0" />
+                        {!isCollapsed && <span>{label}</span>}
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        {/* GROUP 3: GENERAL / SYSTEM */}
+        <SidebarGroup className="pt-2">
+          <SidebarGroupLabel className="text-[11px] font-semibold uppercase tracking-wider text-[var(--muted-foreground)] px-2">
+            General
+          </SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {SYSTEM_NAVIGATION.map((item) => {
+                const Icon = ICONS[item.title] ?? LayoutDashboard;
+                const label = item.title;
+                const isActive = pathname.startsWith(item.href);
 
                 return (
                   <SidebarMenuItem key={item.title}>
