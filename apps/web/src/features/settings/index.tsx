@@ -16,6 +16,7 @@ import {
   Mail,
   RefreshCw,
   RotateCcw,
+  ShieldAlert,
   ShieldCheck,
   SlidersHorizontal,
   Sparkles,
@@ -24,6 +25,7 @@ import {
   User,
   Wallet,
 } from "lucide-react";
+import { TwoFactorSecurityCard } from "./components/TwoFactorSecurityCard";
 import { ThemeToggle } from "@/components/shared/theme-toggle";
 import { useTutorial } from "@/context/tutorial-context";
 import {
@@ -232,15 +234,14 @@ export function SettingsFeature() {
     setProfileSavedMessage(null);
     setProfileErrorMessage(null);
 
-    if (!fullName.trim() || !email.trim()) {
-      setProfileErrorMessage("Please enter both your full name and email address.");
+    if (!fullName.trim()) {
+      setProfileErrorMessage("Please enter your full name.");
       return;
     }
 
     updateProfileMutation.mutate(
       {
         fullName: fullName.trim(),
-        email: email.trim(),
         defaultCurrencyCode,
       },
       {
@@ -390,15 +391,43 @@ export function SettingsFeature() {
                     </div>
 
                     <div className="space-y-1.5">
-                      <Label htmlFor="settings-email">Email Address</Label>
-                      <Input
-                        id="settings-email"
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        placeholder="you@example.com"
-                        required
-                      />
+                      <div className="flex items-center justify-between">
+                        <Label htmlFor="settings-email">Email Address</Label>
+                        <div className="flex items-center gap-1.5">
+                          {user?.isEmailVerified ? (
+                            <Badge variant="default" className="text-[10px] font-medium bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border-emerald-500/30">
+                              <CheckCircle2 className="h-3 w-3 mr-1 text-emerald-600 dark:text-emerald-400" />
+                              Verified
+                            </Badge>
+                          ) : (
+                            <Link
+                              href={`/verify-email?email=${encodeURIComponent(user?.email ?? "")}`}
+                              className="text-[11px] font-medium text-amber-600 dark:text-amber-400 hover:underline inline-flex items-center gap-1"
+                            >
+                              <ShieldAlert className="h-3 w-3" />
+                              Verify Now
+                            </Link>
+                          )}
+                          <Badge variant="neutral" className="text-[10px]">
+                            <Lock className="h-2.5 w-2.5 mr-1" />
+                            Immutable
+                          </Badge>
+                        </div>
+                      </div>
+                      <div className="relative">
+                        <Input
+                          id="settings-email"
+                          type="email"
+                          value={email}
+                          disabled
+                          readOnly
+                          className="bg-[var(--surface-muted)] text-[var(--muted-foreground)] cursor-not-allowed pl-9"
+                        />
+                        <Mail className="absolute left-3 top-3 h-4 w-4 text-[var(--muted-foreground)]" />
+                      </div>
+                      <p className="text-[11px] text-[var(--muted-foreground)]">
+                        Your email address is permanently locked to your account for identity and security protection.
+                      </p>
                     </div>
 
                     <div className="space-y-1.5">
@@ -698,8 +727,12 @@ export function SettingsFeature() {
         {/* TAB 2: PASSWORD & SECURITY */}
         <TabsContent value="security" className="space-y-6">
           <div className="grid gap-6 lg:grid-cols-12">
-            {/* Change Password Card */}
-            <Card className="lg:col-span-7">
+            {/* Left: 2FA + Change Password */}
+            <div className="space-y-6 lg:col-span-7">
+              <TwoFactorSecurityCard user={user ?? null} />
+
+              {/* Change Password Card */}
+              <Card>
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div>
@@ -833,79 +866,92 @@ export function SettingsFeature() {
                 </form>
               </CardContent>
             </Card>
+          </div>
 
-            {/* Account Security Status & Session Management */}
-            <Card className="lg:col-span-5">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <ShieldCheck className="h-4 w-4 text-[var(--accent)]" />
-                  Account Security Status
-                </CardTitle>
-                <CardDescription>
-                  Overview of how your account and sessions are protected
-                </CardDescription>
-              </CardHeader>
+          {/* Account Security Status & Session Management */}
+          <Card className="lg:col-span-5 h-fit">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <ShieldCheck className="h-4 w-4 text-[var(--accent)]" />
+                Account Security Status
+              </CardTitle>
+              <CardDescription>
+                Overview of your identity verification and sign-in protection
+              </CardDescription>
+            </CardHeader>
 
-              <CardContent className="space-y-4">
-                <div className="space-y-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-muted)]/60 p-4">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-[var(--muted-foreground)]">
-                      Signed-In Email
-                    </span>
-                    <span className="inline-flex items-center gap-1.5 font-medium">
+            <CardContent className="space-y-4">
+              <div className="space-y-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-muted)]/60 p-4">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-[var(--muted-foreground)]">
+                    Primary Email
+                  </span>
+                  <div className="flex items-center gap-2 font-medium">
+                    <span className="inline-flex items-center gap-1">
                       <Mail className="h-3.5 w-3.5 text-[var(--accent)]" />
                       {user?.email ?? "—"}
                     </span>
-                  </div>
-                  <Separator />
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-[var(--muted-foreground)]">
-                      Password Protection
-                    </span>
-                    <Badge variant="default">Active &amp; Encrypted</Badge>
-                  </div>
-                  <Separator />
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-[var(--muted-foreground)]">
-                      Data Privacy
-                    </span>
-                    <Badge variant="neutral">Private to You</Badge>
-                  </div>
-                  <Separator />
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-[var(--muted-foreground)]">
-                      Current Browser Session
-                    </span>
-                    <Badge variant="default">Verified</Badge>
+                    <Badge variant={user?.isEmailVerified ? "default" : "neutral"} className="text-[10px]">
+                      {user?.isEmailVerified ? "Verified" : "Unverified"}
+                    </Badge>
                   </div>
                 </div>
-
-                <Alert variant="muted">
-                  <ShieldCheck className="h-4 w-4" />
-                  <AlertTitle>Automatic Sign-In Protection</AlertTitle>
-                  <AlertDescription>
-                    Your sign-in session is stored in a protected browser cookie
-                    that cannot be read by third-party scripts. Changing your
-                    password immediately refreshes your active session.
-                  </AlertDescription>
-                </Alert>
-
-                <div className="pt-1">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    className="w-full text-[var(--danger)] hover:text-[var(--danger)]"
-                    onClick={() => logoutMutation.mutate()}
-                    disabled={logoutMutation.isPending}
-                  >
-                    <LogOut className="h-4 w-4" />
-                    Sign Out of This Device
-                  </Button>
+                <Separator />
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-[var(--muted-foreground)]">
+                    Two-Factor Auth
+                  </span>
+                  <Badge variant={user?.twoFactorEnabled ? "default" : "neutral"} className="text-[10px]">
+                    {user?.twoFactorEnabled ? "TOTP Active" : "Disabled"}
+                  </Badge>
                 </div>
-              </CardContent>
-            </Card>
-          </div>
-        </TabsContent>
+                <Separator />
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-[var(--muted-foreground)]">
+                    Brute-Force Defense
+                  </span>
+                  <Badge variant="default" className="text-[10px]">5 Attempts / 15m Lock</Badge>
+                </div>
+                <Separator />
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-[var(--muted-foreground)]">
+                    Sign-In &amp; Device Alerts
+                  </span>
+                  <Badge variant="default" className="text-[10px]">Email Dispatch Active</Badge>
+                </div>
+                <Separator />
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-[var(--muted-foreground)]">
+                    Session Security
+                  </span>
+                  <Badge variant="default" className="text-[10px]">HttpOnly Cookie</Badge>
+                </div>
+              </div>
+
+              <Alert variant="muted">
+                <ShieldCheck className="h-4 w-4" />
+                <AlertTitle>Continuous Threat Protection</AlertTitle>
+                <AlertDescription>
+                  Vaultz dispatches security alert emails whenever a sign-in from a new device or IP address is detected. Changing your password immediately invalidates all active sessions.
+                </AlertDescription>
+              </Alert>
+
+              <div className="pt-1">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="w-full text-[var(--danger)] hover:text-[var(--danger)]"
+                  onClick={() => logoutMutation.mutate()}
+                  disabled={logoutMutation.isPending}
+                >
+                  <LogOut className="h-4 w-4" />
+                  Sign Out of This Device
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </TabsContent>
 
         {/* TAB 3: PRIVACY & ALERTS */}
         <TabsContent value="privacy" className="space-y-6">

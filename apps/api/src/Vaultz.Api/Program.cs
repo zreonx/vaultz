@@ -91,6 +91,23 @@ if (app.Environment.IsDevelopment())
                 {
                 var sqlStatements = new[]
                 {
+                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS is_email_verified BOOLEAN NOT NULL DEFAULT FALSE;",
+                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verification_token VARCHAR(256) NULL;",
+                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verification_token_expires_at_utc TIMESTAMPTZ NULL;",
+                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS password_reset_token VARCHAR(256) NULL;",
+                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS password_reset_token_expires_at_utc TIMESTAMPTZ NULL;",
+                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS two_factor_enabled BOOLEAN NOT NULL DEFAULT FALSE;",
+                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS two_factor_type INT NOT NULL DEFAULT 0;",
+                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS two_factor_secret VARCHAR(256) NULL;",
+                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS two_factor_otp_code VARCHAR(16) NULL;",
+                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS two_factor_otp_expires_at_utc TIMESTAMPTZ NULL;",
+                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS two_factor_recovery_codes TEXT NULL;",
+                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS failed_login_attempts INT NOT NULL DEFAULT 0;",
+                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS lockout_end_utc TIMESTAMPTZ NULL;",
+                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login_at_utc TIMESTAMPTZ NULL;",
+                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login_ip VARCHAR(64) NULL;",
+                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login_user_agent VARCHAR(512) NULL;",
+                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS security_stamp VARCHAR(64) NOT NULL DEFAULT '';",
                     "ALTER TABLE accounts ADD COLUMN IF NOT EXISTS is_default BOOLEAN NOT NULL DEFAULT FALSE;",
                     "CREATE INDEX IF NOT EXISTS ix_accounts_user_id_is_default ON accounts (user_id, is_default);",
                     """

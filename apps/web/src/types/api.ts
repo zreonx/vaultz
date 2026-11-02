@@ -57,6 +57,28 @@ export interface UserProfileResponse {
   email: string;
   fullName: string;
   defaultCurrencyCode: string;
+  isEmailVerified?: boolean;
+  twoFactorEnabled?: boolean;
+  twoFactorType?: string;
+}
+
+export interface AuthResultResponse {
+  id: string;
+  email: string;
+  fullName: string;
+  defaultCurrencyCode: string;
+  accessToken: string;
+  expiresAtUtc: string;
+  isEmailVerified: boolean;
+  requiresTwoFactor: boolean;
+  twoFactorType?: string;
+  twoFactorToken?: string;
+}
+
+export interface TwoFactorSetupResponse {
+  secretKey: string;
+  qrCodeUri: string;
+  recoveryCodes: string[];
 }
 
 export interface AccountResponse {

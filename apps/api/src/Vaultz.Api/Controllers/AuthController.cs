@@ -29,8 +29,11 @@ public sealed class AuthController : ControllerBase
         [FromBody] RegisterUserCommand command,
         CancellationToken cancellationToken)
     {
-        var result = await _handlers.RegisterAsync(command, cancellationToken);
-        AppendJwtCookie(result.AccessToken, result.ExpiresAtUtc);
+        var result = await _handlers.RegisterAsync(command, GetClientIp(), GetUserAgent(), cancellationToken);
+        if (!string.IsNullOrEmpty(result.AccessToken))
+        {
+            AppendJwtCookie(result.AccessToken, result.ExpiresAtUtc);
+        }
         return CreatedAtAction(nameof(GetMe), result);
     }
 
@@ -40,8 +43,112 @@ public sealed class AuthController : ControllerBase
         [FromBody] LoginUserCommand command,
         CancellationToken cancellationToken)
     {
-        var result = await _handlers.LoginAsync(command, cancellationToken);
-        AppendJwtCookie(result.AccessToken, result.ExpiresAtUtc);
+        var result = await _handlers.LoginAsync(command, GetClientIp(), GetUserAgent(), cancellationToken);
+        if (!string.IsNullOrEmpty(result.AccessToken))
+        {
+            AppendJwtCookie(result.AccessToken, result.ExpiresAtUtc);
+        }
+        return Ok(result);
+    }
+
+    [HttpPost("verify-email")]
+    [ProducesResponseType(typeof(AuthResultResponse), StatusCodes.Status200OK)]
+    public async Task<ActionResult<AuthResultResponse>> VerifyEmail(
+        [FromBody] VerifyEmailCommand command,
+        CancellationToken cancellationToken)
+    {
+        var result = await _handlers.VerifyEmailAsync(command, GetClientIp(), GetUserAgent(), cancellationToken);
+        if (!string.IsNullOrEmpty(result.AccessToken))
+        {
+            AppendJwtCookie(result.AccessToken, result.ExpiresAtUtc);
+        }
+        return Ok(result);
+    }
+
+    [HttpPost("resend-verification")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<IActionResult> ResendVerification(
+        [FromBody] ResendVerificationCommand command,
+        CancellationToken cancellationToken)
+    {
+        await _handlers.ResendVerificationEmailAsync(command, cancellationToken);
+        return Ok(new { message = "If the account exists and is unverified, a new verification email has been sent." });
+    }
+
+    [HttpPost("verify-2fa")]
+    [ProducesResponseType(typeof(AuthResultResponse), StatusCodes.Status200OK)]
+    public async Task<ActionResult<AuthResultResponse>> VerifyTwoFactor(
+        [FromBody] VerifyTwoFactorCommand command,
+        CancellationToken cancellationToken)
+    {
+        var result = await _handlers.VerifyTwoFactorAsync(command, GetClientIp(), GetUserAgent(), cancellationToken);
+        if (!string.IsNullOrEmpty(result.AccessToken))
+        {
+            AppendJwtCookie(result.AccessToken, result.ExpiresAtUtc);
+        }
+        return Ok(result);
+    }
+
+    [Authorize]
+    [HttpPost("2fa/setup")]
+    [ProducesResponseType(typeof(TwoFactorSetupResponse), StatusCodes.Status200OK)]
+    public async Task<ActionResult<TwoFactorSetupResponse>> SetupTwoFactor(CancellationToken cancellationToken)
+    {
+        var result = await _handlers.SetupTwoFactorAsync(cancellationToken);
+        return Ok(result);
+    }
+
+    [Authorize]
+    [HttpPost("2fa/confirm")]
+    [ProducesResponseType(typeof(AuthResultResponse), StatusCodes.Status200OK)]
+    public async Task<ActionResult<AuthResultResponse>> ConfirmTwoFactor(
+        [FromBody] ConfirmTwoFactorCommand command,
+        CancellationToken cancellationToken)
+    {
+        var result = await _handlers.ConfirmTwoFactorAsync(command, cancellationToken);
+        if (!string.IsNullOrEmpty(result.AccessToken))
+        {
+            AppendJwtCookie(result.AccessToken, result.ExpiresAtUtc);
+        }
+        return Ok(result);
+    }
+
+    [Authorize]
+    [HttpPost("2fa/disable")]
+    [ProducesResponseType(typeof(AuthResultResponse), StatusCodes.Status200OK)]
+    public async Task<ActionResult<AuthResultResponse>> DisableTwoFactor(
+        [FromBody] DisableTwoFactorCommand command,
+        CancellationToken cancellationToken)
+    {
+        var result = await _handlers.DisableTwoFactorAsync(command, cancellationToken);
+        if (!string.IsNullOrEmpty(result.AccessToken))
+        {
+            AppendJwtCookie(result.AccessToken, result.ExpiresAtUtc);
+        }
+        return Ok(result);
+    }
+
+    [HttpPost("forgot-password")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<IActionResult> ForgotPassword(
+        [FromBody] ForgotPasswordCommand command,
+        CancellationToken cancellationToken)
+    {
+        await _handlers.ForgotPasswordAsync(command, cancellationToken);
+        return Ok(new { message = "If the account exists, a password reset code has been sent." });
+    }
+
+    [HttpPost("reset-password")]
+    [ProducesResponseType(typeof(AuthResultResponse), StatusCodes.Status200OK)]
+    public async Task<ActionResult<AuthResultResponse>> ResetPassword(
+        [FromBody] ResetPasswordCommand command,
+        CancellationToken cancellationToken)
+    {
+        var result = await _handlers.ResetPasswordAsync(command, GetClientIp(), GetUserAgent(), cancellationToken);
+        if (!string.IsNullOrEmpty(result.AccessToken))
+        {
+            AppendJwtCookie(result.AccessToken, result.ExpiresAtUtc);
+        }
         return Ok(result);
     }
 
@@ -134,6 +241,21 @@ public sealed class AuthController : ControllerBase
             DeleteJwtCookie();
             throw;
         }
+    }
+
+    private string? GetClientIp()
+    {
+        if (Request.Headers.TryGetValue("X-Forwarded-For", out var forwardedFor) && !string.IsNullOrWhiteSpace(forwardedFor))
+        {
+            return forwardedFor.ToString().Split(',')[0].Trim();
+        }
+
+        return HttpContext.Connection.RemoteIpAddress?.ToString();
+    }
+
+    private string? GetUserAgent()
+    {
+        return Request.Headers.UserAgent.ToString();
     }
 
     private void AppendJwtCookie(string token, DateTimeOffset expiresAtUtc)

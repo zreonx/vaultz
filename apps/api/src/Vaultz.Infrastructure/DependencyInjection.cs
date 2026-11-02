@@ -90,6 +90,17 @@ public static class DependencyInjection
         services.AddAuthorization();
         services.AddScoped<IAuthService, JwtAuthService>();
 
+        services.Configure<Email.ResendOptions>(options =>
+        {
+            configuration.GetSection(Email.ResendOptions.SectionName).Bind(options);
+            var envKey = Environment.GetEnvironmentVariable("RESEND_API_KEY");
+            if (!string.IsNullOrWhiteSpace(envKey))
+            {
+                options.ApiKey = envKey;
+            }
+        });
+        services.AddHttpClient<IEmailService, Email.ResendEmailService>();
+
         return services;
     }
 

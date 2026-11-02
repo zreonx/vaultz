@@ -2,7 +2,11 @@
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiClient } from "@/lib/api/client";
-import type { UserProfileResponse } from "@/types/api";
+import type {
+  AuthResultResponse,
+  TwoFactorSetupResponse,
+  UserProfileResponse,
+} from "@/types/api";
 
 export const AUTH_ME_QUERY_KEY = ["auth", "me"] as const;
 
@@ -28,10 +32,12 @@ export function useLoginMutation() {
 
   return useMutation({
     mutationFn: (payload: { email: string; password: string }) =>
-      apiClient.post<UserProfileResponse>("/api/v1/auth/login", payload),
-    onSuccess: (user) => {
-      queryClient.setQueryData(AUTH_ME_QUERY_KEY, user);
-      void queryClient.invalidateQueries();
+      apiClient.post<AuthResultResponse>("/api/v1/auth/login", payload),
+    onSuccess: (result) => {
+      if (!result.requiresTwoFactor) {
+        queryClient.setQueryData(AUTH_ME_QUERY_KEY, result);
+        void queryClient.invalidateQueries();
+      }
     },
   });
 }
@@ -46,7 +52,103 @@ export function useRegisterMutation() {
       fullName: string;
       defaultCurrencyCode: string;
     }) =>
-      apiClient.post<UserProfileResponse>("/api/v1/auth/register", payload),
+      apiClient.post<AuthResultResponse>("/api/v1/auth/register", payload),
+    onSuccess: (user) => {
+      queryClient.setQueryData(AUTH_ME_QUERY_KEY, user);
+      void queryClient.invalidateQueries();
+    },
+  });
+}
+
+export function useVerifyEmailMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (payload: { email: string; code: string }) =>
+      apiClient.post<AuthResultResponse>("/api/v1/auth/verify-email", payload),
+    onSuccess: (user) => {
+      queryClient.setQueryData(AUTH_ME_QUERY_KEY, user);
+      void queryClient.invalidateQueries();
+    },
+  });
+}
+
+export function useResendVerificationMutation() {
+  return useMutation({
+    mutationFn: (payload: { email: string }) =>
+      apiClient.post<{ message: string }>("/api/v1/auth/resend-verification", payload),
+  });
+}
+
+export function useVerifyTwoFactorMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (payload: {
+      email: string;
+      code: string;
+      twoFactorToken: string;
+      isRecoveryCode?: boolean;
+    }) =>
+      apiClient.post<AuthResultResponse>("/api/v1/auth/verify-2fa", payload),
+    onSuccess: (user) => {
+      queryClient.setQueryData(AUTH_ME_QUERY_KEY, user);
+      void queryClient.invalidateQueries();
+    },
+  });
+}
+
+export function useSetupTwoFactorMutation() {
+  return useMutation({
+    mutationFn: () =>
+      apiClient.post<TwoFactorSetupResponse>("/api/v1/auth/2fa/setup"),
+  });
+}
+
+export function useConfirmTwoFactorMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (payload: {
+      secretKey: string;
+      code: string;
+      recoveryCodes: string[];
+      type?: string;
+    }) =>
+      apiClient.post<AuthResultResponse>("/api/v1/auth/2fa/confirm", payload),
+    onSuccess: (user) => {
+      queryClient.setQueryData(AUTH_ME_QUERY_KEY, user);
+      void queryClient.invalidateQueries();
+    },
+  });
+}
+
+export function useDisableTwoFactorMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (payload: { password: string }) =>
+      apiClient.post<AuthResultResponse>("/api/v1/auth/2fa/disable", payload),
+    onSuccess: (user) => {
+      queryClient.setQueryData(AUTH_ME_QUERY_KEY, user);
+      void queryClient.invalidateQueries();
+    },
+  });
+}
+
+export function useForgotPasswordMutation() {
+  return useMutation({
+    mutationFn: (payload: { email: string }) =>
+      apiClient.post<{ message: string }>("/api/v1/auth/forgot-password", payload),
+  });
+}
+
+export function useResetPasswordMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (payload: { email: string; token: string; newPassword: string }) =>
+      apiClient.post<AuthResultResponse>("/api/v1/auth/reset-password", payload),
     onSuccess: (user) => {
       queryClient.setQueryData(AUTH_ME_QUERY_KEY, user);
       void queryClient.invalidateQueries();
@@ -76,7 +178,6 @@ export function useUpdateProfileMutation() {
   return useMutation({
     mutationFn: (payload: {
       fullName: string;
-      email: string;
       defaultCurrencyCode: string;
     }) => apiClient.put<UserProfileResponse>("/api/v1/auth/profile", payload),
     onSuccess: (user) => {

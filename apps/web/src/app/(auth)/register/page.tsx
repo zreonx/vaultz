@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Lock, Mail, User } from "lucide-react";
 import { useRegisterMutation } from "@/hooks/use-auth";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -48,29 +48,34 @@ export default function RegisterPage() {
       ...values,
       defaultCurrencyCode: "USD",
     });
-    window.location.href = "/onboarding";
+    // Direct user to verify their email address via the 6-digit OTP sent by Resend
+    window.location.href = `/verify-email?email=${encodeURIComponent(values.email)}`;
   };
 
   return (
-    <Card>
+    <Card className="mx-auto w-full max-w-md border-[var(--border-subtle)] bg-[var(--surface)] shadow-sm">
       <CardHeader className="space-y-2">
         <div className="flex items-center justify-between">
           <Link
             href="/"
-            className="inline-flex items-center gap-2 text-sm font-semibold"
+            className="inline-flex items-center gap-2 text-sm font-semibold tracking-tight"
           >
             <Avatar className="h-7 w-7 rounded-lg">
-              <AvatarFallback className="rounded-lg bg-[var(--accent)] text-xs text-[var(--accent-foreground)]">
+              <AvatarFallback className="rounded-lg bg-[var(--accent)] text-xs text-[var(--accent-foreground)] font-bold">
                 V
               </AvatarFallback>
             </Avatar>
-            Vaultz
+            <span>Vaultz</span>
           </Link>
-          <Badge variant="default">Free Account</Badge>
+          <Badge variant="default" className="text-[11px] font-medium">
+            Free Account
+          </Badge>
         </div>
-        <CardTitle className="pt-2 text-xl">Create your Vaultz account</CardTitle>
-        <CardDescription>
-          Sign up to get started. You can configure your preferred currency and first account in the next step.
+        <CardTitle className="pt-2 text-xl font-bold tracking-tight">
+          Create your Vaultz account
+        </CardTitle>
+        <CardDescription className="text-xs text-[var(--muted-foreground)] leading-relaxed">
+          Sign up to get started. A 6-digit confirmation code will be sent to verify your email.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -78,8 +83,8 @@ export default function RegisterPage() {
           {registerMutation.isError && (
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Registration Failed</AlertTitle>
-              <AlertDescription>
+              <AlertTitle className="font-semibold">Registration Failed</AlertTitle>
+              <AlertDescription className="text-xs">
                 {registerMutation.error instanceof Error
                   ? registerMutation.error.message
                   : "Registration failed. Please verify your details."}
@@ -88,12 +93,18 @@ export default function RegisterPage() {
           )}
 
           <div className="space-y-1.5">
-            <Label htmlFor="fullName">Full Name</Label>
-            <Input
-              id="fullName"
-              placeholder="Alex Morgan"
-              {...register("fullName")}
-            />
+            <Label htmlFor="fullName" className="text-xs font-medium">
+              Full Name
+            </Label>
+            <div className="relative">
+              <Input
+                id="fullName"
+                placeholder="Alex Morgan"
+                {...register("fullName")}
+                className="h-10 text-sm pl-9"
+              />
+              <User className="absolute left-3 top-3 h-4 w-4 text-[var(--muted-foreground)]" />
+            </div>
             {errors.fullName && (
               <p className="text-xs text-[var(--danger)]">
                 {errors.fullName.message}
@@ -102,28 +113,45 @@ export default function RegisterPage() {
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="email">Email Address</Label>
-            <Input
-              id="email"
-              type="email"
-              placeholder="alex@example.com"
-              autoComplete="email"
-              {...register("email")}
-            />
+            <Label htmlFor="email" className="text-xs font-medium">
+              Email Address
+            </Label>
+            <div className="relative">
+              <Input
+                id="email"
+                type="email"
+                placeholder="alex@example.com"
+                autoComplete="email"
+                {...register("email")}
+                className="h-10 text-sm pl-9"
+              />
+              <Mail className="absolute left-3 top-3 h-4 w-4 text-[var(--muted-foreground)]" />
+            </div>
             {errors.email && (
-              <p className="text-xs text-[var(--danger)]">{errors.email.message}</p>
+              <p className="text-xs text-[var(--danger)]">
+                {errors.email.message}
+              </p>
             )}
+            <p className="text-[11px] text-[var(--muted-foreground)]">
+              This email will be permanently locked to your account for security.
+            </p>
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="password">Password</Label>
-            <Input
-              id="password"
-              type="password"
-              placeholder="At least 8 chars + letters and digit"
-              autoComplete="new-password"
-              {...register("password")}
-            />
+            <Label htmlFor="password" className="text-xs font-medium">
+              Password
+            </Label>
+            <div className="relative">
+              <Input
+                id="password"
+                type="password"
+                placeholder="••••••••"
+                autoComplete="new-password"
+                {...register("password")}
+                className="h-10 text-sm pl-9"
+              />
+              <Lock className="absolute left-3 top-3 h-4 w-4 text-[var(--muted-foreground)]" />
+            </div>
             {errors.password && (
               <p className="text-xs text-[var(--danger)]">
                 {errors.password.message}
@@ -133,13 +161,13 @@ export default function RegisterPage() {
 
           <Button
             type="submit"
-            className="w-full"
+            className="w-full h-10 font-medium"
             disabled={registerMutation.isPending}
           >
-            {registerMutation.isPending ? "Creating account…" : "Continue to Setup"}
+            {registerMutation.isPending ? "Creating Account…" : "Create Account & Verify"}
           </Button>
 
-          <p className="text-center text-xs text-[var(--muted-foreground)]">
+          <p className="text-center text-xs text-[var(--muted-foreground)] pt-2">
             Already have an account?{" "}
             <Link
               href="/login"

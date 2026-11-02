@@ -18,6 +18,28 @@ public sealed class UserAccountConfiguration : IEntityTypeConfiguration<UserAcco
         builder.Property(x => x.CreatedAtUtc).HasColumnName("created_at_utc").IsRequired();
         builder.Property(x => x.UpdatedAtUtc).HasColumnName("updated_at_utc");
 
+        builder.Property(x => x.IsEmailVerified).HasColumnName("is_email_verified").HasDefaultValue(false).IsRequired();
+        builder.Property(x => x.EmailVerificationToken).HasColumnName("email_verification_token").HasMaxLength(256);
+        builder.Property(x => x.EmailVerificationTokenExpiresAtUtc).HasColumnName("email_verification_token_expires_at_utc");
+
+        builder.Property(x => x.PasswordResetToken).HasColumnName("password_reset_token").HasMaxLength(256);
+        builder.Property(x => x.PasswordResetTokenExpiresAtUtc).HasColumnName("password_reset_token_expires_at_utc");
+
+        builder.Property(x => x.TwoFactorEnabled).HasColumnName("two_factor_enabled").HasDefaultValue(false).IsRequired();
+        builder.Property(x => x.TwoFactorType).HasColumnName("two_factor_type").HasDefaultValue(Vaultz.Domain.Enums.TwoFactorType.None).IsRequired();
+        builder.Property(x => x.TwoFactorSecret).HasColumnName("two_factor_secret").HasMaxLength(256);
+        builder.Property(x => x.TwoFactorOtpCode).HasColumnName("two_factor_otp_code").HasMaxLength(16);
+        builder.Property(x => x.TwoFactorOtpExpiresAtUtc).HasColumnName("two_factor_otp_expires_at_utc");
+        builder.Property(x => x.TwoFactorRecoveryCodes).HasColumnName("two_factor_recovery_codes");
+
+        builder.Property(x => x.FailedLoginAttempts).HasColumnName("failed_login_attempts").HasDefaultValue(0).IsRequired();
+        builder.Property(x => x.LockoutEndUtc).HasColumnName("lockout_end_utc");
+
+        builder.Property(x => x.LastLoginAtUtc).HasColumnName("last_login_at_utc");
+        builder.Property(x => x.LastLoginIp).HasColumnName("last_login_ip").HasMaxLength(64);
+        builder.Property(x => x.LastLoginUserAgent).HasColumnName("last_login_user_agent").HasMaxLength(512);
+        builder.Property(x => x.SecurityStamp).HasColumnName("security_stamp").HasMaxLength(64).IsRequired();
+
         builder.HasIndex(x => x.Email).IsUnique().HasDatabaseName("ux_users_email");
     }
 }
