@@ -4,26 +4,28 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  TouchableOpacity,
   RefreshControl,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useWorkspace } from '@/context/WorkspaceContext';
+import { useTheme } from '@/context/ThemeContext';
 import { ScreenWrapper } from '@/components/ui/ScreenWrapper';
 import { Header } from '@/components/shared/Header';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
+import { PressableScale } from '@/components/ui/PressableScale';
+import { FadeInView } from '@/components/ui/FadeInView';
 import { CreateAccountModal } from '@/components/shared/CreateAccountModal';
-import { colors } from '@/theme/colors';
 import { typography, radius, spacing } from '@/theme/tokens';
 import { formatMoney } from '@/utils/currency';
 import { haptics } from '@/utils/haptics';
 import { AccountDto } from '@/types/api';
 
 export const AccountsScreen: React.FC = () => {
-  const { accounts, activeWorkspace, setActiveWorkspace, hideBalance, refreshAccounts, isLoading } =
+  const { accounts, activeWorkspace, setActiveWorkspace, hideBalance, refreshAccounts } =
     useWorkspace();
+  const { colors, isDark } = useTheme();
   const [refreshing, setRefreshing] = useState(false);
   const [createModalVisible, setCreateModalVisible] = useState(false);
 
@@ -64,94 +66,133 @@ export const AccountsScreen: React.FC = () => {
         }
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.introContainer}>
-          <Text style={styles.introTitle}>Personal Financial Containers</Text>
-          <Text style={styles.introSubtitle}>
-            Each account is isolated. Tap any account to set it as your active workspace.
-          </Text>
-        </View>
+        {/* Minimalist Section Header */}
+        <FadeInView delay={40} translateY={10}>
+          <View style={styles.introContainer}>
+            <View style={styles.introHeaderRow}>
+              <Text style={[styles.introTitle, { color: colors.textPrimary }]}>
+                Financial Accounts
+              </Text>
+              <Badge
+                label={`${accounts.length} ${accounts.length === 1 ? 'Account' : 'Accounts'}`}
+                variant="outline"
+              />
+            </View>
+            <Text style={[styles.introSubtitle, { color: colors.textMuted }]}>
+              Each account operates in strict personal isolation. Tap to switch your active workspace.
+            </Text>
+          </View>
+        </FadeInView>
 
+        {/* Accounts List */}
         <View style={styles.accountsList}>
-          {accounts.map((acc) => {
+          {accounts.map((acc, index) => {
             const isActive = activeWorkspace?.id === acc.id;
 
             return (
-              <TouchableOpacity
-                key={acc.id}
-                onPress={() => handleSelectAccount(acc)}
-                activeOpacity={0.7}
-              >
-                <Card
-                  style={isActive ? [styles.accountCard, styles.accountCardActive] : styles.accountCard}
+              <FadeInView key={acc.id} delay={80 + index * 40} translateY={12}>
+                <PressableScale
+                  onPress={() => handleSelectAccount(acc)}
+                  style={styles.cardPressable}
                 >
-                  <View style={styles.cardHeader}>
-                    <View style={styles.cardLeft}>
-                      <View
-                        style={[
-                          styles.iconBadge,
-                          isActive && styles.iconBadgeActive,
-                        ]}
-                      >
-                        <Ionicons
-                          name={getAccountIcon(acc.typeName || String(acc.type))}
-                          size={20}
-                          color={isActive ? colors.accent : colors.textSecondary}
-                        />
-                      </View>
-                      <View>
-                        <View style={styles.nameRow}>
-                          <Text
-                            style={[
-                              styles.accountName,
-                              isActive && styles.accountNameActive,
-                            ]}
-                          >
-                            {acc.name}
-                          </Text>
-                          {acc.isDefault && (
-                            <Badge label="Default" variant="outline" style={styles.badge} />
-                          )}
+                  <Card
+                    style={[
+                      styles.accountCard,
+                      {
+                        backgroundColor: colors.surface,
+                        borderColor: isActive ? colors.accent : colors.border,
+                      },
+                      isActive && {
+                        backgroundColor: isDark ? 'rgba(71, 153, 128, 0.08)' : 'rgba(42, 107, 88, 0.05)',
+                        borderWidth: 1.5,
+                      },
+                    ]}
+                  >
+                    <View style={styles.cardHeader}>
+                      <View style={styles.cardLeft}>
+                        <View
+                          style={[
+                            styles.iconBadge,
+                            {
+                              backgroundColor: isActive
+                                ? colors.accentMuted
+                                : isDark
+                                ? colors.surfaceSubtle
+                                : colors.surfaceMuted,
+                            },
+                          ]}
+                        >
+                          <Ionicons
+                            name={getAccountIcon(acc.typeName || String(acc.type))}
+                            size={20}
+                            color={isActive ? colors.accent : colors.textSecondary}
+                          />
                         </View>
-                        <Text style={styles.accountType}>
-                          {acc.typeName || String(acc.type)} • {acc.currency || acc.currencyCode}
-                        </Text>
+                        <View style={styles.accountTextGroup}>
+                          <View style={styles.nameRow}>
+                            <Text
+                              style={[
+                                styles.accountName,
+                                { color: isActive ? colors.accent : colors.textPrimary },
+                              ]}
+                              numberOfLines={1}
+                            >
+                              {acc.name}
+                            </Text>
+                            {acc.isDefault && (
+                              <Badge label="Default" variant="outline" style={styles.badge} />
+                            )}
+                          </View>
+                          <Text style={[styles.accountType, { color: colors.textMuted }]}>
+                            {acc.typeName || String(acc.type)} • {acc.currency || acc.currencyCode}
+                          </Text>
+                        </View>
                       </View>
+
+                      {isActive && (
+                        <Badge label="Active" variant="success" />
+                      )}
                     </View>
 
-                    {isActive && (
-                      <Badge label="Active Workspace" variant="success" />
-                    )}
-                  </View>
+                    <View style={[styles.balanceDivider, { backgroundColor: colors.border }]} />
 
-                  <View style={styles.balanceDivider} />
-
-                  <View style={styles.cardFooter}>
-                    <Text style={styles.balanceLabel}>Current Balance</Text>
-                    <Text
-                      style={[
-                        styles.balanceValue,
-                        isActive && styles.balanceValueActive,
-                      ]}
-                    >
-                      {hideBalance ? '••••••' : formatMoney(acc.currentBalance ?? acc.balance ?? 0, acc.currency || acc.currencyCode)}
-                    </Text>
-                  </View>
-                </Card>
-              </TouchableOpacity>
+                    <View style={styles.cardFooter}>
+                      <Text style={[styles.balanceLabel, { color: colors.textMuted }]}>
+                        CURRENT BALANCE
+                      </Text>
+                      <Text
+                        style={[
+                          styles.balanceValue,
+                          { color: isActive ? colors.accent : colors.textPrimary },
+                        ]}
+                      >
+                        {hideBalance
+                          ? '••••••'
+                          : formatMoney(
+                              acc.currentBalance ?? acc.balance ?? 0,
+                              acc.currency || acc.currencyCode
+                            )}
+                      </Text>
+                    </View>
+                  </Card>
+                </PressableScale>
+              </FadeInView>
             );
           })}
         </View>
 
-        <Button
-          title="Create New Account"
-          variant="secondary"
-          leftIcon="add-outline"
-          onPress={() => {
-            haptics.light();
-            setCreateModalVisible(true);
-          }}
-          style={styles.createButton}
-        />
+        <FadeInView delay={120 + accounts.length * 40} translateY={12}>
+          <Button
+            title="Create New Account"
+            variant="secondary"
+            leftIcon="add-outline"
+            onPress={() => {
+              haptics.light();
+              setCreateModalVisible(true);
+            }}
+            style={styles.createButton}
+          />
+        </FadeInView>
       </ScrollView>
 
       <CreateAccountModal
@@ -164,32 +205,37 @@ export const AccountsScreen: React.FC = () => {
 
 const styles = StyleSheet.create({
   scrollContainer: {
-    padding: spacing.lg,
+    padding: spacing.base,
     paddingBottom: spacing.xxl * 2,
   },
   introContainer: {
-    marginBottom: spacing.lg,
+    marginBottom: spacing.base,
+  },
+  introHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
   },
   introTitle: {
     ...typography.title,
-    color: colors.textPrimary,
+    fontSize: 19,
+    fontWeight: '700',
   },
   introSubtitle: {
     ...typography.caption,
-    color: colors.textMuted,
-    marginTop: 2,
+    lineHeight: 18,
+    fontSize: 12,
   },
   accountsList: {
-    marginBottom: spacing.lg,
+    marginBottom: spacing.base,
+  },
+  cardPressable: {
+    marginBottom: spacing.md,
   },
   accountCard: {
-    marginBottom: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  accountCardActive: {
-    borderColor: colors.accent,
-    backgroundColor: 'rgba(16, 185, 129, 0.04)',
+    padding: spacing.base,
+    borderRadius: radius.lg,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -199,61 +245,58 @@ const styles = StyleSheet.create({
   cardLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
+    flex: 1,
+    marginRight: spacing.sm,
   },
   iconBadge: {
-    width: 40,
-    height: 40,
+    width: 42,
+    height: 42,
     borderRadius: radius.md,
-    backgroundColor: colors.surfaceHover,
     alignItems: 'center',
     justifyContent: 'center',
+    marginRight: spacing.md,
   },
-  iconBadgeActive: {
-    backgroundColor: colors.accentMuted,
+  accountTextGroup: {
+    flex: 1,
   },
   nameRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: 6,
   },
   accountName: {
     ...typography.title,
     fontSize: 16,
-    color: colors.textPrimary,
-  },
-  accountNameActive: {
-    color: colors.accent,
-    fontWeight: '700',
+    fontWeight: '600',
   },
   badge: {
-    marginLeft: spacing.xs,
+    marginLeft: 2,
   },
   accountType: {
     ...typography.caption,
-    color: colors.textMuted,
     marginTop: 2,
+    fontSize: 12,
   },
   balanceDivider: {
     height: 1,
-    backgroundColor: colors.border,
     marginVertical: spacing.md,
   },
   cardFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'baseline',
   },
   balanceLabel: {
     ...typography.caption,
-    color: colors.textMuted,
+    fontSize: 11,
+    letterSpacing: 0.5,
+    fontWeight: '600',
   },
   balanceValue: {
-    ...typography.bodyLarge,
+    ...typography.title,
+    fontSize: 18,
     fontWeight: '700',
-    color: colors.textPrimary,
-  },
-  balanceValueActive: {
-    color: colors.accent,
   },
   createButton: {
     marginTop: spacing.xs,

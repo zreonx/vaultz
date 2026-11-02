@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { useAuth } from '@/context/AuthContext';
+import { useTheme } from '@/context/ThemeContext';
 import { ScreenWrapper } from '@/components/ui/ScreenWrapper';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
-import { colors } from '@/theme/colors';
 import { typography, radius, spacing } from '@/theme/tokens';
 import { haptics } from '@/utils/haptics';
 
@@ -14,6 +14,7 @@ interface RegisterScreenProps {
 
 export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) => {
   const { register } = useAuth();
+  const { colors, isDark } = useTheme();
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -61,15 +62,33 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
       >
         {/* Brand / Logo Area */}
         <View style={styles.brandContainer}>
-          <Text style={styles.brandName}>CREATE ACCOUNT</Text>
-          <Text style={styles.subtitle}>Start tracking personal finances with isolation</Text>
+          <Text style={[styles.brandName, { color: colors.textPrimary }]}>CREATE ACCOUNT</Text>
+          <Text style={[styles.subtitle, { color: colors.textMuted }]}>
+            Start tracking personal finances with isolation
+          </Text>
         </View>
 
         {/* Form Card */}
-        <View style={styles.formContainer}>
+        <View
+          style={[
+            styles.formContainer,
+            {
+              backgroundColor: colors.surface,
+              borderColor: colors.border,
+            },
+          ]}
+        >
           {error && (
-            <View style={styles.errorBox}>
-              <Text style={styles.errorText}>{error}</Text>
+            <View
+              style={[
+                styles.errorBox,
+                {
+                  backgroundColor: colors.dangerSoft,
+                  borderColor: colors.danger,
+                },
+              ]}
+            >
+              <Text style={[styles.errorText, { color: colors.danger }]}>{error}</Text>
             </View>
           )}
 
@@ -99,8 +118,8 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
           />
 
           <Input
-            label="Password"
-            placeholder="At least 8 characters"
+            label="Password (min. 8 chars)"
+            placeholder="••••••••••••"
             value={password}
             onChangeText={(val) => {
               setPassword(val);
@@ -112,14 +131,14 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
 
           <Input
             label="Confirm Password"
-            placeholder="Repeat password"
+            placeholder="••••••••••••"
             value={confirmPassword}
             onChangeText={(val) => {
               setConfirmPassword(val);
               if (error) setError(null);
             }}
             isPassword
-            leftIcon="shield-checkmark-outline"
+            leftIcon="lock-closed-outline"
           />
 
           <Button
@@ -130,14 +149,17 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
           />
 
           <View style={styles.switchRow}>
-            <Text style={styles.switchText}>Already have an account? </Text>
+            <Text style={[styles.switchText, { color: colors.textSecondary }]}>
+              Already have an account?{' '}
+            </Text>
             <TouchableOpacity
               onPress={() => {
                 haptics.light();
                 navigation.navigate('Login');
               }}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
-              <Text style={styles.switchAction}>Sign In</Text>
+              <Text style={[styles.switchAction, { color: colors.accent }]}>Sign In</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -149,7 +171,7 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
-    paddingHorizontal: spacing.xl,
+    paddingHorizontal: spacing.lg,
     justifyContent: 'center',
     paddingVertical: spacing.xxl,
   },
@@ -158,26 +180,21 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xl,
   },
   brandName: {
-    ...typography.title,
-    color: colors.textPrimary,
+    ...typography.heading,
     letterSpacing: 1.5,
     fontWeight: '800',
   },
   subtitle: {
     ...typography.caption,
-    color: colors.textMuted,
     marginTop: spacing.xs,
+    fontSize: 12,
   },
   formContainer: {
-    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: colors.border,
     borderRadius: radius.xl,
     padding: spacing.xl,
   },
   errorBox: {
-    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-    borderColor: colors.danger,
     borderWidth: 1,
     borderRadius: radius.md,
     padding: spacing.sm,
@@ -185,8 +202,8 @@ const styles = StyleSheet.create({
   },
   errorText: {
     ...typography.caption,
-    color: colors.danger,
     textAlign: 'center',
+    fontWeight: '500',
   },
   registerButton: {
     marginTop: spacing.xs,
@@ -198,11 +215,11 @@ const styles = StyleSheet.create({
   },
   switchText: {
     ...typography.body,
-    color: colors.textSecondary,
+    fontSize: 13,
   },
   switchAction: {
     ...typography.body,
-    fontWeight: '600',
-    color: colors.accent,
+    fontWeight: '700',
+    fontSize: 13,
   },
 });

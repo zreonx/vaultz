@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { ModalSheet } from '@/components/ui/ModalSheet';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
-import { colors } from '@/theme/colors';
-import { typography, radius, spacing } from '@/theme/tokens';
-import { accountsApi } from '@/api/accounts';
+import { PressableScale } from '@/components/ui/PressableScale';
 import { useWorkspace } from '@/context/WorkspaceContext';
+import { useTheme } from '@/context/ThemeContext';
+import { accountsApi } from '@/api/accounts';
+import { typography, radius, spacing } from '@/theme/tokens';
 import { haptics } from '@/utils/haptics';
 
 interface CreateAccountModalProps {
@@ -24,6 +25,7 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
   onSuccess,
 }) => {
   const { refreshAccounts, setActiveWorkspace } = useWorkspace();
+  const { colors, isDark } = useTheme();
   const [name, setName] = useState('');
   const [type, setType] = useState('Checking');
   const [currency, setCurrency] = useState('USD');
@@ -75,12 +77,20 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
       visible={visible}
       onClose={onClose}
       title="Create Account"
-      subtitle="Add an isolated account container"
+      subtitle="Add an isolated financial container"
     >
       <View style={styles.container}>
         {error && (
-          <View style={styles.errorBanner}>
-            <Text style={styles.errorBannerText}>{error}</Text>
+          <View
+            style={[
+              styles.errorBanner,
+              {
+                backgroundColor: colors.dangerSoft,
+                borderColor: colors.danger,
+              },
+            ]}
+          >
+            <Text style={[styles.errorBannerText, { color: colors.danger }]}>{error}</Text>
           </View>
         )}
 
@@ -95,40 +105,86 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
           autoFocus
         />
 
-        <Text style={styles.sectionLabel}>ACCOUNT TYPE</Text>
+        <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>
+          ACCOUNT TYPE
+        </Text>
         <View style={styles.chipRow}>
-          {ACCOUNT_TYPES.map((t) => (
-            <TouchableOpacity
-              key={t}
-              style={[styles.chip, type === t && styles.chipActive]}
-              onPress={() => {
-                haptics.selection();
-                setType(t);
-              }}
-            >
-              <Text style={[styles.chipText, type === t && styles.chipTextActive]}>
-                {t === 'CreditCard' ? 'Credit Card' : t}
-              </Text>
-            </TouchableOpacity>
-          ))}
+          {ACCOUNT_TYPES.map((t) => {
+            const isActive = type === t;
+            return (
+              <PressableScale
+                key={t}
+                style={[
+                  styles.chip,
+                  {
+                    backgroundColor: isActive
+                      ? colors.accentMuted
+                      : isDark
+                      ? colors.surfaceSubtle
+                      : colors.surfaceMuted,
+                    borderColor: isActive ? colors.accent : colors.border,
+                  },
+                ]}
+                onPress={() => {
+                  haptics.selection();
+                  setType(t);
+                }}
+              >
+                <Text
+                  style={[
+                    styles.chipText,
+                    {
+                      color: isActive ? colors.accent : colors.textSecondary,
+                      fontWeight: isActive ? '700' : '500',
+                    },
+                  ]}
+                >
+                  {t === 'CreditCard' ? 'Credit Card' : t}
+                </Text>
+              </PressableScale>
+            );
+          })}
         </View>
 
-        <Text style={styles.sectionLabel}>CURRENCY (ISO 4217)</Text>
+        <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>
+          CURRENCY (ISO 4217)
+        </Text>
         <View style={styles.chipRow}>
-          {CURRENCIES.map((c) => (
-            <TouchableOpacity
-              key={c}
-              style={[styles.chip, currency === c && styles.chipActive]}
-              onPress={() => {
-                haptics.selection();
-                setCurrency(c);
-              }}
-            >
-              <Text style={[styles.chipText, currency === c && styles.chipTextActive]}>
-                {c}
-              </Text>
-            </TouchableOpacity>
-          ))}
+          {CURRENCIES.map((c) => {
+            const isActive = currency === c;
+            return (
+              <PressableScale
+                key={c}
+                style={[
+                  styles.chip,
+                  {
+                    backgroundColor: isActive
+                      ? colors.accentMuted
+                      : isDark
+                      ? colors.surfaceSubtle
+                      : colors.surfaceMuted,
+                    borderColor: isActive ? colors.accent : colors.border,
+                  },
+                ]}
+                onPress={() => {
+                  haptics.selection();
+                  setCurrency(c);
+                }}
+              >
+                <Text
+                  style={[
+                    styles.chipText,
+                    {
+                      color: isActive ? colors.accent : colors.textSecondary,
+                      fontWeight: isActive ? '700' : '500',
+                    },
+                  ]}
+                >
+                  {c}
+                </Text>
+              </PressableScale>
+            );
+          })}
         </View>
 
         <Input
@@ -163,11 +219,9 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    paddingBottom: spacing.md,
+    paddingBottom: spacing.sm,
   },
   errorBanner: {
-    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-    borderColor: colors.danger,
     borderWidth: 1,
     borderRadius: radius.md,
     padding: spacing.sm,
@@ -175,13 +229,14 @@ const styles = StyleSheet.create({
   },
   errorBannerText: {
     ...typography.caption,
-    color: colors.danger,
     textAlign: 'center',
+    fontWeight: '500',
   },
   sectionLabel: {
     ...typography.label,
-    color: colors.textSecondary,
-    marginBottom: spacing.xs,
+    fontSize: 11,
+    fontWeight: '700',
+    marginBottom: 6,
     letterSpacing: 0.5,
   },
   chipRow: {
@@ -191,25 +246,14 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   chip: {
-    paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.sm + 2,
+    paddingVertical: 6,
+    paddingHorizontal: spacing.sm + 4,
     borderRadius: radius.full,
-    backgroundColor: colors.surfaceHover,
     borderWidth: 1,
-    borderColor: colors.border,
-  },
-  chipActive: {
-    backgroundColor: colors.accentMuted,
-    borderColor: colors.accent,
   },
   chipText: {
     ...typography.caption,
-    color: colors.textSecondary,
-    fontWeight: '500',
-  },
-  chipTextActive: {
-    color: colors.accent,
-    fontWeight: '600',
+    fontSize: 12,
   },
   buttonRow: {
     flexDirection: 'row',

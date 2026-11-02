@@ -10,7 +10,6 @@ import { AccountsScreen } from '@/screens/accounts/AccountsScreen';
 import { TransactionsScreen } from '@/screens/transactions/TransactionsScreen';
 import { LendingScreen } from '@/screens/lending/LendingScreen';
 import { SettingsScreen } from '@/screens/settings/SettingsScreen';
-import { colors } from '@/theme/colors';
 import { typography } from '@/theme/tokens';
 import { haptics } from '@/utils/haptics';
 
@@ -123,9 +122,7 @@ export const MainTabNavigator: React.FC = () => {
 
 const styles = StyleSheet.create({
   tabBar: {
-    backgroundColor: colors.surface,
     borderTopWidth: 1,
-    borderTopColor: colors.border,
     paddingTop: 6,
   },
   tabBarLabel: {

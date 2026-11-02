@@ -10,26 +10,27 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useWorkspace } from '@/context/WorkspaceContext';
+import { useTheme } from '@/context/ThemeContext';
 import { ScreenWrapper } from '@/components/ui/ScreenWrapper';
 import { Header } from '@/components/shared/Header';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { Button } from '@/components/ui/Button';
+import { PressableScale } from '@/components/ui/PressableScale';
 import { CreateLendingModal } from './CreateLendingModal';
 import { LogRepaymentModal } from './LogRepaymentModal';
 import { lendingApi } from '@/api/lending';
 import { LendingSummaryDto, LendingItemDto, LendingType, LendingStatus } from '@/types/api';
-import { colors } from '@/theme/colors';
 import { typography, radius, spacing } from '@/theme/tokens';
 import { formatMoney } from '@/utils/currency';
-import { formatDate } from '@/utils/date';
 import { haptics } from '@/utils/haptics';
 
 const LENDING_TABS = ['All', 'Lent', 'Borrowed', 'Settled'] as const;
 
 export const LendingScreen: React.FC = () => {
   const { activeWorkspace, hideBalance } = useWorkspace();
+  const { colors, isDark } = useTheme();
   const [summary, setSummary] = useState<LendingSummaryDto | null>(null);
   const [items, setItems] = useState<LendingItemDto[]>([]);
   const [selectedTab, setSelectedTab] = useState<typeof LENDING_TABS[number]>('All');
@@ -119,11 +120,21 @@ export const LendingScreen: React.FC = () => {
     const curr = item.currency || item.currencyCode;
 
     return (
-      <Card style={styles.itemCard}>
+      <Card
+        style={[
+          styles.itemCard,
+          {
+            backgroundColor: colors.surface,
+            borderColor: colors.border,
+          },
+        ]}
+      >
         {/* Top Row: Name and Status Badge */}
         <View style={styles.cardHeader}>
           <View style={styles.nameContainer}>
-            <Text style={styles.contactName}>{item.borrowerOrLenderName || item.counterparty}</Text>
+            <Text style={[styles.contactName, { color: colors.textPrimary }]}>
+              {item.borrowerOrLenderName || item.counterparty}
+            </Text>
             <Badge
               label={isLent ? 'Lent (You are owed)' : 'Borrowed (You owe)'}
               variant={isLent ? 'success' : 'warning'}
@@ -139,19 +150,23 @@ export const LendingScreen: React.FC = () => {
         {/* Amounts Row */}
         <View style={styles.amountSection}>
           <View>
-            <Text style={styles.amountLabel}>Remaining Balance</Text>
+            <Text style={[styles.amountLabel, { color: colors.textMuted }]}>
+              Remaining Balance
+            </Text>
             <Text
               style={[
                 styles.remainingAmount,
-                isLent ? styles.textLent : styles.textBorrowed,
+                { color: isLent ? colors.accent : colors.warning },
               ]}
             >
               {hideBalance ? '••••' : formatMoney(remainingBalance, curr)}
             </Text>
           </View>
           <View style={styles.totalSection}>
-            <Text style={styles.amountLabel}>Total Principal</Text>
-            <Text style={styles.totalAmount}>
+            <Text style={[styles.amountLabel, { color: colors.textMuted }]}>
+              Total Principal
+            </Text>
+            <Text style={[styles.totalAmount, { color: colors.textSecondary }]}>
               {hideBalance ? '••••' : formatMoney(totalAmount, curr)}
             </Text>
           </View>
@@ -159,7 +174,14 @@ export const LendingScreen: React.FC = () => {
 
         {/* Progress bar */}
         <View style={styles.progressContainer}>
-          <View style={styles.progressBarBg}>
+          <View
+            style={[
+              styles.progressBarBg,
+              {
+                backgroundColor: isDark ? colors.surfaceSubtle : colors.surfaceMuted,
+              },
+            ]}
+          >
             <View
               style={[
                 styles.progressBarFill,
@@ -170,7 +192,7 @@ export const LendingScreen: React.FC = () => {
               ]}
             />
           </View>
-          <Text style={styles.progressText}>
+          <Text style={[styles.progressText, { color: colors.textMuted }]}>
             {hideBalance
               ? '••••'
               : `${formatMoney(item.repaidAmount, curr)} paid (${Math.round(percentPaid)}%)`}
@@ -178,14 +200,14 @@ export const LendingScreen: React.FC = () => {
         </View>
 
         {item.notes && (
-          <Text style={styles.notesText} numberOfLines={2}>
+          <Text style={[styles.notesText, { color: colors.textSecondary }]} numberOfLines={2}>
             "{item.notes}"
           </Text>
         )}
 
         {/* Action Buttons if not settled */}
         {!isSettled && (
-          <View style={styles.actionRow}>
+          <View style={[styles.actionRow, { borderTopColor: colors.borderSubtle }]}>
             <Button
               title="Log Repayment"
               variant="secondary"
@@ -214,16 +236,36 @@ export const LendingScreen: React.FC = () => {
       <View style={styles.container}>
         {/* Summary Overview */}
         <View style={styles.summaryRow}>
-          <Card style={styles.summaryCard}>
-            <Text style={styles.summaryLabel}>TOTAL LENT (OWED TO YOU)</Text>
-            <Text style={[styles.summaryValue, styles.textLent]}>
+          <Card
+            style={[
+              styles.summaryCard,
+              {
+                backgroundColor: colors.surface,
+                borderColor: colors.border,
+              },
+            ]}
+          >
+            <Text style={[styles.summaryLabel, { color: colors.textMuted }]}>
+              OWED TO YOU
+            </Text>
+            <Text style={[styles.summaryValue, { color: colors.accent }]}>
               {hideBalance ? '••••' : formatMoney(summary?.totalLent ?? 0, currency)}
             </Text>
           </Card>
 
-          <Card style={styles.summaryCard}>
-            <Text style={styles.summaryLabel}>TOTAL BORROWED (YOU OWE)</Text>
-            <Text style={[styles.summaryValue, styles.textBorrowed]}>
+          <Card
+            style={[
+              styles.summaryCard,
+              {
+                backgroundColor: colors.surface,
+                borderColor: colors.border,
+              },
+            ]}
+          >
+            <Text style={[styles.summaryLabel, { color: colors.textMuted }]}>
+              YOU OWE
+            </Text>
+            <Text style={[styles.summaryValue, { color: colors.warning }]}>
               {hideBalance ? '••••' : formatMoney(summary?.totalBorrowed ?? 0, currency)}
             </Text>
           </Card>
@@ -231,32 +273,45 @@ export const LendingScreen: React.FC = () => {
 
         {/* Status Filter Tabs */}
         <View style={styles.filterTabs}>
-          {LENDING_TABS.map((tab) => (
-            <TouchableOpacity
-              key={tab}
-              style={[
-                styles.tabBtn,
-                selectedTab === tab && styles.tabBtnActive,
-              ]}
-              onPress={() => handleTabChange(tab)}
-            >
-              <Text
+          {LENDING_TABS.map((tab) => {
+            const isActive = selectedTab === tab;
+            return (
+              <PressableScale
+                key={tab}
                 style={[
-                  styles.tabText,
-                  selectedTab === tab && styles.tabTextActive,
+                  styles.tabBtn,
+                  {
+                    backgroundColor: isActive
+                      ? colors.accentMuted
+                      : isDark
+                      ? colors.surfaceSubtle
+                      : colors.surfaceMuted,
+                    borderColor: isActive ? colors.accent : colors.border,
+                  },
                 ]}
+                onPress={() => handleTabChange(tab)}
               >
-                {tab}
-              </Text>
-            </TouchableOpacity>
-          ))}
+                <Text
+                  style={[
+                    styles.tabText,
+                    {
+                      color: isActive ? colors.accent : colors.textSecondary,
+                      fontWeight: isActive ? '700' : '500',
+                    },
+                  ]}
+                >
+                  {tab}
+                </Text>
+              </PressableScale>
+            );
+          })}
         </View>
 
         {/* List of items */}
         {isLoading ? (
           <View style={styles.loadingContainer}>
-            <Skeleton height={140} style={{ marginBottom: 12 }} />
-            <Skeleton height={140} />
+            <Skeleton height={140} style={{ marginBottom: 12, borderRadius: radius.lg }} />
+            <Skeleton height={140} style={{ borderRadius: radius.lg }} />
           </View>
         ) : (
           <FlatList
@@ -273,11 +328,21 @@ export const LendingScreen: React.FC = () => {
               />
             }
             ListEmptyComponent={
-              <Card style={styles.emptyCard}>
-                <Ionicons name="people-outline" size={32} color={colors.textDisabled} />
-                <Text style={styles.emptyTitle}>No loans or IOUs found</Text>
-                <Text style={styles.emptySubtitle}>
-                  Keep track of money you lend to friends or borrow from others.
+              <Card
+                style={[
+                  styles.emptyCard,
+                  {
+                    backgroundColor: colors.surface,
+                    borderColor: colors.border,
+                  },
+                ]}
+              >
+                <Ionicons name="people-outline" size={36} color={colors.textMuted} />
+                <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>
+                  No loans or IOUs found
+                </Text>
+                <Text style={[styles.emptySubtitle, { color: colors.textMuted }]}>
+                  Track money you lend to friends or borrow from colleagues.
                 </Text>
               </Card>
             }
@@ -285,16 +350,21 @@ export const LendingScreen: React.FC = () => {
         )}
 
         {/* Floating Action Button */}
-        <TouchableOpacity
-          style={styles.fab}
+        <PressableScale
+          style={[
+            styles.fab,
+            {
+              backgroundColor: colors.accent,
+              shadowColor: colors.accent,
+            },
+          ]}
           onPress={() => {
             haptics.light();
             setCreateModalVisible(true);
           }}
-          activeOpacity={0.8}
         >
-          <Ionicons name="add" size={26} color={colors.background} />
-        </TouchableOpacity>
+          <Ionicons name="add" size={26} color={colors.accentForeground} />
+        </PressableScale>
       </View>
 
       <CreateLendingModal
@@ -319,8 +389,8 @@ export const LendingScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
+    paddingHorizontal: spacing.base,
+    paddingTop: spacing.sm,
   },
   summaryRow: {
     flexDirection: 'row',
@@ -330,25 +400,19 @@ const styles = StyleSheet.create({
   summaryCard: {
     flex: 1,
     padding: spacing.md,
+    borderRadius: radius.lg,
   },
   summaryLabel: {
     ...typography.caption,
     fontSize: 10,
+    fontWeight: '700',
     letterSpacing: 0.5,
-    color: colors.textMuted,
-    fontWeight: '600',
     marginBottom: 4,
   },
   summaryValue: {
     ...typography.title,
     fontSize: 18,
-    fontWeight: '700',
-  },
-  textLent: {
-    color: colors.accent,
-  },
-  textBorrowed: {
-    color: colors.warning,
+    fontWeight: '800',
   },
   filterTabs: {
     flexDirection: 'row',
@@ -356,35 +420,25 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   tabBtn: {
-    paddingVertical: spacing.xs + 2,
+    paddingVertical: 6,
     paddingHorizontal: spacing.md,
     borderRadius: radius.full,
-    backgroundColor: colors.surfaceHover,
     borderWidth: 1,
-    borderColor: colors.border,
-  },
-  tabBtnActive: {
-    backgroundColor: colors.accentMuted,
-    borderColor: colors.accent,
   },
   tabText: {
     ...typography.caption,
-    color: colors.textSecondary,
-    fontWeight: '500',
-  },
-  tabTextActive: {
-    color: colors.accent,
-    fontWeight: '700',
+    fontSize: 12,
   },
   loadingContainer: {
-    paddingTop: spacing.md,
+    paddingTop: spacing.xs,
   },
   listContent: {
     paddingBottom: spacing.xxl * 3,
   },
   itemCard: {
     marginBottom: spacing.md,
-    padding: spacing.lg,
+    padding: spacing.base,
+    borderRadius: radius.lg,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -394,11 +448,12 @@ const styles = StyleSheet.create({
   },
   nameContainer: {
     flex: 1,
+    marginRight: spacing.sm,
   },
   contactName: {
     ...typography.title,
-    fontSize: 17,
-    color: colors.textPrimary,
+    fontSize: 16,
+    fontWeight: '600',
   },
   typeBadge: {
     marginTop: 4,
@@ -411,12 +466,12 @@ const styles = StyleSheet.create({
   },
   amountLabel: {
     ...typography.caption,
-    color: colors.textMuted,
+    fontSize: 11,
     marginBottom: 2,
   },
   remainingAmount: {
-    ...typography.heading,
-    fontSize: 22,
+    ...typography.title,
+    fontSize: 20,
     fontWeight: '800',
   },
   totalSection: {
@@ -425,7 +480,7 @@ const styles = StyleSheet.create({
   totalAmount: {
     ...typography.body,
     fontWeight: '600',
-    color: colors.textSecondary,
+    fontSize: 14,
   },
   progressContainer: {
     marginBottom: spacing.md,
@@ -433,7 +488,6 @@ const styles = StyleSheet.create({
   progressBarBg: {
     height: 6,
     borderRadius: 3,
-    backgroundColor: colors.surfaceHover,
     overflow: 'hidden',
     marginBottom: 4,
   },
@@ -443,20 +497,18 @@ const styles = StyleSheet.create({
   },
   progressText: {
     ...typography.caption,
-    color: colors.textMuted,
     fontSize: 11,
   },
   notesText: {
     ...typography.caption,
-    color: colors.textSecondary,
     fontStyle: 'italic',
     marginBottom: spacing.md,
+    lineHeight: 16,
   },
   actionRow: {
     flexDirection: 'row',
     gap: spacing.sm,
     borderTopWidth: 1,
-    borderTopColor: colors.border,
     paddingTop: spacing.md,
   },
   actionBtn: {
@@ -467,32 +519,29 @@ const styles = StyleSheet.create({
   },
   emptyCard: {
     alignItems: 'center',
-    padding: spacing.xl,
+    padding: spacing.xxl,
     marginTop: spacing.lg,
   },
   emptyTitle: {
     ...typography.bodyLarge,
     fontWeight: '600',
-    color: colors.textPrimary,
-    marginTop: spacing.sm,
+    marginTop: spacing.md,
   },
   emptySubtitle: {
     ...typography.caption,
-    color: colors.textMuted,
     textAlign: 'center',
     marginTop: 4,
+    lineHeight: 18,
   },
   fab: {
     position: 'absolute',
-    right: spacing.lg,
-    bottom: spacing.xxl + spacing.sm,
-    width: 54,
-    height: 54,
-    borderRadius: 27,
-    backgroundColor: colors.accent,
+    right: spacing.base,
+    bottom: spacing.xxl + spacing.md,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: colors.accent,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.35,
     shadowRadius: 8,

@@ -10,16 +10,17 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useWorkspace } from '@/context/WorkspaceContext';
+import { useTheme } from '@/context/ThemeContext';
 import { ScreenWrapper } from '@/components/ui/ScreenWrapper';
 import { Header } from '@/components/shared/Header';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Skeleton } from '@/components/ui/Skeleton';
-import { Button } from '@/components/ui/Button';
+import { PressableScale } from '@/components/ui/PressableScale';
+import { FadeInView } from '@/components/ui/FadeInView';
 import { CreateTransactionModal } from './CreateTransactionModal';
 import { transactionsApi } from '@/api/transactions';
 import { TransactionDto, TransactionType } from '@/types/api';
-import { colors } from '@/theme/colors';
 import { typography, radius, spacing } from '@/theme/tokens';
 import { formatMoney } from '@/utils/currency';
 import { formatDate } from '@/utils/date';
@@ -29,6 +30,7 @@ const FILTER_TABS = ['All', 'Expense', 'Income', 'Transfer'] as const;
 
 export const TransactionsScreen: React.FC = () => {
   const { activeWorkspace, hideBalance, refetchAll } = useWorkspace();
+  const { colors, isDark } = useTheme();
   const [transactions, setTransactions] = useState<TransactionDto[]>([]);
   const [selectedTab, setSelectedTab] = useState<typeof FILTER_TABS[number]>('All');
   const [searchQuery, setSearchQuery] = useState('');
@@ -76,40 +78,57 @@ export const TransactionsScreen: React.FC = () => {
     const categoryName = item.category || item.categoryName || 'General';
     const txDate = item.transactionDate || item.occurredOn || item.createdAtUtc;
 
+    const iconBg = isExpense
+      ? colors.dangerSoft
+      : isIncome
+      ? colors.accentSoft
+      : isDark
+      ? 'rgba(59, 130, 246, 0.14)'
+      : 'rgba(37, 99, 235, 0.08)';
+
+    const iconColor = isExpense
+      ? colors.danger
+      : isIncome
+      ? colors.accent
+      : isDark
+      ? '#60A5FA'
+      : '#2563EB';
+
     return (
-      <View style={styles.txRow}>
-        <View
-          style={[
-            styles.txIconContainer,
-            isExpense
-              ? styles.iconExpense
-              : isIncome
-              ? styles.iconIncome
-              : styles.iconTransfer,
-          ]}
-        >
+      <View
+        style={[
+          styles.txRow,
+          {
+            backgroundColor: colors.surface,
+            borderColor: colors.border,
+          },
+        ]}
+      >
+        <View style={[styles.txIconContainer, { backgroundColor: iconBg }]}>
           <Ionicons
             name={
               isExpense
-                ? 'arrow-up-circle-outline'
+                ? 'arrow-up-outline'
                 : isIncome
-                ? 'arrow-down-circle-outline'
+                ? 'arrow-down-outline'
                 : 'swap-horizontal-outline'
             }
-            size={22}
-            color={
-              isExpense
-                ? colors.danger
-                : isIncome
-                ? colors.accent
-                : '#60A5FA'
-            }
+            size={18}
+            color={iconColor}
           />
         </View>
 
         <View style={styles.txDetails}>
-          <Text style={styles.txCategory}>{categoryName}</Text>
-          <Text style={styles.txMeta} numberOfLines={1}>
+          <Text
+            style={[styles.txCategory, { color: colors.textPrimary }]}
+            numberOfLines={1}
+          >
+            {categoryName}
+          </Text>
+          <Text
+            style={[styles.txMeta, { color: colors.textMuted }]}
+            numberOfLines={1}
+          >
             {formatDate(txDate)}
             {item.description ? ` • ${item.description}` : ''}
           </Text>
@@ -119,8 +138,13 @@ export const TransactionsScreen: React.FC = () => {
           <Text
             style={[
               styles.txAmount,
-              isExpense && styles.amountExpense,
-              isIncome && styles.amountIncome,
+              {
+                color: isExpense
+                  ? colors.danger
+                  : isIncome
+                  ? colors.accent
+                  : colors.textPrimary,
+              },
             ]}
           >
             {hideBalance
@@ -138,12 +162,25 @@ export const TransactionsScreen: React.FC = () => {
 
       <View style={styles.container}>
         {/* Search Bar */}
-        <View style={styles.searchContainer}>
-          <Ionicons name="search-outline" size={18} color={colors.textMuted} style={styles.searchIcon} />
+        <View
+          style={[
+            styles.searchContainer,
+            {
+              backgroundColor: colors.surface,
+              borderColor: colors.border,
+            },
+          ]}
+        >
+          <Ionicons
+            name="search-outline"
+            size={18}
+            color={colors.textMuted}
+            style={styles.searchIcon}
+          />
           <TextInput
-            style={styles.searchInput}
+            style={[styles.searchInput, { color: colors.textPrimary }]}
             placeholder="Search notes, categories..."
-            placeholderTextColor={colors.textDisabled}
+            placeholderTextColor={colors.textMuted}
             value={searchQuery}
             onChangeText={setSearchQuery}
             returnKeyType="search"
@@ -161,34 +198,47 @@ export const TransactionsScreen: React.FC = () => {
 
         {/* Filter Tabs */}
         <View style={styles.filterTabs}>
-          {FILTER_TABS.map((tab) => (
-            <TouchableOpacity
-              key={tab}
-              style={[
-                styles.tabBtn,
-                selectedTab === tab && styles.tabBtnActive,
-              ]}
-              onPress={() => handleTabChange(tab)}
-            >
-              <Text
+          {FILTER_TABS.map((tab) => {
+            const isActive = selectedTab === tab;
+            return (
+              <PressableScale
+                key={tab}
                 style={[
-                  styles.tabText,
-                  selectedTab === tab && styles.tabTextActive,
+                  styles.tabBtn,
+                  {
+                    backgroundColor: isActive
+                      ? colors.accentMuted
+                      : isDark
+                      ? colors.surfaceSubtle
+                      : colors.surfaceMuted,
+                    borderColor: isActive ? colors.accent : colors.border,
+                  },
                 ]}
+                onPress={() => handleTabChange(tab)}
               >
-                {tab}
-              </Text>
-            </TouchableOpacity>
-          ))}
+                <Text
+                  style={[
+                    styles.tabText,
+                    {
+                      color: isActive ? colors.accent : colors.textSecondary,
+                      fontWeight: isActive ? '700' : '500',
+                    },
+                  ]}
+                >
+                  {tab}
+                </Text>
+              </PressableScale>
+            );
+          })}
         </View>
 
         {/* Transactions List */}
         {isLoading ? (
           <View style={styles.loadingContainer}>
-            <Skeleton height={50} style={{ marginBottom: 8 }} />
-            <Skeleton height={50} style={{ marginBottom: 8 }} />
-            <Skeleton height={50} style={{ marginBottom: 8 }} />
-            <Skeleton height={50} />
+            <Skeleton height={58} style={{ marginBottom: 8, borderRadius: radius.md }} />
+            <Skeleton height={58} style={{ marginBottom: 8, borderRadius: radius.md }} />
+            <Skeleton height={58} style={{ marginBottom: 8, borderRadius: radius.md }} />
+            <Skeleton height={58} style={{ borderRadius: radius.md }} />
           </View>
         ) : (
           <FlatList
@@ -206,12 +256,22 @@ export const TransactionsScreen: React.FC = () => {
             }
             ItemSeparatorComponent={() => <View style={styles.separator} />}
             ListEmptyComponent={
-              <Card style={styles.emptyCard}>
-                <Ionicons name="receipt-outline" size={32} color={colors.textDisabled} />
-                <Text style={styles.emptyTitle}>No transactions found</Text>
-                <Text style={styles.emptySubtitle}>
+              <Card
+                style={[
+                  styles.emptyCard,
+                  {
+                    backgroundColor: colors.surface,
+                    borderColor: colors.border,
+                  },
+                ]}
+              >
+                <Ionicons name="receipt-outline" size={36} color={colors.textMuted} />
+                <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>
+                  No transactions found
+                </Text>
+                <Text style={[styles.emptySubtitle, { color: colors.textMuted }]}>
                   {searchQuery
-                    ? 'Try adjusting your search criteria.'
+                    ? 'Try adjusting your search query or filter.'
                     : 'Record your first transaction in this account.'}
                 </Text>
               </Card>
@@ -220,16 +280,21 @@ export const TransactionsScreen: React.FC = () => {
         )}
 
         {/* Floating Action Button */}
-        <TouchableOpacity
-          style={styles.fab}
+        <PressableScale
+          style={[
+            styles.fab,
+            {
+              backgroundColor: colors.accent,
+              shadowColor: colors.accent,
+            },
+          ]}
           onPress={() => {
             haptics.light();
             setCreateModalVisible(true);
           }}
-          activeOpacity={0.8}
         >
-          <Ionicons name="add" size={26} color={colors.background} />
-        </TouchableOpacity>
+          <Ionicons name="add" size={26} color={colors.accentForeground} />
+        </PressableScale>
       </View>
 
       <CreateTransactionModal
@@ -244,18 +309,16 @@ export const TransactionsScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
+    paddingHorizontal: spacing.base,
+    paddingTop: spacing.sm,
   },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: colors.border,
     borderRadius: radius.md,
     paddingHorizontal: spacing.md,
-    height: 42,
+    height: 44,
     marginBottom: spacing.md,
   },
   searchIcon: {
@@ -264,8 +327,8 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     ...typography.body,
-    color: colors.textPrimary,
     paddingVertical: 0,
+    fontSize: 14,
   },
   filterTabs: {
     flexDirection: 'row',
@@ -273,28 +336,17 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   tabBtn: {
-    paddingVertical: spacing.xs + 2,
+    paddingVertical: 6,
     paddingHorizontal: spacing.md,
     borderRadius: radius.full,
-    backgroundColor: colors.surfaceHover,
     borderWidth: 1,
-    borderColor: colors.border,
-  },
-  tabBtnActive: {
-    backgroundColor: colors.accentMuted,
-    borderColor: colors.accent,
   },
   tabText: {
     ...typography.caption,
-    color: colors.textSecondary,
-    fontWeight: '500',
-  },
-  tabTextActive: {
-    color: colors.accent,
-    fontWeight: '700',
+    fontSize: 12,
   },
   loadingContainer: {
-    paddingTop: spacing.md,
+    paddingTop: spacing.xs,
   },
   listContent: {
     paddingBottom: spacing.xxl * 3,
@@ -303,11 +355,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: spacing.md,
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.md,
+    borderRadius: radius.lg,
+    paddingHorizontal: spacing.base,
     borderWidth: 1,
-    borderColor: colors.border,
   },
   separator: {
     height: spacing.sm,
@@ -320,15 +370,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginRight: spacing.md,
   },
-  iconExpense: {
-    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-  },
-  iconIncome: {
-    backgroundColor: colors.accentMuted,
-  },
-  iconTransfer: {
-    backgroundColor: 'rgba(59, 130, 246, 0.1)',
-  },
   txDetails: {
     flex: 1,
     marginRight: spacing.sm,
@@ -336,55 +377,46 @@ const styles = StyleSheet.create({
   txCategory: {
     ...typography.body,
     fontWeight: '600',
-    color: colors.textPrimary,
+    fontSize: 14,
   },
   txMeta: {
     ...typography.caption,
-    color: colors.textMuted,
     marginTop: 2,
+    fontSize: 12,
   },
   amountContainer: {
     alignItems: 'flex-end',
   },
   txAmount: {
-    ...typography.body,
+    ...typography.bodyLarge,
     fontWeight: '700',
-    color: colors.textPrimary,
-  },
-  amountExpense: {
-    color: colors.danger,
-  },
-  amountIncome: {
-    color: colors.accent,
+    fontSize: 15,
   },
   emptyCard: {
     alignItems: 'center',
-    padding: spacing.xl,
+    padding: spacing.xxl,
     marginTop: spacing.lg,
   },
   emptyTitle: {
     ...typography.bodyLarge,
     fontWeight: '600',
-    color: colors.textPrimary,
-    marginTop: spacing.sm,
+    marginTop: spacing.md,
   },
   emptySubtitle: {
     ...typography.caption,
-    color: colors.textMuted,
     textAlign: 'center',
     marginTop: 4,
+    lineHeight: 18,
   },
   fab: {
     position: 'absolute',
-    right: spacing.lg,
-    bottom: spacing.xxl + spacing.sm,
-    width: 54,
-    height: 54,
-    borderRadius: 27,
-    backgroundColor: colors.accent,
+    right: spacing.base,
+    bottom: spacing.xxl + spacing.md,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: colors.accent,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.35,
     shadowRadius: 8,

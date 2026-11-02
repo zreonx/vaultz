@@ -13,7 +13,6 @@ import { useTheme } from '@/context/ThemeContext';
 import { ScreenWrapper } from '@/components/ui/ScreenWrapper';
 import { Header } from '@/components/shared/Header';
 import { Card } from '@/components/ui/Card';
-import { Badge } from '@/components/ui/Badge';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { FadeInView } from '@/components/ui/FadeInView';
@@ -24,7 +23,6 @@ import { useTutorial } from '@/context/TutorialContext';
 import { dashboardApi } from '@/api/dashboard';
 import { transactionsApi } from '@/api/transactions';
 import { DashboardSummaryDto, TransactionDto, TransactionType } from '@/types/api';
-import { colors } from '@/theme/colors';
 import { typography, radius, spacing } from '@/theme/tokens';
 import { formatMoney } from '@/utils/currency';
 import { formatDate } from '@/utils/date';
@@ -129,12 +127,22 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) 
         showsVerticalScrollIndicator={false}
       >
         {/* Balance Card with Fade-Slide Entry */}
-        <FadeInView delay={50} translateY={14}>
+        <FadeInView delay={50} translateY={12}>
           <View ref={balanceCardRef} onLayout={handleBalanceCardLayout}>
-            <Card style={styles.balanceCard}>
+            <Card
+              style={[
+                styles.balanceCard,
+                {
+                  backgroundColor: colors.surface,
+                  borderColor: colors.border,
+                },
+              ]}
+            >
               <View style={styles.balanceHeader}>
-                <Text style={[styles.balanceLabel, { color: colors.textSecondary }]}>
-                  {activeWorkspace ? `${activeWorkspace.name.toUpperCase()} BALANCE` : 'TOTAL NET BALANCE'}
+                <Text style={[styles.balanceLabel, { color: colors.textMuted }]}>
+                  {activeWorkspace
+                    ? `${activeWorkspace.name.toUpperCase()} BALANCE`
+                    : 'TOTAL NET BALANCE'}
                 </Text>
                 <TouchableOpacity
                   onPress={() => {
@@ -152,7 +160,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) 
               </View>
 
               {isLoading ? (
-                <Skeleton width={180} height={36} style={{ marginVertical: 8 }} />
+                <Skeleton width={180} height={36} style={{ marginVertical: 8, borderRadius: radius.md }} />
               ) : (
                 <Text style={[styles.balanceValue, { color: colors.textPrimary }]}>
                   {hideBalance ? '••••••••' : formatMoney(balance, currency)}
@@ -160,33 +168,33 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) 
               )}
 
               {/* Monthly Inflow / Outflow Summary */}
-              <View style={styles.statsRow}>
+              <View style={[styles.statsRow, { borderTopColor: colors.borderSubtle }]}>
                 <View style={styles.statItem}>
                   <View style={[styles.statIconBadge, { backgroundColor: colors.accentSoft }]}>
-                    <Ionicons name="arrow-down-outline" size={14} color={colors.accent} />
+                    <Ionicons name="arrow-down-outline" size={13} color={colors.accent} />
                   </View>
                   <View>
-                    <Text style={[styles.statLabel, { color: colors.textMuted }]}>Income this month</Text>
+                    <Text style={[styles.statLabel, { color: colors.textMuted }]}>
+                      Income this month
+                    </Text>
                     <Text style={[styles.statIncome, { color: colors.accent }]}>
-                      {hideBalance
-                        ? '••••'
-                        : formatMoney(summary?.monthlyIncome ?? 0, currency)}
+                      {hideBalance ? '••••' : formatMoney(summary?.monthlyIncome ?? 0, currency)}
                     </Text>
                   </View>
                 </View>
 
-                <View style={[styles.statDivider, { backgroundColor: colors.border }]} />
+                <View style={[styles.statDivider, { backgroundColor: colors.borderSubtle }]} />
 
                 <View style={styles.statItem}>
                   <View style={[styles.statIconBadge, { backgroundColor: colors.dangerSoft }]}>
-                    <Ionicons name="arrow-up-outline" size={14} color={colors.danger} />
+                    <Ionicons name="arrow-up-outline" size={13} color={colors.danger} />
                   </View>
                   <View>
-                    <Text style={[styles.statLabel, { color: colors.textMuted }]}>Spent this month</Text>
+                    <Text style={[styles.statLabel, { color: colors.textMuted }]}>
+                      Spent this month
+                    </Text>
                     <Text style={[styles.statExpense, { color: colors.danger }]}>
-                      {hideBalance
-                        ? '••••'
-                        : formatMoney(summary?.monthlyExpenses ?? 0, currency)}
+                      {hideBalance ? '••••' : formatMoney(summary?.monthlyExpenses ?? 0, currency)}
                     </Text>
                   </View>
                 </View>
@@ -196,9 +204,11 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) 
         </FadeInView>
 
         {/* Quick Actions with Tactile Spring Press */}
-        <FadeInView delay={140} translateY={14}>
+        <FadeInView delay={120} translateY={12}>
           <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>QUICK ACTIONS</Text>
+            <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
+              QUICK ACTIONS
+            </Text>
           </View>
 
           <View
@@ -207,41 +217,66 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) 
             style={styles.quickActionsGrid}
           >
             <PressableScale
-              style={[styles.actionBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
+              style={[
+                styles.actionBtn,
+                { backgroundColor: colors.surface, borderColor: colors.border },
+              ]}
               onPress={() => openTxModal('Expense')}
             >
               <View style={[styles.actionIconContainer, { backgroundColor: colors.dangerSoft }]}>
-                <Ionicons name="remove-circle-outline" size={22} color={colors.danger} />
+                <Ionicons name="remove-circle-outline" size={20} color={colors.danger} />
               </View>
               <Text style={[styles.actionText, { color: colors.textPrimary }]}>Expense</Text>
             </PressableScale>
 
             <PressableScale
-              style={[styles.actionBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
+              style={[
+                styles.actionBtn,
+                { backgroundColor: colors.surface, borderColor: colors.border },
+              ]}
               onPress={() => openTxModal('Income')}
             >
               <View style={[styles.actionIconContainer, { backgroundColor: colors.accentSoft }]}>
-                <Ionicons name="add-circle-outline" size={22} color={colors.accent} />
+                <Ionicons name="add-circle-outline" size={20} color={colors.accent} />
               </View>
               <Text style={[styles.actionText, { color: colors.textPrimary }]}>Income</Text>
             </PressableScale>
 
             <PressableScale
-              style={[styles.actionBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
+              style={[
+                styles.actionBtn,
+                { backgroundColor: colors.surface, borderColor: colors.border },
+              ]}
               onPress={() => openTxModal('Transfer')}
             >
-              <View style={[styles.actionIconContainer, { backgroundColor: 'rgba(59, 130, 246, 0.12)' }]}>
-                <Ionicons name="swap-horizontal-outline" size={22} color="#60A5FA" />
+              <View
+                style={[
+                  styles.actionIconContainer,
+                  {
+                    backgroundColor: isDark
+                      ? 'rgba(59, 130, 246, 0.14)'
+                      : 'rgba(37, 99, 235, 0.08)',
+                  },
+                ]}
+              >
+                <Ionicons
+                  name="swap-horizontal-outline"
+                  size={20}
+                  color={isDark ? '#60A5FA' : '#2563EB'}
+                />
               </View>
               <Text style={[styles.actionText, { color: colors.textPrimary }]}>Transfer</Text>
             </PressableScale>
 
             <PressableScale
-              style={[styles.actionBtn, { backgroundColor: colors.surface, borderColor: colors.border }]}
+              style={[
+                styles.actionBtn,
+                { backgroundColor: colors.surface, borderColor: colors.border },
+              ]}
               onPress={openLendingModal}
             >
               <View style={[styles.actionIconContainer, { backgroundColor: colors.warningSoft }]}>
-                <Ionicons name="people-outline" size={22} color={colors.warning} />
+                <Ionicons name="people-outline" size={20} color={colors.warning} />
               </View>
               <Text style={[styles.actionText, { color: colors.textPrimary }]}>IOU / Loan</Text>
             </PressableScale>
@@ -249,71 +284,116 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) 
         </FadeInView>
 
         {/* Recent Activity with Fade-In Animation */}
-        <FadeInView delay={220} translateY={14}>
+        <FadeInView delay={180} translateY={12}>
           <View style={styles.sectionHeaderWithAction}>
-            <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>RECENT ACTIVITY</Text>
+            <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
+              RECENT ACTIVITY
+            </Text>
             <TouchableOpacity
               onPress={() => {
                 haptics.light();
                 navigation.navigate('Transactions');
               }}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
               <Text style={[styles.viewAllText, { color: colors.accent }]}>View All</Text>
             </TouchableOpacity>
           </View>
 
           {isLoading ? (
-            <Card>
-              <Skeleton height={32} style={{ marginBottom: 12 }} />
-              <Skeleton height={32} style={{ marginBottom: 12 }} />
-              <Skeleton height={32} />
+            <Card
+              style={{
+                backgroundColor: colors.surface,
+                borderColor: colors.border,
+                padding: spacing.base,
+              }}
+            >
+              <Skeleton height={28} style={{ marginBottom: 10, borderRadius: radius.sm }} />
+              <Skeleton height={28} style={{ marginBottom: 10, borderRadius: radius.sm }} />
+              <Skeleton height={28} style={{ borderRadius: radius.sm }} />
             </Card>
           ) : recentTransactions.length === 0 ? (
-            <Card style={styles.emptyCard}>
-              <Ionicons name="receipt-outline" size={32} color={colors.textDisabled} />
-              <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>No transactions recorded</Text>
-              <Text style={[styles.emptySubtitle, { color: colors.textMuted }]}>Use the quick actions above to log your first transaction.</Text>
+            <Card
+              style={[
+                styles.emptyCard,
+                {
+                  backgroundColor: colors.surface,
+                  borderColor: colors.border,
+                },
+              ]}
+            >
+              <Ionicons name="receipt-outline" size={34} color={colors.textMuted} />
+              <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>
+                No transactions recorded
+              </Text>
+              <Text style={[styles.emptySubtitle, { color: colors.textMuted }]}>
+                Use the quick actions above to log your first transaction.
+              </Text>
             </Card>
           ) : (
-            <Card style={{ padding: 0 }}>
+            <Card
+              style={{
+                backgroundColor: colors.surface,
+                borderColor: colors.border,
+                padding: 0,
+                borderRadius: radius.lg,
+                overflow: 'hidden',
+              }}
+            >
               {recentTransactions.map((tx, idx) => {
                 const isExpense = tx.type === TransactionType.Expense || tx.typeName === 'Expense';
                 const isIncome = tx.type === TransactionType.Income || tx.typeName === 'Income';
                 const isLast = idx === recentTransactions.length - 1;
+
+                const iconBg = isExpense
+                  ? colors.dangerSoft
+                  : isIncome
+                  ? colors.accentSoft
+                  : isDark
+                  ? 'rgba(59, 130, 246, 0.14)'
+                  : 'rgba(37, 99, 235, 0.08)';
+
+                const iconColor = isExpense
+                  ? colors.danger
+                  : isIncome
+                  ? colors.accent
+                  : isDark
+                  ? '#60A5FA'
+                  : '#2563EB';
 
                 return (
                   <View
                     key={tx.id}
                     style={[
                       styles.txRow,
-                      !isLast && { borderBottomWidth: 1, borderBottomColor: colors.border },
+                      !isLast && { borderBottomWidth: 1, borderBottomColor: colors.borderSubtle },
                     ]}
                   >
-                    <View style={styles.txIconContainer}>
+                    <View style={[styles.txIconContainer, { backgroundColor: iconBg }]}>
                       <Ionicons
                         name={
                           isExpense
-                            ? 'arrow-up-circle-outline'
+                            ? 'arrow-up-outline'
                             : isIncome
-                            ? 'arrow-down-circle-outline'
+                            ? 'arrow-down-outline'
                             : 'swap-horizontal-outline'
                         }
-                        size={20}
-                        color={
-                          isExpense
-                            ? colors.danger
-                            : isIncome
-                            ? colors.accent
-                            : '#60A5FA'
-                        }
+                        size={17}
+                        color={iconColor}
                       />
                     </View>
 
                     <View style={styles.txDetails}>
-                      <Text style={[styles.txCategory, { color: colors.textPrimary }]} numberOfLines={1}>
+                      <Text
+                        style={[styles.txCategory, { color: colors.textPrimary }]}
+                        numberOfLines={1}
+                      >
                         {tx.category}
                       </Text>
-                      <Text style={[styles.txMeta, { color: colors.textMuted }]} numberOfLines={1}>
+                      <Text
+                        style={[styles.txMeta, { color: colors.textMuted }]}
+                        numberOfLines={1}
+                      >
                         {formatDate(tx.transactionDate)}
                         {tx.description ? ` • ${tx.description}` : ''}
                       </Text>
@@ -322,8 +402,13 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) 
                     <Text
                       style={[
                         styles.txAmount,
-                        isExpense && { color: colors.danger },
-                        isIncome && { color: colors.accent },
+                        {
+                          color: isExpense
+                            ? colors.danger
+                            : isIncome
+                            ? colors.accent
+                            : colors.textPrimary,
+                        },
                       ]}
                     >
                       {hideBalance
@@ -352,6 +437,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) 
         onClose={() => setLendingModalVisible(false)}
         onSuccess={loadData}
       />
+
       {/* Create Account Modal for guided onboarding */}
       <CreateAccountModal
         visible={createAccountModalVisible}
@@ -364,30 +450,31 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) 
 
 const styles = StyleSheet.create({
   scrollContainer: {
-    padding: spacing.lg,
+    padding: spacing.base,
     paddingBottom: spacing.xxl * 2,
   },
   balanceCard: {
-    marginBottom: spacing.xl,
-    padding: spacing.xl,
+    marginBottom: spacing.base,
+    padding: spacing.base,
+    borderRadius: radius.lg,
   },
   balanceHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: spacing.xs,
+    marginBottom: 4,
   },
   balanceLabel: {
-    ...typography.label,
-    letterSpacing: 1,
-    color: colors.textMuted,
+    ...typography.caption,
+    letterSpacing: 0.8,
+    fontWeight: '700',
+    fontSize: 11,
   },
   balanceValue: {
     ...typography.display,
-    fontSize: 34,
-    color: colors.textPrimary,
+    fontSize: 32,
     fontWeight: '800',
-    marginVertical: spacing.xs,
+    marginVertical: 4,
   },
   statsRow: {
     flexDirection: 'row',
@@ -395,7 +482,6 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
     paddingTop: spacing.md,
     borderTopWidth: 1,
-    borderTopColor: colors.border,
   },
   statItem: {
     flex: 1,
@@ -407,109 +493,102 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: radius.full,
-    backgroundColor: colors.accentMuted,
     alignItems: 'center',
     justifyContent: 'center',
   },
   statLabel: {
     ...typography.caption,
-    color: colors.textMuted,
-    fontSize: 11,
+    fontSize: 10,
+    fontWeight: '500',
   },
   statIncome: {
     ...typography.body,
     fontWeight: '700',
-    color: colors.accent,
+    fontSize: 13,
   },
   statExpense: {
     ...typography.body,
     fontWeight: '700',
-    color: colors.danger,
+    fontSize: 13,
   },
   statDivider: {
     width: 1,
     height: 28,
-    backgroundColor: colors.border,
-    marginHorizontal: spacing.md,
+    marginHorizontal: spacing.sm,
   },
   sectionHeader: {
-    marginBottom: spacing.sm,
+    marginBottom: spacing.xs + 2,
   },
   sectionHeaderWithAction: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: spacing.sm,
-    marginTop: spacing.xl,
+    marginBottom: spacing.xs + 2,
+    marginTop: spacing.base,
   },
   sectionTitle: {
     ...typography.label,
-    letterSpacing: 1,
-    color: colors.textSecondary,
+    letterSpacing: 0.8,
+    fontSize: 11,
+    fontWeight: '700',
   },
   viewAllText: {
     ...typography.caption,
     fontWeight: '600',
-    color: colors.accent,
+    fontSize: 12,
   },
   quickActionsGrid: {
     flexDirection: 'row',
-    gap: spacing.sm,
+    gap: spacing.xs + 2,
   },
   actionBtn: {
     flex: 1,
     alignItems: 'center',
-    backgroundColor: colors.surface,
     paddingVertical: spacing.md,
     borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: colors.border,
-  },
-  actionBtnHighlighted: {
-    borderColor: colors.accent,
-    backgroundColor: 'rgba(16, 185, 129, 0.08)',
-    borderWidth: 1.5,
   },
   actionIconContainer: {
-    width: 44,
-    height: 44,
+    width: 38,
+    height: 38,
     borderRadius: radius.md,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: spacing.xs,
+    marginBottom: 4,
   },
   actionText: {
     ...typography.caption,
     fontWeight: '600',
-    color: colors.textPrimary,
+    fontSize: 11,
   },
   emptyCard: {
     alignItems: 'center',
-    padding: spacing.xl,
+    padding: spacing.xxl,
+    borderRadius: radius.lg,
   },
   emptyTitle: {
     ...typography.bodyLarge,
     fontWeight: '600',
-    color: colors.textPrimary,
-    marginTop: spacing.sm,
+    marginTop: spacing.md,
   },
   emptySubtitle: {
     ...typography.caption,
-    color: colors.textMuted,
     textAlign: 'center',
     marginTop: 4,
+    lineHeight: 18,
   },
   txRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: spacing.base,
     paddingVertical: spacing.md,
   },
-  txRowBorder: {
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
   txIconContainer: {
+    width: 34,
+    height: 34,
+    borderRadius: radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
     marginRight: spacing.md,
   },
   txDetails: {
@@ -519,22 +598,16 @@ const styles = StyleSheet.create({
   txCategory: {
     ...typography.body,
     fontWeight: '600',
-    color: colors.textPrimary,
+    fontSize: 14,
   },
   txMeta: {
     ...typography.caption,
-    color: colors.textMuted,
     marginTop: 2,
+    fontSize: 12,
   },
   txAmount: {
-    ...typography.body,
+    ...typography.bodyLarge,
     fontWeight: '700',
-    color: colors.textPrimary,
-  },
-  txAmountExpense: {
-    color: colors.danger,
-  },
-  txAmountIncome: {
-    color: colors.accent,
+    fontSize: 14,
   },
 });

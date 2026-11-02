@@ -5,7 +5,6 @@ import {
   StyleSheet,
   ScrollView,
   Switch,
-  TouchableOpacity,
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -20,7 +19,6 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { getApiBaseUrl } from '@/api/client';
-import { colors } from '@/theme/colors';
 import { typography, radius, spacing } from '@/theme/tokens';
 import { haptics } from '@/utils/haptics';
 
@@ -72,29 +70,64 @@ export const SettingsScreen: React.FC = () => {
         showsVerticalScrollIndicator={false}
       >
         {/* User Card */}
-        <Card style={styles.profileCard}>
-          <View style={styles.profileAvatar}>
-            <Text style={styles.profileAvatarText}>
+        <Card
+          style={[
+            styles.profileCard,
+            {
+              backgroundColor: colors.surface,
+              borderColor: colors.border,
+            },
+          ]}
+        >
+          <View
+            style={[
+              styles.profileAvatar,
+              {
+                backgroundColor: isDark ? colors.surfaceSubtle : colors.surfaceMuted,
+                borderColor: colors.border,
+              },
+            ]}
+          >
+            <Text style={[styles.profileAvatarText, { color: colors.textPrimary }]}>
               {user?.fullName?.slice(0, 2).toUpperCase() ||
                 user?.email?.slice(0, 2).toUpperCase() ||
                 'VZ'}
             </Text>
           </View>
           <View style={styles.profileInfo}>
-            <Text style={styles.profileName}>
+            <Text style={[styles.profileName, { color: colors.textPrimary }]}>
               {user?.fullName || 'Vaultz User'}
             </Text>
-            <Text style={styles.profileEmail}>{user?.email}</Text>
+            <Text style={[styles.profileEmail, { color: colors.textMuted }]}>
+              {user?.email}
+            </Text>
           </View>
-          <Badge label="Authenticated" variant="success" />
+          <Badge label="Active" variant="success" />
         </Card>
 
         {/* Appearance & Theme Section */}
-        <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>APPEARANCE & THEME</Text>
-        <Card style={styles.settingGroup}>
+        <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
+          APPEARANCE & THEME
+        </Text>
+        <Card
+          style={[
+            styles.settingGroup,
+            {
+              backgroundColor: colors.surface,
+              borderColor: colors.border,
+            },
+          ]}
+        >
           <View style={styles.themeRow}>
             <View style={styles.settingLeft}>
-              <View style={[styles.settingIcon, { backgroundColor: colors.accentSoft }]}>
+              <View
+                style={[
+                  styles.settingIcon,
+                  {
+                    backgroundColor: isDark ? colors.surfaceSubtle : colors.surfaceMuted,
+                  },
+                ]}
+              >
                 <Ionicons
                   name={isDark ? 'moon-outline' : 'sunny-outline'}
                   size={20}
@@ -102,32 +135,40 @@ export const SettingsScreen: React.FC = () => {
                 />
               </View>
               <View style={styles.settingLabels}>
-                <Text style={[styles.settingTitle, { color: colors.textPrimary }]}>Interface Theme</Text>
+                <Text style={[styles.settingTitle, { color: colors.textPrimary }]}>
+                  App Theme
+                </Text>
                 <Text style={[styles.settingSubtitle, { color: colors.textMuted }]}>
-                  {themeMode === 'system'
-                    ? `System Auto (${isDark ? 'Dark' : 'Light'})`
-                    : themeMode === 'light'
-                    ? 'Warm Minimalist Light'
-                    : 'Deep Graphite Dark'}
+                  Warm linen light, deep graphite dark
                 </Text>
               </View>
             </View>
           </View>
 
-          {/* Theme Segmented Switcher */}
-          <View style={[styles.themeSegmentContainer, { backgroundColor: isDark ? colors.surfaceSubtle : colors.surfaceMuted, borderColor: colors.border }]}>
-            {(
-              [
-                { mode: 'light', label: 'Light', icon: 'sunny-outline' },
-                { mode: 'dark', label: 'Dark', icon: 'moon-outline' },
-                { mode: 'system', label: 'System', icon: 'phone-portrait-outline' },
-              ] as const
-            ).map((opt) => {
-              const isActive = themeMode === opt.mode;
+          {/* Segmented Theme Picker */}
+          <View
+            style={[
+              styles.themeSegmentContainer,
+              {
+                backgroundColor: isDark ? colors.surfaceSubtle : colors.surfaceMuted,
+                borderColor: colors.border,
+              },
+            ]}
+          >
+            {(['light', 'dark', 'system'] as ThemeMode[]).map((mode) => {
+              const isActive = themeMode === mode;
+              const modeLabel =
+                mode === 'light' ? 'Light' : mode === 'dark' ? 'Dark' : 'System';
+              const modeIcon =
+                mode === 'light'
+                  ? 'sunny-outline'
+                  : mode === 'dark'
+                  ? 'moon-outline'
+                  : 'phone-portrait-outline';
+
               return (
                 <PressableScale
-                  key={opt.mode}
-                  onPress={() => setThemeMode(opt.mode)}
+                  key={mode}
                   style={[
                     styles.themeSegmentBtn,
                     isActive && [
@@ -135,23 +176,30 @@ export const SettingsScreen: React.FC = () => {
                       {
                         backgroundColor: colors.surface,
                         borderColor: colors.border,
-                        shadowColor: isDark ? '#000' : '#1C1B18',
+                        shadowColor: '#000',
                       },
                     ],
                   ]}
+                  onPress={() => {
+                    haptics.selection();
+                    setThemeMode(mode);
+                  }}
                 >
                   <Ionicons
-                    name={opt.icon as any}
+                    name={modeIcon}
                     size={15}
-                    color={isActive ? colors.accent : colors.textMuted}
+                    color={isActive ? colors.accent : colors.textSecondary}
                   />
                   <Text
                     style={[
                       styles.themeSegmentText,
-                      { color: isActive ? colors.textPrimary : colors.textMuted },
+                      {
+                        color: isActive ? colors.accent : colors.textSecondary,
+                        fontWeight: isActive ? '700' : '500',
+                      },
                     ]}
                   >
-                    {opt.label}
+                    {modeLabel}
                   </Text>
                 </PressableScale>
               );
@@ -159,19 +207,38 @@ export const SettingsScreen: React.FC = () => {
           </View>
         </Card>
 
-        {/* Security Section */}
-        <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>SECURITY & PRIVACY</Text>
-        <Card style={styles.settingGroup}>
+        {/* Security & Preferences */}
+        <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
+          SECURITY & PRIVACY
+        </Text>
+        <Card
+          style={[
+            styles.settingGroup,
+            {
+              backgroundColor: colors.surface,
+              borderColor: colors.border,
+            },
+          ]}
+        >
           {/* Biometrics */}
           <View style={styles.settingRow}>
             <View style={styles.settingLeft}>
-              <View style={styles.settingIcon}>
+              <View
+                style={[
+                  styles.settingIcon,
+                  {
+                    backgroundColor: isDark ? colors.surfaceSubtle : colors.surfaceMuted,
+                  },
+                ]}
+              >
                 <Ionicons name="finger-print-outline" size={20} color={colors.accent} />
               </View>
               <View style={styles.settingLabels}>
-                <Text style={styles.settingTitle}>Biometric Lock</Text>
-                <Text style={styles.settingSubtitle}>
-                  Require FaceID / TouchID to unlock app
+                <Text style={[styles.settingTitle, { color: colors.textPrimary }]}>
+                  Biometric Lock
+                </Text>
+                <Text style={[styles.settingSubtitle, { color: colors.textMuted }]}>
+                  Require FaceID or Fingerprint on app launch
                 </Text>
               </View>
             </View>
@@ -179,20 +246,24 @@ export const SettingsScreen: React.FC = () => {
               value={isBiometricEnabled}
               onValueChange={handleBiometricToggle}
               disabled={isUpdatingBio}
-              thumbColor={isBiometricEnabled ? colors.accent : colors.textMuted}
-              trackColor={{
-                false: colors.surfaceHover,
-                true: 'rgba(16, 185, 129, 0.4)',
-              }}
+              trackColor={{ false: colors.border, true: colors.accentMuted }}
+              thumbColor={isBiometricEnabled ? colors.accent : colors.surface}
             />
           </View>
 
-          <View style={styles.divider} />
+          <View style={[styles.divider, { backgroundColor: colors.borderSubtle }]} />
 
-          {/* Hide Balances */}
+          {/* Privacy Mask */}
           <View style={styles.settingRow}>
             <View style={styles.settingLeft}>
-              <View style={styles.settingIcon}>
+              <View
+                style={[
+                  styles.settingIcon,
+                  {
+                    backgroundColor: isDark ? colors.surfaceSubtle : colors.surfaceMuted,
+                  },
+                ]}
+              >
                 <Ionicons
                   name={hideBalance ? 'eye-off-outline' : 'eye-outline'}
                   size={20}
@@ -200,9 +271,11 @@ export const SettingsScreen: React.FC = () => {
                 />
               </View>
               <View style={styles.settingLabels}>
-                <Text style={styles.settingTitle}>Privacy Masking</Text>
-                <Text style={styles.settingSubtitle}>
-                  Obscure monetary values by default
+                <Text style={[styles.settingTitle, { color: colors.textPrimary }]}>
+                  Mask Balances
+                </Text>
+                <Text style={[styles.settingSubtitle, { color: colors.textMuted }]}>
+                  Hide account amounts in public spaces
                 </Text>
               </View>
             </View>
@@ -212,84 +285,111 @@ export const SettingsScreen: React.FC = () => {
                 haptics.selection();
                 toggleHideBalance();
               }}
-              thumbColor={hideBalance ? colors.accent : colors.textMuted}
-              trackColor={{
-                false: colors.surfaceHover,
-                true: 'rgba(16, 185, 129, 0.4)',
-              }}
+              trackColor={{ false: colors.border, true: colors.accentMuted }}
+              thumbColor={hideBalance ? colors.accent : colors.surface}
             />
           </View>
+        </Card>
 
-          <View style={styles.divider} />
-
-          {/* Replay Tutorial */}
-          <TouchableOpacity
-            style={styles.settingRow}
-            onPress={() => {
-              resetTour();
-              Alert.alert(
-                'Guided Tour Activated',
-                'The spotlight walkthrough has been reset. Switch to the Overview tab to view the guided tour.'
-              );
-            }}
-          >
+        {/* Guided Tour Reset */}
+        <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
+          HELP & ONBOARDING
+        </Text>
+        <Card
+          style={[
+            styles.settingGroup,
+            {
+              backgroundColor: colors.surface,
+              borderColor: colors.border,
+            },
+          ]}
+        >
+          <View style={styles.settingRow}>
             <View style={styles.settingLeft}>
-              <View style={styles.settingIcon}>
+              <View
+                style={[
+                  styles.settingIcon,
+                  {
+                    backgroundColor: isDark ? colors.surfaceSubtle : colors.surfaceMuted,
+                  },
+                ]}
+              >
                 <Ionicons name="sparkles-outline" size={20} color={colors.accent} />
               </View>
               <View style={styles.settingLabels}>
-                <Text style={styles.settingTitle}>Replay In-App Tutorial</Text>
-                <Text style={styles.settingSubtitle}>
-                  Interactive walkthrough for accounts & transactions
+                <Text style={[styles.settingTitle, { color: colors.textPrimary }]}>
+                  Restart Interactive Tour
+                </Text>
+                <Text style={[styles.settingSubtitle, { color: colors.textMuted }]}>
+                  Re-run the guided product walkthrough
                 </Text>
               </View>
             </View>
-            <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
-          </TouchableOpacity>
+            <Button
+              title="Start"
+              variant="secondary"
+              size="sm"
+              onPress={() => {
+                haptics.success();
+                resetTour();
+                Alert.alert(
+                  'Tour Reset',
+                  'Return to the Dashboard tab to experience the guided spotlight walkthrough.'
+                );
+              }}
+            />
+          </View>
         </Card>
 
-        {/* Network & Infrastructure Section */}
-        <Text style={styles.sectionTitle}>SYSTEM & INFRASTRUCTURE</Text>
-        <Card style={styles.settingGroup}>
+        {/* Environment Info */}
+        <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
+          SYSTEM INFO
+        </Text>
+        <Card
+          style={[
+            styles.settingGroup,
+            {
+              backgroundColor: colors.surface,
+              borderColor: colors.border,
+            },
+          ]}
+        >
           <View style={styles.settingRow}>
             <View style={styles.settingLeft}>
-              <View style={styles.settingIcon}>
-                <Ionicons name="server-outline" size={20} color="#60A5FA" />
+              <View
+                style={[
+                  styles.settingIcon,
+                  {
+                    backgroundColor: isDark ? colors.surfaceSubtle : colors.surfaceMuted,
+                  },
+                ]}
+              >
+                <Ionicons name="server-outline" size={20} color={colors.textSecondary} />
               </View>
               <View style={styles.settingLabels}>
-                <Text style={styles.settingTitle}>API Backend Host</Text>
-                <Text style={styles.settingSubtitle}>{getApiBaseUrl()}</Text>
+                <Text style={[styles.settingTitle, { color: colors.textPrimary }]}>
+                  API Endpoint
+                </Text>
+                <Text style={[styles.settingSubtitle, { color: colors.textMuted }]}>
+                  {getApiBaseUrl()}
+                </Text>
               </View>
             </View>
-            <Badge label="Online" variant="success" />
-          </View>
-
-          <View style={styles.divider} />
-
-          <View style={styles.settingRow}>
-            <View style={styles.settingLeft}>
-              <View style={styles.settingIcon}>
-                <Ionicons name="flash-outline" size={20} color={colors.warning} />
-              </View>
-              <View style={styles.settingLabels}>
-                <Text style={styles.settingTitle}>JavaScript Engine</Text>
-                <Text style={styles.settingSubtitle}>Hermes (High performance)</Text>
-              </View>
-            </View>
-            <Badge label="Active" variant="info" />
           </View>
         </Card>
 
         {/* Sign Out Button */}
         <Button
-          title="Sign Out of Vaultz"
+          title="Sign Out"
           variant="danger"
           leftIcon="log-out-outline"
           onPress={handleSignOut}
           style={styles.signOutButton}
         />
 
-        <Text style={styles.versionText}>Vaultz Mobile v1.0.0 • Strict Multi-Tenant Isolation</Text>
+        <Text style={[styles.versionText, { color: colors.textMuted }]}>
+          Vaultz Mobile • v1.0.0
+        </Text>
       </ScrollView>
     </ScreenWrapper>
   );
@@ -297,22 +397,21 @@ export const SettingsScreen: React.FC = () => {
 
 const styles = StyleSheet.create({
   scrollContainer: {
-    padding: spacing.lg,
+    padding: spacing.base,
     paddingBottom: spacing.xxl * 2,
   },
   profileCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: spacing.xl,
-    padding: spacing.lg,
+    marginBottom: spacing.base,
+    padding: spacing.base,
+    borderRadius: radius.lg,
   },
   profileAvatar: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: colors.surfaceHover,
     borderWidth: 1,
-    borderColor: colors.borderLight,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: spacing.md,
@@ -320,7 +419,7 @@ const styles = StyleSheet.create({
   profileAvatarText: {
     ...typography.title,
     fontSize: 16,
-    color: colors.textPrimary,
+    fontWeight: '700',
   },
   profileInfo: {
     flex: 1,
@@ -328,35 +427,37 @@ const styles = StyleSheet.create({
   profileName: {
     ...typography.title,
     fontSize: 16,
-    color: colors.textPrimary,
+    fontWeight: '600',
   },
   profileEmail: {
     ...typography.caption,
-    color: colors.textMuted,
     marginTop: 2,
+    fontSize: 12,
   },
   sectionTitle: {
     ...typography.label,
-    letterSpacing: 1,
-    color: colors.textSecondary,
-    marginBottom: spacing.xs,
+    letterSpacing: 0.8,
+    fontSize: 11,
+    fontWeight: '700',
+    marginBottom: 6,
     marginLeft: 2,
   },
   settingGroup: {
-    marginBottom: spacing.xl,
-    padding: spacing.md,
+    marginBottom: spacing.lg,
+    padding: spacing.base,
+    borderRadius: radius.lg,
   },
   settingRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: spacing.xs,
+    paddingVertical: 2,
   },
   themeRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: spacing.sm,
+    marginBottom: spacing.md,
   },
   themeSegmentContainer: {
     flexDirection: 'row',
@@ -378,14 +479,13 @@ const styles = StyleSheet.create({
   themeSegmentActive: {
     borderWidth: 1,
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.15,
+    shadowOpacity: 0.12,
     shadowRadius: 3,
     elevation: 2,
   },
   themeSegmentText: {
     ...typography.caption,
     fontSize: 12,
-    fontWeight: '600',
   },
   settingLeft: {
     flexDirection: 'row',
@@ -397,7 +497,6 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: radius.md,
-    backgroundColor: colors.surfaceHover,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: spacing.md,
@@ -408,16 +507,15 @@ const styles = StyleSheet.create({
   settingTitle: {
     ...typography.body,
     fontWeight: '600',
-    color: colors.textPrimary,
+    fontSize: 14,
   },
   settingSubtitle: {
     ...typography.caption,
-    color: colors.textMuted,
     marginTop: 2,
+    fontSize: 12,
   },
   divider: {
     height: 1,
-    backgroundColor: colors.border,
     marginVertical: spacing.md,
   },
   signOutButton: {
@@ -425,8 +523,8 @@ const styles = StyleSheet.create({
   },
   versionText: {
     ...typography.caption,
-    color: colors.textDisabled,
     textAlign: 'center',
     marginTop: spacing.xl,
+    fontSize: 11,
   },
 });

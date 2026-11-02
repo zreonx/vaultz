@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, ViewStyle, TextStyle } from 'react-native';
-import { colors } from '@/theme/colors';
+import { useTheme } from '@/context/ThemeContext';
 import { typography, radius, spacing } from '@/theme/tokens';
 
 export type BadgeVariant = 'default' | 'success' | 'danger' | 'warning' | 'info' | 'outline';
@@ -18,43 +18,68 @@ export const Badge: React.FC<BadgeProps> = ({
   style,
   textStyle,
 }) => {
-  const getBadgeStyle = () => {
+  const { colors, isDark } = useTheme();
+
+  const getVariantStyles = (): { container: ViewStyle; text: TextStyle } => {
     switch (variant) {
       case 'success':
-        return styles.badgeSuccess;
+        return {
+          container: {
+            backgroundColor: colors.accentMuted,
+            borderColor: colors.accent,
+            borderWidth: 0,
+          },
+          text: { color: colors.accent },
+        };
       case 'danger':
-        return styles.badgeDanger;
+        return {
+          container: {
+            backgroundColor: colors.dangerSoft,
+            borderWidth: 0,
+          },
+          text: { color: colors.danger },
+        };
       case 'warning':
-        return styles.badgeWarning;
+        return {
+          container: {
+            backgroundColor: colors.warningSoft,
+            borderWidth: 0,
+          },
+          text: { color: colors.warning },
+        };
       case 'info':
-        return styles.badgeInfo;
+        return {
+          container: {
+            backgroundColor: isDark ? 'rgba(59, 130, 246, 0.15)' : 'rgba(37, 99, 235, 0.1)',
+            borderWidth: 0,
+          },
+          text: { color: isDark ? '#60A5FA' : '#2563EB' },
+        };
       case 'outline':
-        return styles.badgeOutline;
+        return {
+          container: {
+            backgroundColor: 'transparent',
+            borderWidth: 1,
+            borderColor: colors.border,
+          },
+          text: { color: colors.textSecondary },
+        };
       default:
-        return styles.badgeDefault;
+        return {
+          container: {
+            backgroundColor: isDark ? colors.surfaceSubtle : colors.surfaceMuted,
+            borderWidth: 0,
+          },
+          text: { color: colors.textSecondary },
+        };
     }
   };
 
-  const getTextStyle = () => {
-    switch (variant) {
-      case 'success':
-        return styles.textSuccess;
-      case 'danger':
-        return styles.textDanger;
-      case 'warning':
-        return styles.textWarning;
-      case 'info':
-        return styles.textInfo;
-      case 'outline':
-        return styles.textOutline;
-      default:
-        return styles.textDefault;
-    }
-  };
+  const { container: variantContainer, text: variantText } = getVariantStyles();
 
   return (
-    <View style={[styles.badge, getBadgeStyle(), style]}>
-      <Text style={[styles.text, getTextStyle(), textStyle]}>{label}</Text>
+    <View style={[styles.badge, variantContainer, style]}>
+      <Text style={[styles.text, variantText, textStyle]}>{label}</Text>
     </View>
   );
 };
@@ -62,7 +87,7 @@ export const Badge: React.FC<BadgeProps> = ({
 const styles = StyleSheet.create({
   badge: {
     paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
+    paddingVertical: 3,
     borderRadius: radius.full,
     alignSelf: 'flex-start',
     alignItems: 'center',
@@ -73,43 +98,5 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontSize: 11,
     letterSpacing: 0.2,
-  },
-  badgeDefault: {
-    backgroundColor: colors.surfaceHover,
-  },
-  textDefault: {
-    color: colors.textSecondary,
-  },
-  badgeSuccess: {
-    backgroundColor: colors.accentMuted,
-  },
-  textSuccess: {
-    color: colors.accent,
-  },
-  badgeDanger: {
-    backgroundColor: 'rgba(239, 68, 68, 0.15)',
-  },
-  textDanger: {
-    color: colors.danger,
-  },
-  badgeWarning: {
-    backgroundColor: 'rgba(245, 158, 11, 0.15)',
-  },
-  textWarning: {
-    color: colors.warning,
-  },
-  badgeInfo: {
-    backgroundColor: 'rgba(59, 130, 246, 0.15)',
-  },
-  textInfo: {
-    color: '#60A5FA',
-  },
-  badgeOutline: {
-    backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  textOutline: {
-    color: colors.textSecondary,
   },
 });

@@ -3,9 +3,9 @@ import { View, Text, StyleSheet } from 'react-native';
 import { ModalSheet } from '@/components/ui/ModalSheet';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
-import { colors } from '@/theme/colors';
-import { typography, radius, spacing } from '@/theme/tokens';
+import { useTheme } from '@/context/ThemeContext';
 import { lendingApi } from '@/api/lending';
+import { typography, radius, spacing } from '@/theme/tokens';
 import { formatMoney } from '@/utils/currency';
 import { haptics } from '@/utils/haptics';
 import { LendingItemDto, LendingType } from '@/types/api';
@@ -23,6 +23,7 @@ export const LogRepaymentModal: React.FC<LogRepaymentModalProps> = ({
   onClose,
   onSuccess,
 }) => {
+  const { colors, isDark } = useTheme();
   const [amount, setAmount] = useState('');
   const [notes, setNotes] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -77,24 +78,45 @@ export const LogRepaymentModal: React.FC<LogRepaymentModalProps> = ({
       visible={visible}
       onClose={onClose}
       title="Record Repayment"
-      subtitle={`${isLent ? 'Received from' : 'Paid to'} ${contactName}`}
+      subtitle={`${isLent ? 'Repayment received from' : 'Payment made to'} ${contactName}`}
     >
       <View style={styles.container}>
+        {/* Remaining Balance Summary Pill */}
+        <View
+          style={[
+            styles.infoCard,
+            {
+              backgroundColor: isDark ? colors.surfaceSubtle : colors.surfaceMuted,
+              borderColor: colors.border,
+            },
+          ]}
+        >
+          <Text style={[styles.infoLabel, { color: colors.textMuted }]}>
+            OUTSTANDING BALANCE
+          </Text>
+          <Text style={[styles.infoValue, { color: isLent ? colors.accent : colors.warning }]}>
+            {formatMoney(remainingBalance, curr)}
+          </Text>
+        </View>
+
         {error && (
-          <View style={styles.errorBox}>
-            <Text style={styles.errorText}>{error}</Text>
+          <View
+            style={[
+              styles.errorBox,
+              {
+                backgroundColor: colors.dangerSoft,
+                borderColor: colors.danger,
+              },
+            ]}
+          >
+            <Text style={[styles.errorText, { color: colors.danger }]}>{error}</Text>
           </View>
         )}
 
-        <View style={styles.infoCard}>
-          <Text style={styles.infoLabel}>Remaining Balance</Text>
-          <Text style={styles.infoValue}>{formatMoney(remainingBalance, curr)}</Text>
-        </View>
-
         <Input
-          label={`Repayment Amount (${curr})`}
-          placeholder={remainingBalance.toFixed(2)}
-          keyboardType="decimal-pad"
+          label="Repayment Amount"
+          placeholder="0.00"
+          keyboardType="numeric"
           value={amount}
           onChangeText={(val) => {
             setAmount(val);
@@ -106,10 +128,10 @@ export const LogRepaymentModal: React.FC<LogRepaymentModalProps> = ({
 
         <Input
           label="Notes (Optional)"
-          placeholder="e.g. Bank transfer, Cash"
+          placeholder="e.g. Bank transfer, Cash in hand"
           value={notes}
           onChangeText={setNotes}
-          leftIcon="document-text-outline"
+          leftIcon="reader-outline"
         />
 
         <View style={styles.buttonRow}>
@@ -135,31 +157,28 @@ export const LogRepaymentModal: React.FC<LogRepaymentModalProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    paddingBottom: spacing.md,
+    paddingBottom: spacing.sm,
   },
   infoCard: {
-    backgroundColor: colors.surfaceHover,
-    borderRadius: radius.md,
-    padding: spacing.md,
-    marginBottom: spacing.lg,
+    borderRadius: radius.lg,
+    padding: spacing.base,
+    marginBottom: spacing.base,
     borderWidth: 1,
-    borderColor: colors.border,
     alignItems: 'center',
   },
   infoLabel: {
     ...typography.caption,
-    color: colors.textSecondary,
-    marginBottom: 2,
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.8,
+    marginBottom: 4,
   },
   infoValue: {
     ...typography.title,
-    fontSize: 20,
-    color: colors.accent,
-    fontWeight: '700',
+    fontSize: 22,
+    fontWeight: '800',
   },
   errorBox: {
-    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-    borderColor: colors.danger,
     borderWidth: 1,
     borderRadius: radius.md,
     padding: spacing.sm,
@@ -167,8 +186,8 @@ const styles = StyleSheet.create({
   },
   errorText: {
     ...typography.caption,
-    color: colors.danger,
     textAlign: 'center',
+    fontWeight: '500',
   },
   buttonRow: {
     flexDirection: 'row',

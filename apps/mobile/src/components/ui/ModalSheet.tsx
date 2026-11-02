@@ -55,7 +55,12 @@ export const ModalSheet: React.FC<ModalSheetProps> = ({
       statusBarTranslucent
     >
       <TouchableWithoutFeedback onPress={handleClose}>
-        <View style={styles.backdrop}>
+        <View
+          style={[
+            styles.backdrop,
+            { backgroundColor: isDark ? 'rgba(0, 0, 0, 0.65)' : 'rgba(0, 0, 0, 0.4)' },
+          ]}
+        >
           <TouchableWithoutFeedback>
             <KeyboardAvoidingView
               behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -83,7 +88,7 @@ export const ModalSheet: React.FC<ModalSheetProps> = ({
                 <View
                   style={[
                     styles.header,
-                    { borderBottomColor: colors.border },
+                    { borderBottomColor: colors.borderSubtle },
                   ]}
                 >
                   <View style={styles.headerTextContainer}>
@@ -177,6 +182,6 @@ const styles = StyleSheet.create({
     flexGrow: 0,
   },
   scrollContent: {
-    padding: spacing.lg,
+    padding: spacing.base,
   },
 });

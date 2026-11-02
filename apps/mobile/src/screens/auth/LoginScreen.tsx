@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { useAuth } from '@/context/AuthContext';
+import { useTheme } from '@/context/ThemeContext';
 import { ScreenWrapper } from '@/components/ui/ScreenWrapper';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
-import { colors } from '@/theme/colors';
 import { typography, radius, spacing } from '@/theme/tokens';
 import { haptics } from '@/utils/haptics';
 
@@ -14,6 +14,7 @@ interface LoginScreenProps {
 
 export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   const { login } = useAuth();
+  const { colors, isDark } = useTheme();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -47,20 +48,46 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
       >
         {/* Brand / Logo Area */}
         <View style={styles.brandContainer}>
-          <View style={styles.logoMark}>
-            <Text style={styles.logoMarkText}>V</Text>
+          <View
+            style={[
+              styles.logoMark,
+              {
+                backgroundColor: colors.surface,
+                borderColor: colors.border,
+              },
+            ]}
+          >
+            <Text style={[styles.logoMarkText, { color: colors.accent }]}>V</Text>
           </View>
-          <Text style={styles.brandName}>VAULTZ</Text>
-          <Text style={styles.subtitle}>Personal Finance, Uncompromisingly Secure</Text>
+          <Text style={[styles.brandName, { color: colors.textPrimary }]}>VAULTZ</Text>
+          <Text style={[styles.subtitle, { color: colors.textMuted }]}>
+            Personal Finance, Uncompromisingly Secure
+          </Text>
         </View>
 
         {/* Form Card */}
-        <View style={styles.formContainer}>
-          <Text style={styles.formTitle}>Sign In</Text>
+        <View
+          style={[
+            styles.formContainer,
+            {
+              backgroundColor: colors.surface,
+              borderColor: colors.border,
+            },
+          ]}
+        >
+          <Text style={[styles.formTitle, { color: colors.textPrimary }]}>Sign In</Text>
 
           {error && (
-            <View style={styles.errorBox}>
-              <Text style={styles.errorText}>{error}</Text>
+            <View
+              style={[
+                styles.errorBox,
+                {
+                  backgroundColor: colors.dangerSoft,
+                  borderColor: colors.danger,
+                },
+              ]}
+            >
+              <Text style={[styles.errorText, { color: colors.danger }]}>{error}</Text>
             </View>
           )}
 
@@ -98,14 +125,17 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
           />
 
           <View style={styles.switchRow}>
-            <Text style={styles.switchText}>Don't have an account? </Text>
+            <Text style={[styles.switchText, { color: colors.textSecondary }]}>
+              Don't have an account?{' '}
+            </Text>
             <TouchableOpacity
               onPress={() => {
                 haptics.light();
                 navigation.navigate('Register');
               }}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
-              <Text style={styles.switchAction}>Sign Up</Text>
+              <Text style={[styles.switchAction, { color: colors.accent }]}>Sign Up</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -117,56 +147,49 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
-    paddingHorizontal: spacing.xl,
+    paddingHorizontal: spacing.lg,
     justifyContent: 'center',
     paddingVertical: spacing.xxl,
   },
   brandContainer: {
     alignItems: 'center',
-    marginBottom: spacing.xxl,
+    marginBottom: spacing.xl,
   },
   logoMark: {
-    width: 60,
-    height: 60,
-    borderRadius: radius.xl,
-    backgroundColor: colors.surface,
+    width: 56,
+    height: 56,
+    borderRadius: radius.lg,
     borderWidth: 1,
-    borderColor: colors.borderLight,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing.md,
   },
   logoMarkText: {
     ...typography.display,
-    color: colors.accent,
+    fontSize: 28,
     fontWeight: '800',
   },
   brandName: {
     ...typography.heading,
-    color: colors.textPrimary,
     letterSpacing: 2,
     fontWeight: '800',
   },
   subtitle: {
     ...typography.caption,
-    color: colors.textMuted,
     marginTop: spacing.xs,
+    fontSize: 12,
   },
   formContainer: {
-    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: colors.border,
     borderRadius: radius.xl,
     padding: spacing.xl,
   },
   formTitle: {
     ...typography.title,
-    color: colors.textPrimary,
     marginBottom: spacing.lg,
+    fontSize: 18,
   },
   errorBox: {
-    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-    borderColor: colors.danger,
     borderWidth: 1,
     borderRadius: radius.md,
     padding: spacing.sm,
@@ -174,8 +197,8 @@ const styles = StyleSheet.create({
   },
   errorText: {
     ...typography.caption,
-    color: colors.danger,
     textAlign: 'center',
+    fontWeight: '500',
   },
   loginButton: {
     marginTop: spacing.xs,
@@ -187,11 +210,11 @@ const styles = StyleSheet.create({
   },
   switchText: {
     ...typography.body,
-    color: colors.textSecondary,
+    fontSize: 13,
   },
   switchAction: {
     ...typography.body,
-    fontWeight: '600',
-    color: colors.accent,
+    fontWeight: '700',
+    fontSize: 13,
   },
 });

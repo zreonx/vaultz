@@ -2,14 +2,15 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/context/AuthContext';
+import { useTheme } from '@/context/ThemeContext';
 import { ScreenWrapper } from '@/components/ui/ScreenWrapper';
 import { Button } from '@/components/ui/Button';
-import { colors } from '@/theme/colors';
 import { typography, radius, spacing } from '@/theme/tokens';
 import { haptics } from '@/utils/haptics';
 
 export const BiometricLockScreen: React.FC = () => {
   const { unlockWithBiometrics, logout, user } = useAuth();
+  const { colors, isDark } = useTheme();
   const [error, setError] = useState<string | null>(null);
 
   const attemptUnlock = async () => {
@@ -21,26 +22,49 @@ export const BiometricLockScreen: React.FC = () => {
   };
 
   useEffect(() => {
-    // Attempt biometric unlock immediately when screen loads
     attemptUnlock();
   }, []);
 
   return (
     <ScreenWrapper includeBottomInset>
       <View style={styles.container}>
-        <View style={styles.content}>
-          <View style={styles.iconCircle}>
-            <Ionicons name="lock-closed" size={44} color={colors.accent} />
+        <View
+          style={[
+            styles.content,
+            {
+              backgroundColor: colors.surface,
+              borderColor: colors.border,
+            },
+          ]}
+        >
+          <View
+            style={[
+              styles.iconCircle,
+              {
+                backgroundColor: colors.accentMuted,
+                borderColor: colors.accent,
+              },
+            ]}
+          >
+            <Ionicons name="lock-closed" size={38} color={colors.accent} />
           </View>
 
-          <Text style={styles.title}>Vaultz is Locked</Text>
-          <Text style={styles.subtitle}>
+          <Text style={[styles.title, { color: colors.textPrimary }]}>Vaultz is Locked</Text>
+          <Text style={[styles.subtitle, { color: colors.textMuted }]}>
             Welcome back, {user?.fullName || user?.email || 'User'}. Confirm your identity to unlock.
           </Text>
 
           {error && (
-            <View style={styles.errorBox}>
-              <Text style={styles.errorText}>{error}</Text>
+            <View
+              style={[
+                styles.errorBox,
+                {
+                  backgroundColor: colors.dangerSoft,
+                  borderColor: colors.danger,
+                },
+              ]}
+            >
+              <Text style={[styles.errorText, { color: colors.danger }]}>{error}</Text>
             </View>
           )}
 
@@ -58,8 +82,9 @@ export const BiometricLockScreen: React.FC = () => {
               haptics.medium();
               logout();
             }}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
           >
-            <Text style={styles.logoutText}>Sign Out</Text>
+            <Text style={[styles.logoutText, { color: colors.textMuted }]}>Sign Out</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -72,45 +97,39 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: spacing.xl,
+    paddingHorizontal: spacing.lg,
   },
   content: {
     width: '100%',
     alignItems: 'center',
-    backgroundColor: colors.surface,
-    padding: spacing.xxl,
+    padding: spacing.xl,
     borderRadius: radius.xl,
     borderWidth: 1,
-    borderColor: colors.border,
   },
   iconCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: colors.accentMuted,
+    width: 72,
+    height: 72,
+    borderRadius: 36,
     borderWidth: 1,
-    borderColor: 'rgba(16, 185, 129, 0.3)',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: spacing.lg,
+    marginBottom: spacing.base,
   },
   title: {
     ...typography.title,
-    fontSize: 22,
-    color: colors.textPrimary,
+    fontSize: 20,
+    fontWeight: '700',
     marginBottom: spacing.xs,
   },
   subtitle: {
     ...typography.body,
-    color: colors.textMuted,
     textAlign: 'center',
     marginBottom: spacing.xl,
     lineHeight: 20,
+    fontSize: 13,
   },
   errorBox: {
     width: '100%',
-    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-    borderColor: colors.danger,
     borderWidth: 1,
     borderRadius: radius.md,
     padding: spacing.sm,
@@ -118,8 +137,8 @@ const styles = StyleSheet.create({
   },
   errorText: {
     ...typography.caption,
-    color: colors.danger,
     textAlign: 'center',
+    fontWeight: '500',
   },
   unlockButton: {
     width: '100%',
@@ -130,7 +149,7 @@ const styles = StyleSheet.create({
   },
   logoutText: {
     ...typography.body,
-    color: colors.textMuted,
-    fontWeight: '500',
+    fontWeight: '600',
+    fontSize: 13,
   },
 });

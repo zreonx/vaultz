@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { ModalSheet } from '@/components/ui/ModalSheet';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
-import { colors } from '@/theme/colors';
-import { typography, radius, spacing } from '@/theme/tokens';
+import { PressableScale } from '@/components/ui/PressableScale';
 import { lendingApi } from '@/api/lending';
 import { useWorkspace } from '@/context/WorkspaceContext';
+import { useTheme } from '@/context/ThemeContext';
+import { typography, radius, spacing } from '@/theme/tokens';
 import { haptics } from '@/utils/haptics';
 
 interface CreateLendingModalProps {
@@ -23,6 +24,7 @@ export const CreateLendingModal: React.FC<CreateLendingModalProps> = ({
   onSuccess,
 }) => {
   const { activeWorkspace, refetchAll } = useWorkspace();
+  const { colors, isDark } = useTheme();
   const [type, setType] = useState<'Lent' | 'Borrowed'>(defaultType);
   const [contactName, setContactName] = useState('');
   const [amount, setAmount] = useState('');
@@ -73,7 +75,7 @@ export const CreateLendingModal: React.FC<CreateLendingModalProps> = ({
       if (onSuccess) onSuccess();
     } catch (err: any) {
       haptics.error();
-      setError(err.message || 'Failed to create lending record');
+      setError(err.message || 'Failed to record loan');
     } finally {
       setIsLoading(false);
     }
@@ -84,19 +86,44 @@ export const CreateLendingModal: React.FC<CreateLendingModalProps> = ({
       visible={visible}
       onClose={onClose}
       title="Record Loan / IOU"
-      subtitle={type === 'Lent' ? 'Money you lent to someone' : 'Money you borrowed from someone'}
+      subtitle="Track money lent to or borrowed from others"
     >
       <View style={styles.container}>
         {error && (
-          <View style={styles.errorBox}>
-            <Text style={styles.errorText}>{error}</Text>
+          <View
+            style={[
+              styles.errorBox,
+              {
+                backgroundColor: colors.dangerSoft,
+                borderColor: colors.danger,
+              },
+            ]}
+          >
+            <Text style={[styles.errorText, { color: colors.danger }]}>{error}</Text>
           </View>
         )}
 
-        {/* Type toggle */}
-        <View style={styles.segmentedControl}>
-          <TouchableOpacity
-            style={[styles.segmentBtn, type === 'Lent' && styles.segmentBtnActive]}
+        {/* Type Segmented Control */}
+        <View
+          style={[
+            styles.segmentedControl,
+            {
+              backgroundColor: isDark ? colors.surfaceSubtle : colors.surfaceMuted,
+              borderColor: colors.border,
+            },
+          ]}
+        >
+          <PressableScale
+            style={[
+              styles.segmentBtn,
+              type === 'Lent' && [
+                styles.segmentBtnActive,
+                {
+                  backgroundColor: colors.surface,
+                  shadowColor: '#000',
+                },
+              ],
+            ]}
             onPress={() => {
               haptics.selection();
               setType('Lent');
@@ -105,15 +132,27 @@ export const CreateLendingModal: React.FC<CreateLendingModalProps> = ({
             <Text
               style={[
                 styles.segmentText,
-                type === 'Lent' && { color: colors.accent, fontWeight: '700' },
+                {
+                  color: type === 'Lent' ? colors.accent : colors.textMuted,
+                  fontWeight: type === 'Lent' ? '700' : '500',
+                },
               ]}
             >
-              I Lent (Owed to Me)
+              I Lent (Owed to me)
             </Text>
-          </TouchableOpacity>
+          </PressableScale>
 
-          <TouchableOpacity
-            style={[styles.segmentBtn, type === 'Borrowed' && styles.segmentBtnActive]}
+          <PressableScale
+            style={[
+              styles.segmentBtn,
+              type === 'Borrowed' && [
+                styles.segmentBtnActive,
+                {
+                  backgroundColor: colors.surface,
+                  shadowColor: '#000',
+                },
+              ],
+            ]}
             onPress={() => {
               haptics.selection();
               setType('Borrowed');
@@ -122,17 +161,20 @@ export const CreateLendingModal: React.FC<CreateLendingModalProps> = ({
             <Text
               style={[
                 styles.segmentText,
-                type === 'Borrowed' && { color: colors.warning, fontWeight: '700' },
+                {
+                  color: type === 'Borrowed' ? colors.warning : colors.textMuted,
+                  fontWeight: type === 'Borrowed' ? '700' : '500',
+                },
               ]}
             >
-              I Borrowed (I Owe)
+              I Borrowed (I owe)
             </Text>
-          </TouchableOpacity>
+          </PressableScale>
         </View>
 
         <Input
-          label="Contact / Person Name"
-          placeholder="e.g. Alex Smith, Landlord"
+          label={type === 'Lent' ? 'Debtor / Borrower Name' : 'Creditor / Lender Name'}
+          placeholder="e.g. Alex Rivera, Mom, Dave"
           value={contactName}
           onChangeText={(val) => {
             setContactName(val);
@@ -143,9 +185,9 @@ export const CreateLendingModal: React.FC<CreateLendingModalProps> = ({
         />
 
         <Input
-          label={`Principal Amount (${activeWorkspace?.currency || 'USD'})`}
+          label="Total Amount"
           placeholder="0.00"
-          keyboardType="decimal-pad"
+          keyboardType="numeric"
           value={amount}
           onChangeText={(val) => {
             setAmount(val);
@@ -155,11 +197,11 @@ export const CreateLendingModal: React.FC<CreateLendingModalProps> = ({
         />
 
         <Input
-          label="Notes / Reason (Optional)"
-          placeholder="e.g. Split lunch, rent share"
+          label="Notes / Description (Optional)"
+          placeholder="e.g. For concert tickets, Split lunch"
           value={notes}
           onChangeText={setNotes}
-          leftIcon="document-text-outline"
+          leftIcon="reader-outline"
         />
 
         <View style={styles.buttonRow}>
@@ -171,7 +213,7 @@ export const CreateLendingModal: React.FC<CreateLendingModalProps> = ({
             disabled={isLoading}
           />
           <Button
-            title="Save Record"
+            title="Save Loan"
             variant="primary"
             onPress={handleSubmit}
             isLoading={isLoading}
@@ -185,11 +227,9 @@ export const CreateLendingModal: React.FC<CreateLendingModalProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    paddingBottom: spacing.md,
+    paddingBottom: spacing.sm,
   },
   errorBox: {
-    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-    borderColor: colors.danger,
     borderWidth: 1,
     borderRadius: radius.md,
     padding: spacing.sm,
@@ -197,31 +237,32 @@ const styles = StyleSheet.create({
   },
   errorText: {
     ...typography.caption,
-    color: colors.danger,
     textAlign: 'center',
+    fontWeight: '500',
   },
   segmentedControl: {
     flexDirection: 'row',
-    backgroundColor: colors.surfaceHover,
-    borderRadius: radius.md,
+    borderRadius: radius.lg,
     padding: 3,
     borderWidth: 1,
-    borderColor: colors.border,
-    marginBottom: spacing.lg,
+    marginBottom: spacing.base,
+    gap: 4,
   },
   segmentBtn: {
     flex: 1,
-    paddingVertical: spacing.sm,
+    paddingVertical: 8,
     alignItems: 'center',
-    borderRadius: radius.sm,
+    borderRadius: radius.md,
   },
   segmentBtnActive: {
-    backgroundColor: colors.surface,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.12,
+    shadowRadius: 2,
+    elevation: 2,
   },
   segmentText: {
     ...typography.caption,
-    fontWeight: '600',
-    color: colors.textMuted,
+    fontSize: 12,
   },
   buttonRow: {
     flexDirection: 'row',

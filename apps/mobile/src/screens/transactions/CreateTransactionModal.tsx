@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { ModalSheet } from '@/components/ui/ModalSheet';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
-import { colors } from '@/theme/colors';
-import { typography, radius, spacing } from '@/theme/tokens';
+import { PressableScale } from '@/components/ui/PressableScale';
 import { transactionsApi } from '@/api/transactions';
 import { useWorkspace } from '@/context/WorkspaceContext';
+import { useTheme } from '@/context/ThemeContext';
+import { typography, radius, spacing } from '@/theme/tokens';
 import { haptics } from '@/utils/haptics';
 
 interface CreateTransactionModalProps {
@@ -17,7 +18,17 @@ interface CreateTransactionModalProps {
 }
 
 const COMMON_CATEGORIES = {
-  Expense: ['Food & Dining', 'Groceries', 'Transport', 'Utilities', 'Shopping', 'Entertainment', 'Healthcare', 'Housing', 'Other'],
+  Expense: [
+    'Food & Dining',
+    'Groceries',
+    'Transport',
+    'Utilities',
+    'Shopping',
+    'Entertainment',
+    'Healthcare',
+    'Housing',
+    'Other',
+  ],
   Income: ['Salary', 'Freelance', 'Investments', 'Gift', 'Refund', 'Other'],
   Transfer: ['Account Transfer', 'Savings Allocation', 'Debt Payment', 'Other'],
 };
@@ -29,6 +40,7 @@ export const CreateTransactionModal: React.FC<CreateTransactionModalProps> = ({
   onSuccess,
 }) => {
   const { activeWorkspace, accounts, refetchAll } = useWorkspace();
+  const { colors, isDark } = useTheme();
   const [type, setType] = useState<'Expense' | 'Income' | 'Transfer'>(defaultType);
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState(COMMON_CATEGORIES[defaultType][0]);
@@ -99,43 +111,79 @@ export const CreateTransactionModal: React.FC<CreateTransactionModalProps> = ({
       visible={visible}
       onClose={onClose}
       title="Record Transaction"
-      subtitle={`Posting to ${activeWorkspace?.name || 'Account'}`}
+      subtitle={`Adding to ${activeWorkspace?.name || 'Active Account'}`}
     >
       <View style={styles.container}>
         {error && (
-          <View style={styles.errorBox}>
-            <Text style={styles.errorText}>{error}</Text>
+          <View
+            style={[
+              styles.errorBox,
+              {
+                backgroundColor: colors.dangerSoft,
+                borderColor: colors.danger,
+              },
+            ]}
+          >
+            <Text style={[styles.errorText, { color: colors.danger }]}>{error}</Text>
           </View>
         )}
 
-        {/* Type Selector (Segmented control) */}
-        <View style={styles.segmentedControl}>
-          {(['Expense', 'Income', 'Transfer'] as const).map((t) => (
-            <TouchableOpacity
-              key={t}
-              style={[styles.segmentBtn, type === t && styles.segmentBtnActive]}
-              onPress={() => handleTypeChange(t)}
-            >
-              <Text
+        {/* Segmented Control for Type */}
+        <View
+          style={[
+            styles.segmentedControl,
+            {
+              backgroundColor: isDark ? colors.surfaceSubtle : colors.surfaceMuted,
+              borderColor: colors.border,
+            },
+          ]}
+        >
+          {(['Expense', 'Income', 'Transfer'] as const).map((t) => {
+            const isActive = type === t;
+            return (
+              <PressableScale
+                key={t}
                 style={[
-                  styles.segmentText,
-                  type === t && styles.segmentTextActive,
-                  type === t && t === 'Expense' && { color: colors.danger },
-                  type === t && t === 'Income' && { color: colors.accent },
-                  type === t && t === 'Transfer' && { color: '#60A5FA' },
+                  styles.segmentBtn,
+                  isActive && [
+                    styles.segmentBtnActive,
+                    {
+                      backgroundColor: colors.surface,
+                      shadowColor: '#000',
+                    },
+                  ],
                 ]}
+                onPress={() => handleTypeChange(t)}
               >
-                {t}
-              </Text>
-            </TouchableOpacity>
-          ))}
+                <Text
+                  style={[
+                    styles.segmentText,
+                    {
+                      color: isActive
+                        ? t === 'Expense'
+                          ? colors.danger
+                          : t === 'Income'
+                          ? colors.accent
+                          : isDark
+                          ? '#60A5FA'
+                          : '#2563EB'
+                        : colors.textMuted,
+                      fontWeight: isActive ? '700' : '500',
+                    },
+                  ]}
+                >
+                  {t}
+                </Text>
+              </PressableScale>
+            );
+          })}
         </View>
 
         {/* Amount Input */}
         <Input
-          label={`Amount (${activeWorkspace?.currency || 'USD'})`}
+          label="Amount"
           placeholder="0.00"
-          keyboardType="decimal-pad"
+          keyboardType="numeric"
           value={amount}
           onChangeText={(val) => {
             setAmount(val);
@@ -145,66 +193,106 @@ export const CreateTransactionModal: React.FC<CreateTransactionModalProps> = ({
           autoFocus
         />
 
-        {/* Transfer Destination Picker */}
+        {/* Destination Account Selection for Transfer */}
         {type === 'Transfer' && (
           <View style={styles.section}>
-            <Text style={styles.sectionLabel}>TRANSFER TO</Text>
-            <View style={styles.chipRow}>
-              {otherAccounts.length === 0 ? (
-                <Text style={styles.emptyText}>Create another account first to transfer funds.</Text>
-              ) : (
-                otherAccounts.map((acc) => (
-                  <TouchableOpacity
-                    key={acc.id}
-                    style={[
-                      styles.chip,
-                      destinationAccountId === acc.id && styles.chipActive,
-                    ]}
-                    onPress={() => {
-                      haptics.selection();
-                      setDestinationAccountId(acc.id);
-                    }}
-                  >
-                    <Text
+            <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>
+              TRANSFER TO ACCOUNT
+            </Text>
+            {otherAccounts.length === 0 ? (
+              <Text style={[styles.emptyText, { color: colors.textMuted }]}>
+                No other accounts available. Create another account first.
+              </Text>
+            ) : (
+              <View style={styles.chipRow}>
+                {otherAccounts.map((acc) => {
+                  const isSelected = destinationAccountId === acc.id;
+                  return (
+                    <PressableScale
+                      key={acc.id}
                       style={[
-                        styles.chipText,
-                        destinationAccountId === acc.id && styles.chipTextActive,
+                        styles.chip,
+                        {
+                          backgroundColor: isSelected
+                            ? colors.accentMuted
+                            : isDark
+                            ? colors.surfaceSubtle
+                            : colors.surfaceMuted,
+                          borderColor: isSelected ? colors.accent : colors.border,
+                        },
                       ]}
+                      onPress={() => {
+                        haptics.selection();
+                        setDestinationAccountId(acc.id);
+                      }}
                     >
-                      {acc.name} ({acc.currency})
-                    </Text>
-                  </TouchableOpacity>
-                ))
-              )}
-            </View>
+                      <Text
+                        style={[
+                          styles.chipText,
+                          {
+                            color: isSelected ? colors.accent : colors.textSecondary,
+                            fontWeight: isSelected ? '700' : '500',
+                          },
+                        ]}
+                      >
+                        {acc.name}
+                      </Text>
+                    </PressableScale>
+                  );
+                })}
+              </View>
+            )}
           </View>
         )}
 
-        {/* Category Picker */}
+        {/* Category Chips */}
         <View style={styles.section}>
-          <Text style={styles.sectionLabel}>CATEGORY</Text>
+          <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>
+            CATEGORY
+          </Text>
           <View style={styles.chipRow}>
-            {COMMON_CATEGORIES[type].map((cat) => (
-              <TouchableOpacity
-                key={cat}
-                style={[styles.chip, category === cat && styles.chipActive]}
-                onPress={() => {
-                  haptics.selection();
-                  setCategory(cat);
-                }}
-              >
-                <Text style={[styles.chipText, category === cat && styles.chipTextActive]}>
-                  {cat}
-                </Text>
-              </TouchableOpacity>
-            ))}
+            {COMMON_CATEGORIES[type].map((cat) => {
+              const isSelected = category === cat;
+              return (
+                <PressableScale
+                  key={cat}
+                  style={[
+                    styles.chip,
+                    {
+                      backgroundColor: isSelected
+                        ? colors.accentMuted
+                        : isDark
+                        ? colors.surfaceSubtle
+                        : colors.surfaceMuted,
+                      borderColor: isSelected ? colors.accent : colors.border,
+                    },
+                  ]}
+                  onPress={() => {
+                    haptics.selection();
+                    setCategory(cat);
+                  }}
+                >
+                  <Text
+                    style={[
+                      styles.chipText,
+                      {
+                        color: isSelected ? colors.accent : colors.textSecondary,
+                        fontWeight: isSelected ? '700' : '500',
+                      },
+                    ]}
+                  >
+                    {cat}
+                  </Text>
+                </PressableScale>
+              );
+            })}
           </View>
         </View>
 
         {/* Description Input */}
         <Input
           label="Note / Description (Optional)"
-          placeholder="e.g. Dinner with friends, Uber ride"
+          placeholder="e.g. Dinner with friends, Grocery haul"
           value={description}
           onChangeText={setDescription}
           leftIcon="reader-outline"
@@ -233,11 +321,9 @@ export const CreateTransactionModal: React.FC<CreateTransactionModalProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    paddingBottom: spacing.md,
+    paddingBottom: spacing.sm,
   },
   errorBox: {
-    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-    borderColor: colors.danger,
     borderWidth: 1,
     borderRadius: radius.md,
     padding: spacing.sm,
@@ -245,42 +331,41 @@ const styles = StyleSheet.create({
   },
   errorText: {
     ...typography.caption,
-    color: colors.danger,
     textAlign: 'center',
+    fontWeight: '500',
   },
   segmentedControl: {
     flexDirection: 'row',
-    backgroundColor: colors.surfaceHover,
-    borderRadius: radius.md,
+    borderRadius: radius.lg,
     padding: 3,
     borderWidth: 1,
-    borderColor: colors.border,
-    marginBottom: spacing.lg,
+    marginBottom: spacing.base,
+    gap: 4,
   },
   segmentBtn: {
     flex: 1,
-    paddingVertical: spacing.sm,
+    paddingVertical: 8,
     alignItems: 'center',
-    borderRadius: radius.sm,
+    borderRadius: radius.md,
   },
   segmentBtnActive: {
-    backgroundColor: colors.surface,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.12,
+    shadowRadius: 2,
+    elevation: 2,
   },
   segmentText: {
     ...typography.caption,
-    fontWeight: '600',
-    color: colors.textMuted,
-  },
-  segmentTextActive: {
-    fontWeight: '700',
+    fontSize: 12,
   },
   section: {
     marginBottom: spacing.md,
   },
   sectionLabel: {
     ...typography.label,
-    color: colors.textSecondary,
-    marginBottom: spacing.xs,
+    fontSize: 11,
+    fontWeight: '700',
+    marginBottom: 6,
     letterSpacing: 0.5,
   },
   chipRow: {
@@ -289,29 +374,17 @@ const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   chip: {
-    paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.sm + 2,
+    paddingVertical: 5,
+    paddingHorizontal: spacing.sm + 3,
     borderRadius: radius.full,
-    backgroundColor: colors.surfaceHover,
     borderWidth: 1,
-    borderColor: colors.border,
-  },
-  chipActive: {
-    backgroundColor: colors.accentMuted,
-    borderColor: colors.accent,
   },
   chipText: {
     ...typography.caption,
-    color: colors.textSecondary,
-    fontWeight: '500',
-  },
-  chipTextActive: {
-    color: colors.accent,
-    fontWeight: '600',
+    fontSize: 12,
   },
   emptyText: {
     ...typography.caption,
-    color: colors.textMuted,
     fontStyle: 'italic',
   },
   buttonRow: {
