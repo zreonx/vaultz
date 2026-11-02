@@ -7,6 +7,7 @@ using Microsoft.IdentityModel.Tokens;
 using Npgsql;
 using Vaultz.Application.Common.Interfaces;
 using Vaultz.Infrastructure.Authentication;
+using Vaultz.Infrastructure.Notifications;
 using Vaultz.Infrastructure.Persistence;
 
 namespace Vaultz.Infrastructure;
@@ -70,12 +71,18 @@ public static class DependencyInjection
                     ClockSkew = TimeSpan.FromMinutes(1)
                 };
 
-                // Support both standard Authorization: Bearer <token> headers AND HttpOnly cookie (vaultz.jwt)
+                // Support standard Bearer tokens, cookies, and SignalR query token
                 options.Events = new JwtBearerEvents
                 {
                     OnMessageReceived = context =>
                     {
-                        if (string.IsNullOrEmpty(context.Token) &&
+                        var accessToken = context.Request.Query["access_token"];
+                        var path = context.HttpContext.Request.Path;
+                        if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs"))
+                        {
+                            context.Token = accessToken;
+                        }
+                        else if (string.IsNullOrEmpty(context.Token) &&
                             context.Request.Cookies.TryGetValue(jwtOptions.CookieName, out var cookieToken) &&
                             !string.IsNullOrWhiteSpace(cookieToken))
                         {
@@ -88,7 +95,9 @@ public static class DependencyInjection
             });
 
         services.AddAuthorization();
+        services.AddSignalR();
         services.AddScoped<IAuthService, JwtAuthService>();
+        services.AddScoped<INotificationService, NotificationService>();
 
         services.Configure<Email.ResendOptions>(options =>
         {

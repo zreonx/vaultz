@@ -235,3 +235,25 @@ public sealed class LendingPaymentConfiguration : IEntityTypeConfiguration<Lendi
         builder.HasIndex(x => x.LendingRecordId).HasDatabaseName("ix_lending_payments_lending_record_id");
     }
 }
+
+public sealed class NotificationConfiguration : IEntityTypeConfiguration<Notification>
+{
+    public void Configure(EntityTypeBuilder<Notification> builder)
+    {
+        builder.ToTable("notifications");
+        builder.HasKey(x => x.Id);
+
+        builder.Property(x => x.UserId).HasColumnName("user_id").HasMaxLength(128).IsRequired();
+        builder.Property(x => x.Title).HasColumnName("title").HasMaxLength(150).IsRequired();
+        builder.Property(x => x.Message).HasColumnName("message").HasMaxLength(1000).IsRequired();
+        builder.Property(x => x.Type).HasColumnName("type").IsRequired();
+        builder.Property(x => x.IsRead).HasColumnName("is_read").IsRequired();
+        builder.Property(x => x.ReadAtUtc).HasColumnName("read_at_utc");
+        builder.Property(x => x.ActionUrl).HasColumnName("action_url").HasMaxLength(300);
+        builder.Property(x => x.CreatedAtUtc).HasColumnName("created_at_utc").IsRequired();
+        builder.Property(x => x.UpdatedAtUtc).HasColumnName("updated_at_utc");
+
+        builder.HasIndex(x => new { x.UserId, x.IsRead }).HasDatabaseName("ix_notifications_user_id_is_read");
+        builder.HasIndex(x => new { x.UserId, x.CreatedAtUtc }).HasDatabaseName("ix_notifications_user_id_created_at_utc");
+    }
+}

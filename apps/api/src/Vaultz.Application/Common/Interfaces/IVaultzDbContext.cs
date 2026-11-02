@@ -17,6 +17,7 @@ public interface IVaultzDbContext
     DbSet<RecurringTransaction> RecurringTransactions { get; }
     DbSet<LendingRecord> LendingRecords { get; }
     DbSet<LendingPayment> LendingPayments { get; }
+    DbSet<Notification> Notifications { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
     Task<bool> CanConnectAsync(CancellationToken cancellationToken = default);

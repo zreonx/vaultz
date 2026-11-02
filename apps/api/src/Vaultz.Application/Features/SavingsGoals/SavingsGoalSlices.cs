@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Vaultz.Application.Common.Exceptions;
 using Vaultz.Application.Common.Interfaces;
 using Vaultz.Domain.Entities;
+using Vaultz.Domain.Enums;
 
 namespace Vaultz.Application.Features.SavingsGoals;
 
@@ -61,17 +62,20 @@ public sealed class SavingsGoalHandlers
     private readonly ICurrentUserService _currentUser;
     private readonly IValidator<CreateSavingsGoalCommand> _createValidator;
     private readonly IValidator<AdjustSavingsGoalCommand> _adjustValidator;
+    private readonly INotificationService? _notificationService;
 
     public SavingsGoalHandlers(
         IVaultzDbContext dbContext,
         ICurrentUserService currentUser,
         IValidator<CreateSavingsGoalCommand> createValidator,
-        IValidator<AdjustSavingsGoalCommand> adjustValidator)
+        IValidator<AdjustSavingsGoalCommand> adjustValidator,
+        INotificationService? notificationService = null)
     {
         _dbContext = dbContext;
         _currentUser = currentUser;
         _createValidator = createValidator;
         _adjustValidator = adjustValidator;
+        _notificationService = notificationService;
     }
 
     public async Task<IReadOnlyList<SavingsGoalResponse>> GetSavingsGoalsAsync(
@@ -167,6 +171,17 @@ public sealed class SavingsGoalHandlers
         }
 
         await _dbContext.SaveChangesAsync(cancellationToken);
+
+        if (_notificationService != null && !command.IsWithdrawal && goal.CurrentAmount >= goal.TargetAmount)
+        {
+            await _notificationService.SendAsync(
+                userId,
+                "Savings Goal Milestone Reached! 🎉",
+                $"Congratulations! You have reached 100% of your target for '{goal.Name}' ({goal.CurrentAmount:N2} / {goal.TargetAmount:N2} {goal.CurrencyCode}).",
+                NotificationType.SavingsGoalMilestone,
+                actionUrl: "/savings-goals",
+                cancellationToken: cancellationToken);
+        }
 
         string? accountName = null;
         if (goal.AccountId.HasValue)

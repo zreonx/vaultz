@@ -25,6 +25,7 @@ public sealed class VaultzDbContext : DbContext, IVaultzDbContext
     public DbSet<RecurringTransaction> RecurringTransactions => Set<RecurringTransaction>();
     public DbSet<LendingRecord> LendingRecords => Set<LendingRecord>();
     public DbSet<LendingPayment> LendingPayments => Set<LendingPayment>();
+    public DbSet<Notification> Notifications => Set<Notification>();
 
     public async Task<bool> CanConnectAsync(CancellationToken cancellationToken = default)
     {

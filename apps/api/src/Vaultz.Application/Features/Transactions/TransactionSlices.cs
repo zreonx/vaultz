@@ -132,17 +132,20 @@ public sealed class TransactionHandlers
     private readonly ICurrentUserService _currentUser;
     private readonly IValidator<CreateTransactionCommand> _createValidator;
     private readonly IValidator<UpdateTransactionCommand> _updateValidator;
+    private readonly INotificationService? _notificationService;
 
     public TransactionHandlers(
         IVaultzDbContext dbContext,
         ICurrentUserService currentUser,
         IValidator<CreateTransactionCommand> createValidator,
-        IValidator<UpdateTransactionCommand> updateValidator)
+        IValidator<UpdateTransactionCommand> updateValidator,
+        INotificationService? notificationService = null)
     {
         _dbContext = dbContext;
         _currentUser = currentUser;
         _createValidator = createValidator;
         _updateValidator = updateValidator;
+        _notificationService = notificationService;
     }
 
     public async Task<IReadOnlyList<TransactionResponse>> GetTransactionsAsync(
@@ -363,6 +366,17 @@ public sealed class TransactionHandlers
 
             _dbContext.Transactions.Add(created);
             await _dbContext.SaveChangesAsync(ct);
+
+            if (_notificationService != null && created.Type == TransactionType.Transfer && destinationAccount != null)
+            {
+                await _notificationService.SendAsync(
+                    userId,
+                    "Transfer Completed",
+                    $"Successfully transferred {created.Amount:N2} {sourceAccount.CurrencyCode} from {sourceAccount.Name} to {destinationAccount.Name}.",
+                    NotificationType.TransferCompleted,
+                    actionUrl: "/transactions",
+                    cancellationToken: ct);
+            }
         }, cancellationToken);
 
         return MapToResponse(created!, accountMap, categoryMap);

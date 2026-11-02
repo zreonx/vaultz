@@ -157,7 +157,22 @@ if (app.Environment.IsDevelopment())
                         updated_at_utc TIMESTAMPTZ NULL
                     );
                     """,
-                    "CREATE INDEX IF NOT EXISTS ix_lending_payments_lending_record_id ON lending_payments (lending_record_id);"
+                    "CREATE INDEX IF NOT EXISTS ix_lending_payments_lending_record_id ON lending_payments (lending_record_id);",
+                    """
+                    CREATE TABLE IF NOT EXISTS notifications (
+                        "Id" UUID PRIMARY KEY,
+                        user_id VARCHAR(128) NOT NULL,
+                        title VARCHAR(150) NOT NULL,
+                        message VARCHAR(1000) NOT NULL,
+                        type INT NOT NULL,
+                        is_read BOOLEAN NOT NULL DEFAULT FALSE,
+                        read_at_utc TIMESTAMPTZ NULL,
+                        action_url VARCHAR(500) NULL,
+                        created_at_utc TIMESTAMPTZ NOT NULL
+                    );
+                    """,
+                    "CREATE INDEX IF NOT EXISTS ix_notifications_user_id_created_at_utc ON notifications (user_id, created_at_utc DESC);",
+                    "CREATE INDEX IF NOT EXISTS ix_notifications_user_id_is_read ON notifications (user_id, is_read);"
                 };
 
                 foreach (var sql in sqlStatements)
@@ -212,6 +227,7 @@ app.UseAuthorization();
 
 app.MapHealthChecks("/health");
 app.MapControllers();
+app.MapHub<Vaultz.Infrastructure.Notifications.NotificationHub>("/hubs/notifications");
 
 app.Run();
 

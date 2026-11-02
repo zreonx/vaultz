@@ -25,17 +25,20 @@ public sealed class JwtAuthService : IAuthService
     private readonly IEmailService _emailService;
     private readonly JwtOptions _jwtOptions;
     private readonly ILogger<JwtAuthService> _logger;
+    private readonly INotificationService? _notificationService;
 
     public JwtAuthService(
         IVaultzDbContext dbContext,
         IEmailService emailService,
         IOptions<JwtOptions> jwtOptions,
-        ILogger<JwtAuthService> logger)
+        ILogger<JwtAuthService> logger,
+        INotificationService? notificationService = null)
     {
         _dbContext = dbContext;
         _emailService = emailService;
         _jwtOptions = jwtOptions.Value;
         _logger = logger;
+        _notificationService = notificationService;
     }
 
     public async Task<AuthResultResponse> RegisterAsync(
@@ -415,6 +418,17 @@ public sealed class JwtAuthService : IAuthService
             "Two-factor authentication has been successfully activated on your Vaultz account.",
             CancellationToken.None);
 
+        if (_notificationService != null)
+        {
+            _ = _notificationService.SendAsync(
+                user.Id.ToString(),
+                "Two-Factor Authentication Enabled",
+                "Two-Factor Authentication (2FA) is now active on your account.",
+                NotificationType.SecurityAlert,
+                actionUrl: "/settings",
+                cancellationToken: CancellationToken.None);
+        }
+
         return CreateAuthResult(user);
     }
 
@@ -448,6 +462,17 @@ public sealed class JwtAuthService : IAuthService
             "Two-Factor Authentication Disabled",
             "Two-factor authentication has been turned off for your Vaultz account. If you did not make this change, please reset your password immediately.",
             CancellationToken.None);
+
+        if (_notificationService != null)
+        {
+            _ = _notificationService.SendAsync(
+                user.Id.ToString(),
+                "Two-Factor Authentication Disabled",
+                "Two-Factor Authentication was disabled on your account.",
+                NotificationType.SecurityAlert,
+                actionUrl: "/settings",
+                cancellationToken: CancellationToken.None);
+        }
 
         return CreateAuthResult(user);
     }
@@ -618,6 +643,17 @@ public sealed class JwtAuthService : IAuthService
             "Password Changed",
             "Your Vaultz account password was changed. If you did not perform this action, please contact support immediately.",
             CancellationToken.None);
+
+        if (_notificationService != null)
+        {
+            _ = _notificationService.SendAsync(
+                user.Id.ToString(),
+                "Password Changed Successfully",
+                "Your account password was updated. If you did not do this, please secure your account immediately.",
+                NotificationType.SecurityAlert,
+                actionUrl: "/settings",
+                cancellationToken: CancellationToken.None);
+        }
 
         return CreateAuthResult(user);
     }

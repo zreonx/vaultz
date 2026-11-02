@@ -6,6 +6,7 @@ using Vaultz.Application.Features.Budgets;
 using Vaultz.Application.Features.Categories;
 using Vaultz.Application.Features.Dashboard;
 using Vaultz.Application.Features.Lending;
+using Vaultz.Application.Features.Notifications;
 using Vaultz.Application.Features.RecurringTransactions;
 using Vaultz.Application.Features.Reports;
 using Vaultz.Application.Features.SavingsGoals;
@@ -30,6 +31,7 @@ public static class DependencyInjection
         services.AddScoped<LendingHandlers>();
         services.AddScoped<RecurringTransactionHandlers>();
         services.AddScoped<DashboardHandlers>();
+        services.AddScoped<NotificationHandlers>();
         services.AddScoped<ReportHandlers>();
 
         return services;

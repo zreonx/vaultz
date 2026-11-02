@@ -328,3 +328,29 @@ export interface RecordLendingPaymentRequest {
   notes?: string | null;
   syncAccountBalance?: boolean;
 }
+
+export type NotificationType =
+  | "System"
+  | "SecurityAlert"
+  | "BudgetWarning"
+  | "SavingsGoalMilestone"
+  | "LendingReminder"
+  | "TransactionAlert"
+  | "TransferCompleted";
+
+export interface NotificationItem {
+  id: string;
+  title: string;
+  message: string;
+  type: NotificationType | string;
+  isRead: boolean;
+  actionUrl?: string | null;
+  createdAtUtc: string;
+  readAtUtc?: string | null;
+}
+
+export interface NotificationsListResponse {
+  items: NotificationItem[];
+  unreadCount: number;
+}
+
