@@ -5,6 +5,7 @@ import {
   HubConnection,
   HubConnectionBuilder,
   HubConnectionState,
+  type ILogger,
   LogLevel,
 } from "@microsoft/signalr";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -48,8 +49,27 @@ function playNotificationChime() {
   }
 }
 
+const signalRLogger: ILogger = {
+  log(logLevel: LogLevel, message: string) {
+    // Suppress harmless React StrictMode unmount / negotiation abort logs
+    if (
+      message.includes("stopped during negotiation") ||
+      message.includes("canceled") ||
+      message.includes("cancelled")
+    ) {
+      return;
+    }
+    if (logLevel >= LogLevel.Error) {
+      console.error("[SignalR]", message);
+    } else if (logLevel >= LogLevel.Warning) {
+      console.warn("[SignalR]", message);
+    }
+  },
+};
+
 export function useNotifications() {
   const { data: user } = useCurrentUser();
+  const userId = user?.id;
   const queryClient = useQueryClient();
   const [isConnected, setIsConnected] = useState(false);
   const connectionRef = useRef<HubConnection | null>(null);
@@ -59,7 +79,7 @@ export function useNotifications() {
     queryFn: () =>
       apiRequest<NotificationsListResponse>("/api/v1/notifications?limit=30"),
     staleTime: 30 * 1000,
-    enabled: Boolean(user),
+    enabled: Boolean(userId),
   });
 
   const markAsReadMutation = useMutation({
@@ -92,7 +112,7 @@ export function useNotifications() {
   });
 
   useEffect(() => {
-    if (!user) {
+    if (!userId) {
       setIsConnected(false);
       return;
     }
@@ -106,7 +126,7 @@ export function useNotifications() {
         withCredentials: true,
       })
       .withAutomaticReconnect([0, 2000, 5000, 10000, 30000])
-      .configureLogging(LogLevel.Warning)
+      .configureLogging(signalRLogger)
       .build();
 
     connectionRef.current = connection;
@@ -150,25 +170,28 @@ export function useNotifications() {
     connection
       .start()
       .then(() => {
-        if (!isCancelled) {
+        if (isCancelled) {
+          // If unmounted during negotiation, stop once connected cleanly
+          connection.stop().catch(() => {});
+        } else {
           setIsConnected(true);
         }
       })
       .catch((err) => {
         if (!isCancelled) {
           setIsConnected(false);
+          console.debug("SignalR connection attempt:", err?.message || err);
         }
-        // Non-blocking log
-        console.debug("SignalR connection attempt:", err?.message || err);
       });
 
     return () => {
       isCancelled = true;
-      if (connection.state !== HubConnectionState.Disconnected) {
+      // If already connected, stop immediately; otherwise .then() stops it gracefully after negotiation
+      if (connection.state === HubConnectionState.Connected) {
         connection.stop().catch(() => {});
       }
     };
-  }, [queryClient, user]);
+  }, [queryClient, userId]);
 
   return {
     notifications: query.data?.items ?? [],
