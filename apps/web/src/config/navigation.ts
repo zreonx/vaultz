@@ -48,13 +48,6 @@ export const SHARED_NAVIGATION = ALL_ACCOUNTS_NAVIGATION;
  */
 export const ACCOUNT_NAVIGATION: NavItem[] = [
   {
-    title: "Transactions",
-    href: "/transactions?scope=account",
-    status: "active",
-    description: "Record & view transactions for this account",
-    scope: "account",
-  },
-  {
     title: "Budgets",
     href: "/budgets",
     status: "active",

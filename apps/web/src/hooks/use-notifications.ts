@@ -11,6 +11,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { env } from "@/config/env";
 import { apiRequest } from "@/lib/api/client";
 import { toast } from "@/components/ui/toast";
+import { useCurrentUser } from "@/hooks/use-auth";
 import type { NotificationItem, NotificationsListResponse } from "@/types/api";
 
 function playNotificationChime() {
@@ -48,6 +49,7 @@ function playNotificationChime() {
 }
 
 export function useNotifications() {
+  const { data: user } = useCurrentUser();
   const queryClient = useQueryClient();
   const [isConnected, setIsConnected] = useState(false);
   const connectionRef = useRef<HubConnection | null>(null);
@@ -55,13 +57,14 @@ export function useNotifications() {
   const query = useQuery({
     queryKey: ["notifications"],
     queryFn: () =>
-      apiRequest<NotificationsListResponse>("/notifications?limit=30"),
+      apiRequest<NotificationsListResponse>("/api/v1/notifications?limit=30"),
     staleTime: 30 * 1000,
+    enabled: Boolean(user),
   });
 
   const markAsReadMutation = useMutation({
     mutationFn: (id: string) =>
-      apiRequest<void>(`/notifications/${id}/read`, { method: "PUT" }),
+      apiRequest<void>(`/api/v1/notifications/${id}/read`, { method: "PUT" }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
     },
@@ -69,7 +72,7 @@ export function useNotifications() {
 
   const markAllAsReadMutation = useMutation({
     mutationFn: () =>
-      apiRequest<void>("/notifications/read-all", { method: "PUT" }),
+      apiRequest<void>("/api/v1/notifications/read-all", { method: "PUT" }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
     },
@@ -77,7 +80,7 @@ export function useNotifications() {
 
   const deleteNotificationMutation = useMutation({
     mutationFn: (id: string) =>
-      apiRequest<void>(`/notifications/${id}`, { method: "DELETE" }),
+      apiRequest<void>(`/api/v1/notifications/${id}`, { method: "DELETE" }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
     },
@@ -85,10 +88,15 @@ export function useNotifications() {
 
   const sendTestNotificationMutation = useMutation({
     mutationFn: () =>
-      apiRequest<{ message: string }>("/notifications/test", { method: "POST" }),
+      apiRequest<{ message: string }>("/api/v1/notifications/test", { method: "POST" }),
   });
 
   useEffect(() => {
+    if (!user) {
+      setIsConnected(false);
+      return;
+    }
+
     let isCancelled = false;
 
     const hubUrl = `${env.NEXT_PUBLIC_API_BASE_URL}/hubs/notifications`;
@@ -160,7 +168,7 @@ export function useNotifications() {
         connection.stop().catch(() => {});
       }
     };
-  }, [queryClient]);
+  }, [queryClient, user]);
 
   return {
     notifications: query.data?.items ?? [],
