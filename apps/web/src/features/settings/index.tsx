@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   CheckCircle2,
+  Compass,
   ExternalLink,
   Eye,
   EyeOff,
@@ -14,12 +15,15 @@ import {
   LogOut,
   Mail,
   RefreshCw,
+  RotateCcw,
   ShieldCheck,
   SlidersHorizontal,
+  Sparkles,
   Star,
   User,
   Wallet,
 } from "lucide-react";
+import { useTutorial } from "@/context/tutorial-context";
 import {
   useChangePasswordMutation,
   useCurrentUser,
@@ -83,7 +87,9 @@ const DEFAULT_PREFERENCES: SecurityPreferences = {
 const PREFERENCES_STORAGE_KEY = "vaultz.security_preferences";
 
 export function SettingsFeature() {
+  const router = useRouter();
   const searchParams = useSearchParams();
+  const { resetTutorial } = useTutorial();
   const initialTab =
     searchParams.get("tab") === "security"
       ? "security"
@@ -984,6 +990,50 @@ export function SettingsFeature() {
                   </AlertDescription>
                 </Alert>
               )}
+            </CardContent>
+          </Card>
+
+          {/* Interactive Onboarding Tour Replay Card */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Compass className="h-4 w-4 text-[var(--accent)]" />
+                    Interactive Onboarding Tour
+                  </CardTitle>
+                  <CardDescription>
+                    Walk through the core features of Vaultz with our step-by-step interactive guide.
+                  </CardDescription>
+                </div>
+                <Badge variant="neutral" className="gap-1 text-xs">
+                  <Sparkles className="h-3 w-3 text-[var(--accent)]" />
+                  Guided Tour
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-xs text-[var(--muted-foreground)] leading-relaxed">
+                The onboarding tour walks you through creating your first isolated account, understanding workspace scoping, and recording transactions with live button highlights.
+              </p>
+              <div className="flex items-center justify-between pt-1">
+                <span className="text-xs text-[var(--muted-foreground)]">
+                  Reset guide status and restart tour on the dashboard
+                </span>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    resetTutorial();
+                    router.push("/dashboard");
+                  }}
+                  className="gap-2"
+                >
+                  <RotateCcw className="h-3.5 w-3.5 text-[var(--accent)]" />
+                  <span>Replay Onboarding Guide</span>
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
