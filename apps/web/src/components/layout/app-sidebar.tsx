@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   ArrowLeftRight,
   BarChart3,
+  Calculator,
   CalendarClock,
   Check,
   ChevronsUpDown,
@@ -65,6 +66,7 @@ const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   IOUs: Handshake,
   Recurring: CalendarClock,
   Reports: BarChart3,
+  "Calculators & Tools": Calculator,
   Settings: Settings,
 };
 

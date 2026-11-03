@@ -89,6 +89,13 @@ export const ACCOUNT_NAVIGATION: NavItem[] = [
  */
 export const SYSTEM_NAVIGATION: NavItem[] = [
   {
+    title: "Calculators & Tools",
+    href: "/tools",
+    status: "active",
+    description: "Currency converter, arithmetic & loan calculators",
+    scope: "system",
+  },
+  {
     title: "Settings",
     href: "/settings",
     status: "active",

@@ -17,7 +17,6 @@ import {
   Mail,
   RefreshCw,
   RotateCcw,
-  Send,
   ShieldAlert,
   ShieldCheck,
   SlidersHorizontal,
@@ -32,7 +31,6 @@ import {
   DEFAULT_NOTIFICATION_PREFERENCES,
   NOTIFICATION_PREFERENCES_KEY,
   getStoredNotificationPreferences,
-  useNotifications,
 } from "@/hooks/use-notifications";
 import { TwoFactorSecurityCard } from "./components/TwoFactorSecurityCard";
 import { ThemeToggle } from "@/components/shared/theme-toggle";
@@ -127,7 +125,6 @@ export function SettingsFeature() {
   }, [searchParams]);
 
   // Notification Preferences state
-  const { sendTestNotification, isSendingTest } = useNotifications();
   const [notifPreferences, setNotifPreferences] = useState<NotificationPreferences>(
     DEFAULT_NOTIFICATION_PREFERENCES
   );
@@ -1008,25 +1005,10 @@ export function SettingsFeature() {
         <TabsContent value="notifications" className="space-y-6">
           <Card>
             <CardHeader>
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                <div>
-                  <CardTitle>Notification Preferences</CardTitle>
-                  <CardDescription>
-                    Choose which activities trigger instant live notifications and audio alerts.
-                  </CardDescription>
-                </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => sendTestNotification()}
-                  disabled={isSendingTest}
-                  className="gap-1.5 text-xs shrink-0"
-                >
-                  <Send className="h-3.5 w-3.5 text-[var(--accent)]" />
-                  {isSendingTest ? "Dispatching..." : "Send Test Alert"}
-                </Button>
-              </div>
+              <CardTitle>Notification Preferences</CardTitle>
+              <CardDescription>
+                Choose which activities trigger instant live notifications and audio alerts.
+              </CardDescription>
             </CardHeader>
 
             <CardContent className="space-y-5">
