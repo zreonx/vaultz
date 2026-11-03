@@ -168,9 +168,11 @@ if (app.Environment.IsDevelopment())
                         is_read BOOLEAN NOT NULL DEFAULT FALSE,
                         read_at_utc TIMESTAMPTZ NULL,
                         action_url VARCHAR(500) NULL,
-                        created_at_utc TIMESTAMPTZ NOT NULL
+                        created_at_utc TIMESTAMPTZ NOT NULL,
+                        updated_at_utc TIMESTAMPTZ NULL
                     );
                     """,
+                    "ALTER TABLE notifications ADD COLUMN IF NOT EXISTS updated_at_utc TIMESTAMPTZ NULL;",
                     "CREATE INDEX IF NOT EXISTS ix_notifications_user_id_created_at_utc ON notifications (user_id, created_at_utc DESC);",
                     "CREATE INDEX IF NOT EXISTS ix_notifications_user_id_is_read ON notifications (user_id, is_read);"
                 };

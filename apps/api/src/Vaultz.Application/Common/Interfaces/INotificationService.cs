@@ -13,7 +13,7 @@ public sealed record NotificationResponse(
     DateTimeOffset? ReadAtUtc);
 
 public sealed record NotificationsListResponse(
-    List<NotificationResponse> Notifications,
+    List<NotificationResponse> Items,
     int UnreadCount);
 
 public interface INotificationService
