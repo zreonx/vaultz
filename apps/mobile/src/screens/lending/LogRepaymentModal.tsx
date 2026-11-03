@@ -132,6 +132,8 @@ export const LogRepaymentModal: React.FC<LogRepaymentModalProps> = ({
           value={notes}
           onChangeText={setNotes}
           leftIcon="reader-outline"
+          multiline
+          numberOfLines={3}
         />
 
         <View style={styles.buttonRow}>

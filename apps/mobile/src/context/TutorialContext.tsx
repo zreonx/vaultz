@@ -49,7 +49,7 @@ export const MOBILE_TOUR_STEPS: MobileTourStep[] = [
     badge: 'FINANCIAL TOOLKIT',
     title: '4. Full Financial Toolkit',
     description:
-      'Access your entire personal finance toolkit from the bottom bar: manage all Accounts, inspect Activity logs, track debts with IOUs, or replay this tour anytime in Settings.',
+      'Access your entire personal finance toolkit from the bottom bar: manage all Accounts, inspect Activity logs, track IOUs, use Calculators & Tools, or manage preferences in Settings.',
   },
 ];
 

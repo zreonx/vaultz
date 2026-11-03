@@ -8,6 +8,7 @@ import {
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '@/context/AuthContext';
 import { useWorkspace } from '@/context/WorkspaceContext';
 import { useTutorial } from '@/context/TutorialContext';
@@ -23,11 +24,15 @@ import { typography, radius, spacing } from '@/theme/tokens';
 import { haptics } from '@/utils/haptics';
 
 export const SettingsScreen: React.FC = () => {
+  const navigation = useNavigation<any>();
   const { user, isBiometricEnabled, setBiometricEnabled, logout } = useAuth();
   const { hideBalance, toggleHideBalance } = useWorkspace();
   const { resetTour } = useTutorial();
   const { themeMode, setThemeMode, colors, isDark } = useTheme();
   const [isUpdatingBio, setIsUpdatingBio] = useState(false);
+  const [notifyBudget, setNotifyBudget] = useState(true);
+  const [notifyIou, setNotifyIou] = useState(true);
+  const [notifyTransactions, setNotifyTransactions] = useState(false);
 
   const handleBiometricToggle = async (value: boolean) => {
     try {
@@ -287,6 +292,169 @@ export const SettingsScreen: React.FC = () => {
               }}
               trackColor={{ false: colors.border, true: colors.accentMuted }}
               thumbColor={hideBalance ? colors.accent : colors.surface}
+            />
+          </View>
+        </Card>
+
+        {/* Notification Preferences */}
+        <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
+          NOTIFICATIONS
+        </Text>
+        <Card
+          style={[
+            styles.settingGroup,
+            {
+              backgroundColor: colors.surface,
+              borderColor: colors.border,
+            },
+          ]}
+        >
+          {/* Budget Alerts */}
+          <View style={styles.settingRow}>
+            <View style={styles.settingLeft}>
+              <View
+                style={[
+                  styles.settingIcon,
+                  {
+                    backgroundColor: isDark ? colors.surfaceSubtle : colors.surfaceMuted,
+                  },
+                ]}
+              >
+                <Ionicons name="notifications-outline" size={20} color={colors.accent} />
+              </View>
+              <View style={styles.settingLabels}>
+                <Text style={[styles.settingTitle, { color: colors.textPrimary }]}>
+                  Budget Warnings
+                </Text>
+                <Text style={[styles.settingSubtitle, { color: colors.textMuted }]}>
+                  Alert when spending reaches 80% and 100%
+                </Text>
+              </View>
+            </View>
+            <Switch
+              value={notifyBudget}
+              onValueChange={(val) => {
+                haptics.selection();
+                setNotifyBudget(val);
+              }}
+              trackColor={{ false: colors.border, true: colors.accentMuted }}
+              thumbColor={notifyBudget ? colors.accent : colors.surface}
+            />
+          </View>
+
+          <View style={[styles.divider, { backgroundColor: colors.borderSubtle }]} />
+
+          {/* IOU Reminders */}
+          <View style={styles.settingRow}>
+            <View style={styles.settingLeft}>
+              <View
+                style={[
+                  styles.settingIcon,
+                  {
+                    backgroundColor: isDark ? colors.surfaceSubtle : colors.surfaceMuted,
+                  },
+                ]}
+              >
+                <Ionicons name="calendar-outline" size={20} color={colors.accent} />
+              </View>
+              <View style={styles.settingLabels}>
+                <Text style={[styles.settingTitle, { color: colors.textPrimary }]}>
+                  IOU Due Date Reminders
+                </Text>
+                <Text style={[styles.settingSubtitle, { color: colors.textMuted }]}>
+                  Scheduled notifications for lent or borrowed funds
+                </Text>
+              </View>
+            </View>
+            <Switch
+              value={notifyIou}
+              onValueChange={(val) => {
+                haptics.selection();
+                setNotifyIou(val);
+              }}
+              trackColor={{ false: colors.border, true: colors.accentMuted }}
+              thumbColor={notifyIou ? colors.accent : colors.surface}
+            />
+          </View>
+
+          <View style={[styles.divider, { backgroundColor: colors.borderSubtle }]} />
+
+          {/* Transaction Activity Alerts */}
+          <View style={styles.settingRow}>
+            <View style={styles.settingLeft}>
+              <View
+                style={[
+                  styles.settingIcon,
+                  {
+                    backgroundColor: isDark ? colors.surfaceSubtle : colors.surfaceMuted,
+                  },
+                ]}
+              >
+                <Ionicons name="receipt-outline" size={20} color={colors.accent} />
+              </View>
+              <View style={styles.settingLabels}>
+                <Text style={[styles.settingTitle, { color: colors.textPrimary }]}>
+                  Transaction Confirmations
+                </Text>
+                <Text style={[styles.settingSubtitle, { color: colors.textMuted }]}>
+                  Push alert for each newly recorded entry
+                </Text>
+              </View>
+            </View>
+            <Switch
+              value={notifyTransactions}
+              onValueChange={(val) => {
+                haptics.selection();
+                setNotifyTransactions(val);
+              }}
+              trackColor={{ false: colors.border, true: colors.accentMuted }}
+              thumbColor={notifyTransactions ? colors.accent : colors.surface}
+            />
+          </View>
+        </Card>
+
+        {/* Financial Utilities */}
+        <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
+          FINANCIAL UTILITIES
+        </Text>
+        <Card
+          style={[
+            styles.settingGroup,
+            {
+              backgroundColor: colors.surface,
+              borderColor: colors.border,
+            },
+          ]}
+        >
+          <View style={styles.settingRow}>
+            <View style={styles.settingLeft}>
+              <View
+                style={[
+                  styles.settingIcon,
+                  {
+                    backgroundColor: isDark ? colors.surfaceSubtle : colors.surfaceMuted,
+                  },
+                ]}
+              >
+                <Ionicons name="calculator-outline" size={20} color={colors.accent} />
+              </View>
+              <View style={styles.settingLabels}>
+                <Text style={[styles.settingTitle, { color: colors.textPrimary }]}>
+                  Calculators & Tools
+                </Text>
+                <Text style={[styles.settingSubtitle, { color: colors.textMuted }]}>
+                  FX converter, standard calculator, loan & savings projections
+                </Text>
+              </View>
+            </View>
+            <Button
+              title="Open"
+              variant="secondary"
+              size="sm"
+              onPress={() => {
+                haptics.selection();
+                navigation.navigate('Tools');
+              }}
             />
           </View>
         </Card>

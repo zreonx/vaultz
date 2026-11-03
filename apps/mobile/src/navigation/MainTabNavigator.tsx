@@ -9,6 +9,7 @@ import { DashboardScreen } from '@/screens/dashboard/DashboardScreen';
 import { AccountsScreen } from '@/screens/accounts/AccountsScreen';
 import { TransactionsScreen } from '@/screens/transactions/TransactionsScreen';
 import { LendingScreen } from '@/screens/lending/LendingScreen';
+import { ToolsScreen } from '@/screens/tools/ToolsScreen';
 import { SettingsScreen } from '@/screens/settings/SettingsScreen';
 import { typography } from '@/theme/tokens';
 import { haptics } from '@/utils/haptics';
@@ -18,6 +19,7 @@ export type MainTabParamList = {
   Accounts: undefined;
   Transactions: undefined;
   IOUs: undefined;
+  Tools: undefined;
   Settings: undefined;
 };
 
@@ -77,6 +79,9 @@ export const MainTabNavigator: React.FC = () => {
             case 'IOUs':
               iconName = focused ? 'people' : 'people-outline';
               break;
+            case 'Tools':
+              iconName = focused ? 'calculator' : 'calculator-outline';
+              break;
             case 'Settings':
               iconName = focused ? 'settings' : 'settings-outline';
               break;
@@ -110,6 +115,11 @@ export const MainTabNavigator: React.FC = () => {
         name="IOUs"
         component={LendingScreen}
         options={{ tabBarLabel: 'IOUs' }}
+      />
+      <Tab.Screen
+        name="Tools"
+        component={ToolsScreen}
+        options={{ tabBarLabel: 'Tools' }}
       />
       <Tab.Screen
         name="Settings"
