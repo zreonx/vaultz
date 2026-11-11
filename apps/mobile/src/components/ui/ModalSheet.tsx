@@ -68,7 +68,7 @@ export const ModalSheet: React.FC<ModalSheetProps> = ({
                 styles.sheetContainer,
                 {
                   backgroundColor: colors.surface,
-                  borderColor: colors.border,
+                  borderColor: colors.borderSubtle,
                   maxHeight: `${Math.round(maxHeightRatio * 100)}%`,
                 },
               ]}
@@ -142,7 +142,7 @@ const styles = StyleSheet.create({
   sheetContainer: {
     borderTopLeftRadius: radius.xl,
     borderTopRightRadius: radius.xl,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderBottomWidth: 0,
     width: '100%',
   },
@@ -162,7 +162,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.sm,
-    borderBottomWidth: 1,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
   headerTextContainer: {
     flex: 1,

@@ -74,7 +74,7 @@ export const RegisterScreen: React.FC<RegisterScreenProps> = ({ navigation }) =>
             styles.formContainer,
             {
               backgroundColor: colors.surface,
-              borderColor: colors.border,
+              borderColor: colors.borderSubtle,
             },
           ]}
         >
@@ -190,7 +190,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   formContainer: {
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderRadius: radius.xl,
     padding: spacing.xl,
   },

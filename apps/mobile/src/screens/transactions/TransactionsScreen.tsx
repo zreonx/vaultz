@@ -148,7 +148,7 @@ export const TransactionsScreen: React.FC = () => {
           styles.txRow,
           {
             backgroundColor: colors.surface,
-            borderColor: colors.border,
+            borderColor: colors.borderSubtle,
           },
         ]}
       >
@@ -232,8 +232,8 @@ export const TransactionsScreen: React.FC = () => {
             style={[
               styles.syncBanner,
               {
-                backgroundColor: isDark ? 'rgba(217, 119, 6, 0.12)' : 'rgba(245, 158, 11, 0.12)',
-                borderColor: colors.warning,
+                backgroundColor: colors.warningSoft,
+                borderColor: isDark ? colors.borderSubtle : colors.warning,
               },
             ]}
           >
@@ -251,7 +251,7 @@ export const TransactionsScreen: React.FC = () => {
             <TouchableOpacity
               style={[
                 styles.syncBannerBtn,
-                { backgroundColor: colors.surface, borderColor: colors.border },
+                { backgroundColor: colors.surface, borderColor: colors.borderSubtle },
               ]}
               onPress={() => syncQueue()}
               disabled={isSyncing}
@@ -269,7 +269,7 @@ export const TransactionsScreen: React.FC = () => {
             styles.searchContainer,
             {
               backgroundColor: colors.surface,
-              borderColor: colors.border,
+              borderColor: colors.borderSubtle,
             },
           ]}
         >
@@ -358,15 +358,7 @@ export const TransactionsScreen: React.FC = () => {
             }
             ItemSeparatorComponent={() => <View style={styles.separator} />}
             ListEmptyComponent={
-              <Card
-                style={[
-                  styles.emptyCard,
-                  {
-                    backgroundColor: colors.surface,
-                    borderColor: colors.border,
-                  },
-                ]}
-              >
+              <Card style={styles.emptyCard}>
                 <Ionicons name="receipt-outline" size={36} color={colors.textMuted} />
                 <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>
                   No transactions found
@@ -417,7 +409,7 @@ const styles = StyleSheet.create({
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderRadius: radius.md,
     paddingHorizontal: spacing.md,
     height: 44,
@@ -441,7 +433,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     paddingHorizontal: spacing.md,
     borderRadius: radius.full,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
   },
   tabText: {
     ...typography.caption,
@@ -459,7 +451,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.md,
     borderRadius: radius.lg,
     paddingHorizontal: spacing.base,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
   },
   separator: {
     height: spacing.sm,
@@ -507,7 +499,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     borderRadius: radius.lg,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     marginBottom: spacing.sm,
   },
   syncBannerLeft: {
@@ -530,7 +522,7 @@ const styles = StyleSheet.create({
     marginTop: 1,
   },
   syncBannerBtn: {
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: radius.md,

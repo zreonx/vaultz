@@ -39,15 +39,15 @@ export function Button({
   icon,
   leftIcon,
 }: ButtonProps) {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
 
   const getVariantStyle = (): ViewStyle => {
     switch (variant) {
       case "secondary":
         return {
-          backgroundColor: colors.surfaceSubtle,
-          borderColor: colors.border,
-          borderWidth: 1,
+          backgroundColor: isDark ? colors.surfaceSubtle : colors.surfaceMuted,
+          borderColor: isDark ? colors.borderSubtle : colors.border,
+          borderWidth: StyleSheet.hairlineWidth,
         };
       case "danger":
         return {
@@ -69,22 +69,25 @@ export function Button({
     switch (size) {
       case "sm":
         return {
-          paddingVertical: spacing.sm,
-          paddingHorizontal: spacing.md,
-          minHeight: 36,
+          paddingVertical: 5,
+          paddingHorizontal: 12,
+          minHeight: 30,
+          borderRadius: radii.md,
         };
       case "lg":
         return {
-          paddingVertical: spacing.base,
+          paddingVertical: 14,
           paddingHorizontal: spacing.xl,
-          minHeight: 52,
+          minHeight: 50,
+          borderRadius: radii.md,
         };
       case "md":
       default:
         return {
-          paddingVertical: spacing.md,
+          paddingVertical: 10,
           paddingHorizontal: spacing.base,
-          minHeight: 46,
+          minHeight: 44,
+          borderRadius: radii.md,
         };
     }
   };
@@ -125,7 +128,7 @@ export function Button({
           {leftIcon && (
             <Ionicons
               name={leftIcon}
-              size={18}
+              size={size === "sm" ? 15 : 18}
               color={getTextColor()}
               style={{ marginRight: spacing.xs + 2 }}
             />
@@ -134,6 +137,7 @@ export function Button({
           <Text
             style={[
               typography.label,
+              size === "sm" && { fontSize: 12, lineHeight: 16 },
               { color: getTextColor(), marginLeft: icon ? spacing.sm : 0 },
               textStyle,
             ]}

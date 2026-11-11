@@ -96,15 +96,11 @@ export const AccountsScreen: React.FC = () => {
                   style={styles.cardPressable}
                 >
                   <Card
+                    variant={isActive ? "active" : "surface"}
                     style={[
                       styles.accountCard,
-                      {
-                        backgroundColor: colors.surface,
-                        borderColor: isActive ? colors.accent : colors.border,
-                      },
                       isActive && {
-                        backgroundColor: isDark ? 'rgba(71, 153, 128, 0.08)' : 'rgba(42, 107, 88, 0.05)',
-                        borderWidth: 1.5,
+                        backgroundColor: colors.accentSoft,
                       },
                     ]}
                   >

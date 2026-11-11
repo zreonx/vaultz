@@ -120,15 +120,7 @@ export const LendingScreen: React.FC = () => {
     const curr = item.currency || item.currencyCode;
 
     return (
-      <Card
-        style={[
-          styles.itemCard,
-          {
-            backgroundColor: colors.surface,
-            borderColor: colors.border,
-          },
-        ]}
-      >
+      <Card style={styles.itemCard}>
         {/* Top Row: Name and Status Badge */}
         <View style={styles.cardHeader}>
           <View style={styles.nameContainer}>
@@ -236,15 +228,7 @@ export const LendingScreen: React.FC = () => {
       <View style={styles.container}>
         {/* Summary Overview */}
         <View style={styles.summaryRow}>
-          <Card
-            style={[
-              styles.summaryCard,
-              {
-                backgroundColor: colors.surface,
-                borderColor: colors.border,
-              },
-            ]}
-          >
+          <Card style={styles.summaryCard}>
             <Text style={[styles.summaryLabel, { color: colors.textMuted }]}>
               OWED TO YOU
             </Text>
@@ -253,15 +237,7 @@ export const LendingScreen: React.FC = () => {
             </Text>
           </Card>
 
-          <Card
-            style={[
-              styles.summaryCard,
-              {
-                backgroundColor: colors.surface,
-                borderColor: colors.border,
-              },
-            ]}
-          >
+          <Card style={styles.summaryCard}>
             <Text style={[styles.summaryLabel, { color: colors.textMuted }]}>
               YOU OWE
             </Text>
@@ -328,15 +304,7 @@ export const LendingScreen: React.FC = () => {
               />
             }
             ListEmptyComponent={
-              <Card
-                style={[
-                  styles.emptyCard,
-                  {
-                    backgroundColor: colors.surface,
-                    borderColor: colors.border,
-                  },
-                ]}
-              >
+              <Card style={styles.emptyCard}>
                 <Ionicons name="people-outline" size={36} color={colors.textMuted} />
                 <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>
                   No loans or IOUs found

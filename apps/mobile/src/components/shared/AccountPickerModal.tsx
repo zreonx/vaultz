@@ -62,13 +62,11 @@ export const AccountPickerModal: React.FC<AccountPickerModalProps> = ({
                   styles.accountItem,
                   {
                     backgroundColor: isSelected
-                      ? isDark
-                        ? 'rgba(71, 153, 128, 0.1)'
-                        : 'rgba(42, 107, 88, 0.06)'
+                      ? colors.accentSoft
                       : isDark
                       ? colors.surfaceSubtle
                       : colors.surfaceMuted,
-                    borderColor: isSelected ? colors.accent : colors.border,
+                    borderColor: isSelected ? colors.accent : colors.borderSubtle,
                   },
                 ]}
                 onPress={() => handleSelectAccount(acc)}
@@ -166,7 +164,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: spacing.md,
     borderRadius: radius.lg,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     marginBottom: spacing.sm,
   },
   accountIconContainer: {

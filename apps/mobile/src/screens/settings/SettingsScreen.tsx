@@ -77,21 +77,13 @@ export const SettingsScreen: React.FC = () => {
         showsVerticalScrollIndicator={false}
       >
         {/* User Card */}
-        <Card
-          style={[
-            styles.profileCard,
-            {
-              backgroundColor: colors.surface,
-              borderColor: colors.border,
-            },
-          ]}
-        >
+        <Card style={styles.profileCard}>
           <View
             style={[
               styles.profileAvatar,
               {
                 backgroundColor: isDark ? colors.surfaceSubtle : colors.surfaceMuted,
-                borderColor: colors.border,
+                borderColor: colors.borderSubtle,
               },
             ]}
           >
@@ -116,15 +108,7 @@ export const SettingsScreen: React.FC = () => {
         <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
           APPEARANCE & THEME
         </Text>
-        <Card
-          style={[
-            styles.settingGroup,
-            {
-              backgroundColor: colors.surface,
-              borderColor: colors.border,
-            },
-          ]}
-        >
+        <Card style={styles.settingGroup}>
           <View style={styles.themeRow}>
             <View style={styles.settingLeft}>
               <View
@@ -158,7 +142,7 @@ export const SettingsScreen: React.FC = () => {
               styles.themeSegmentContainer,
               {
                 backgroundColor: isDark ? colors.surfaceSubtle : colors.surfaceMuted,
-                borderColor: colors.border,
+                borderColor: colors.borderSubtle,
               },
             ]}
           >
@@ -182,8 +166,7 @@ export const SettingsScreen: React.FC = () => {
                       styles.themeSegmentActive,
                       {
                         backgroundColor: colors.surface,
-                        borderColor: colors.border,
-                        shadowColor: '#000',
+                        borderColor: colors.borderSubtle,
                       },
                     ],
                   ]}
@@ -218,15 +201,7 @@ export const SettingsScreen: React.FC = () => {
         <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
           SECURITY & PRIVACY
         </Text>
-        <Card
-          style={[
-            styles.settingGroup,
-            {
-              backgroundColor: colors.surface,
-              borderColor: colors.border,
-            },
-          ]}
-        >
+        <Card style={styles.settingGroup}>
           {/* Biometrics */}
           <View style={styles.settingRow}>
             <View style={styles.settingLeft}>
@@ -302,15 +277,7 @@ export const SettingsScreen: React.FC = () => {
         <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
           NOTIFICATIONS
         </Text>
-        <Card
-          style={[
-            styles.settingGroup,
-            {
-              backgroundColor: colors.surface,
-              borderColor: colors.border,
-            },
-          ]}
-        >
+        <Card style={styles.settingGroup}>
           {/* Budget Alerts */}
           <View style={styles.settingRow}>
             <View style={styles.settingLeft}>
@@ -419,15 +386,7 @@ export const SettingsScreen: React.FC = () => {
         <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
           FINANCIAL UTILITIES
         </Text>
-        <Card
-          style={[
-            styles.settingGroup,
-            {
-              backgroundColor: colors.surface,
-              borderColor: colors.border,
-            },
-          ]}
-        >
+        <Card style={styles.settingGroup}>
           <View style={styles.settingRow}>
             <View style={styles.settingLeft}>
               <View
@@ -465,15 +424,7 @@ export const SettingsScreen: React.FC = () => {
         <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
           OFFLINE & SYNC
         </Text>
-        <Card
-          style={[
-            styles.settingGroup,
-            {
-              backgroundColor: colors.surface,
-              borderColor: colors.border,
-            },
-          ]}
-        >
+        <Card style={styles.settingGroup}>
           <View style={styles.settingRow}>
             <View style={styles.settingLeft}>
               <View
@@ -525,15 +476,7 @@ export const SettingsScreen: React.FC = () => {
         <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
           HELP & ONBOARDING
         </Text>
-        <Card
-          style={[
-            styles.settingGroup,
-            {
-              backgroundColor: colors.surface,
-              borderColor: colors.border,
-            },
-          ]}
-        >
+        <Card style={styles.settingGroup}>
           <View style={styles.settingRow}>
             <View style={styles.settingLeft}>
               <View
@@ -575,15 +518,7 @@ export const SettingsScreen: React.FC = () => {
         <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
           SYSTEM INFO
         </Text>
-        <Card
-          style={[
-            styles.settingGroup,
-            {
-              backgroundColor: colors.surface,
-              borderColor: colors.border,
-            },
-          ]}
-        >
+        <Card style={styles.settingGroup}>
           <View style={styles.settingRow}>
             <View style={styles.settingLeft}>
               <View
@@ -641,7 +576,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: spacing.md,
@@ -693,7 +628,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderRadius: radius.lg,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     padding: 3,
     gap: 4,
   },
@@ -702,16 +637,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 8,
+    paddingVertical: 7,
     borderRadius: radius.md,
     gap: 5,
   },
   themeSegmentActive: {
-    borderWidth: 1,
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.12,
-    shadowRadius: 3,
-    elevation: 2,
+    borderWidth: StyleSheet.hairlineWidth,
+    elevation: 0,
   },
   themeSegmentText: {
     ...typography.caption,
@@ -745,7 +677,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   divider: {
-    height: 1,
+    height: StyleSheet.hairlineWidth,
     marginVertical: spacing.md,
   },
   signOutButton: {

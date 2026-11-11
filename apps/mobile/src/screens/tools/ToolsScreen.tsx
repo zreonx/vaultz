@@ -309,7 +309,7 @@ export const ToolsScreen: React.FC = () => {
           styles.tabBar,
           {
             backgroundColor: isDark ? colors.surfaceSubtle : colors.surfaceMuted,
-            borderColor: colors.border,
+            borderColor: colors.borderSubtle,
           },
         ]}
       >
@@ -331,8 +331,7 @@ export const ToolsScreen: React.FC = () => {
                   styles.tabBtnActive,
                   {
                     backgroundColor: colors.surface,
-                    borderColor: colors.border,
-                    shadowColor: '#000',
+                    borderColor: colors.borderSubtle,
                   },
                 ],
               ]}
@@ -369,12 +368,7 @@ export const ToolsScreen: React.FC = () => {
         {/* ===================== TAB 1: CONVERTER ===================== */}
         {activeTab === 'converter' && (
           <View style={styles.tabContent}>
-            <Card
-              style={[
-                styles.card,
-                { backgroundColor: colors.surface, borderColor: colors.border },
-              ]}
-            >
+            <Card style={styles.card}>
               <Text style={[styles.sectionHeading, { color: colors.textPrimary }]}>
                 Live Currency Converter
               </Text>
@@ -384,7 +378,7 @@ export const ToolsScreen: React.FC = () => {
 
               {/* Amount Input */}
               <Input
-                label="Amount"
+                label={`AMOUNT IN ${fromCurr}`}
                 keyboardType="numeric"
                 value={amount}
                 onChangeText={setAmount}
@@ -392,99 +386,118 @@ export const ToolsScreen: React.FC = () => {
                 placeholder="100.00"
               />
 
-              {/* From & To Controls */}
-              <View style={styles.currRow}>
-                <View style={styles.currCol}>
-                  <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>
-                    FROM
-                  </Text>
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                    <View style={styles.chipRow}>
-                      {SUPPORTED_CURRENCIES.slice(0, 6).map((c) => (
-                        <PressableScale
-                          key={c}
+              {/* From Currency Selector */}
+              <View style={styles.currSection}>
+                <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>
+                  FROM CURRENCY
+                </Text>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.chipScroll}
+                >
+                  {SUPPORTED_CURRENCIES.map((c) => {
+                    const isSelected = fromCurr === c;
+                    return (
+                      <PressableScale
+                        key={c}
+                        style={[
+                          styles.currChip,
+                          {
+                            backgroundColor: isSelected
+                              ? colors.accentSoft
+                              : isDark
+                              ? colors.surfaceSubtle
+                              : colors.surfaceMuted,
+                            borderColor: isSelected ? colors.accent : colors.borderSubtle,
+                          },
+                        ]}
+                        onPress={() => {
+                          haptics.selection();
+                          setFromCurr(c);
+                        }}
+                      >
+                        <Text
                           style={[
-                            styles.currChip,
-                            fromCurr === c && {
-                              backgroundColor: colors.accentMuted,
-                              borderColor: colors.accent,
+                            styles.currChipText,
+                            {
+                              color: isSelected ? colors.accent : colors.textSecondary,
+                              fontWeight: isSelected ? '700' : '500',
                             },
-                            { borderColor: colors.border },
                           ]}
-                          onPress={() => {
-                            haptics.selection();
-                            setFromCurr(c);
-                          }}
                         >
-                          <Text
-                            style={[
-                              styles.currChipText,
-                              {
-                                color: fromCurr === c ? colors.accent : colors.textSecondary,
-                                fontWeight: fromCurr === c ? '700' : '500',
-                              },
-                            ]}
-                          >
-                            {c}
-                          </Text>
-                        </PressableScale>
-                      ))}
-                    </View>
-                  </ScrollView>
-                </View>
+                          {c}
+                        </Text>
+                      </PressableScale>
+                    );
+                  })}
+                </ScrollView>
+              </View>
 
-                {/* Swap Button */}
+              {/* Centered Swap Divider */}
+              <View style={styles.swapDividerRow}>
+                <View style={[styles.swapDividerLine, { backgroundColor: colors.borderSubtle }]} />
                 <TouchableOpacity
                   style={[
-                    styles.swapBtn,
+                    styles.swapCircleBtn,
                     {
                       backgroundColor: isDark ? colors.surfaceSubtle : colors.surfaceMuted,
-                      borderColor: colors.border,
+                      borderColor: colors.borderSubtle,
                     },
                   ]}
                   onPress={handleSwapCurrencies}
                 >
-                  <Ionicons name="swap-vertical" size={18} color={colors.accent} />
+                  <Ionicons name="swap-vertical" size={17} color={colors.accent} />
                 </TouchableOpacity>
+                <View style={[styles.swapDividerLine, { backgroundColor: colors.borderSubtle }]} />
+              </View>
 
-                <View style={styles.currCol}>
-                  <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>
-                    TO
-                  </Text>
-                  <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                    <View style={styles.chipRow}>
-                      {SUPPORTED_CURRENCIES.slice(0, 6).map((c) => (
-                        <PressableScale
-                          key={c}
+              {/* To Currency Selector */}
+              <View style={styles.currSection}>
+                <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>
+                  TO CURRENCY
+                </Text>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.chipScroll}
+                >
+                  {SUPPORTED_CURRENCIES.map((c) => {
+                    const isSelected = toCurr === c;
+                    return (
+                      <PressableScale
+                        key={c}
+                        style={[
+                          styles.currChip,
+                          {
+                            backgroundColor: isSelected
+                              ? colors.accentSoft
+                              : isDark
+                              ? colors.surfaceSubtle
+                              : colors.surfaceMuted,
+                            borderColor: isSelected ? colors.accent : colors.borderSubtle,
+                          },
+                        ]}
+                        onPress={() => {
+                          haptics.selection();
+                          setToCurr(c);
+                        }}
+                      >
+                        <Text
                           style={[
-                            styles.currChip,
-                            toCurr === c && {
-                              backgroundColor: colors.accentMuted,
-                              borderColor: colors.accent,
+                            styles.currChipText,
+                            {
+                              color: isSelected ? colors.accent : colors.textSecondary,
+                              fontWeight: isSelected ? '700' : '500',
                             },
-                            { borderColor: colors.border },
                           ]}
-                          onPress={() => {
-                            haptics.selection();
-                            setToCurr(c);
-                          }}
                         >
-                          <Text
-                            style={[
-                              styles.currChipText,
-                              {
-                                color: toCurr === c ? colors.accent : colors.textSecondary,
-                                fontWeight: toCurr === c ? '700' : '500',
-                              },
-                            ]}
-                          >
-                            {c}
-                          </Text>
-                        </PressableScale>
-                      ))}
-                    </View>
-                  </ScrollView>
-                </View>
+                          {c}
+                        </Text>
+                      </PressableScale>
+                    );
+                  })}
+                </ScrollView>
               </View>
 
               {/* Converted Result Callout */}
@@ -493,7 +506,7 @@ export const ToolsScreen: React.FC = () => {
                   styles.resultBox,
                   {
                     backgroundColor: isDark ? colors.surfaceSubtle : colors.surfaceMuted,
-                    borderColor: colors.border,
+                    borderColor: colors.borderSubtle,
                   },
                 ]}
               >
@@ -511,12 +524,7 @@ export const ToolsScreen: React.FC = () => {
             </Card>
 
             {/* Benchmark Currencies List */}
-            <Card
-              style={[
-                styles.card,
-                { backgroundColor: colors.surface, borderColor: colors.border },
-              ]}
-            >
+            <Card style={styles.card}>
               <Text style={[styles.sectionHeading, { color: colors.textPrimary }]}>
                 Global Benchmark Matrix
               </Text>
@@ -565,18 +573,12 @@ export const ToolsScreen: React.FC = () => {
         {activeTab === 'calculator' && (
           <View style={styles.tabContent}>
             {/* Screen Display */}
-            <Card
-              style={[
-                styles.card,
-                { backgroundColor: colors.surface, borderColor: colors.border },
-              ]}
-            >
+            <Card style={styles.card}>
               <View
                 style={[
                   styles.calcScreen,
                   {
                     backgroundColor: isDark ? colors.surfaceSubtle : colors.surfaceMuted,
-                    borderColor: colors.border,
                   },
                 ]}
               >
@@ -592,7 +594,7 @@ export const ToolsScreen: React.FC = () => {
                 </Text>
               </View>
 
-              {/* Keypad Grid */}
+              {/* Keypad Grid — borderless minimalist keys */}
               <View style={styles.keypadGrid}>
                 {/* Row 1 */}
                 <TouchableOpacity
@@ -614,7 +616,7 @@ export const ToolsScreen: React.FC = () => {
                   <Text style={[styles.keyText, { color: colors.textPrimary }]}>%</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[styles.keyBtn, { backgroundColor: colors.accentMuted }]}
+                  style={[styles.keyBtn, { backgroundColor: colors.accentSoft }]}
                   onPress={() => handleCalcOperator('÷')}
                 >
                   <Text style={[styles.keyText, { color: colors.accent }]}>÷</Text>
@@ -624,14 +626,14 @@ export const ToolsScreen: React.FC = () => {
                 {['7', '8', '9'].map((n) => (
                   <TouchableOpacity
                     key={n}
-                    style={[styles.keyBtn, { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 }]}
+                    style={[styles.keyBtn, { backgroundColor: isDark ? colors.surfaceSubtle : colors.surfaceMuted }]}
                     onPress={() => handleCalcInput(n)}
                   >
                     <Text style={[styles.keyText, { color: colors.textPrimary }]}>{n}</Text>
                   </TouchableOpacity>
                 ))}
                 <TouchableOpacity
-                  style={[styles.keyBtn, { backgroundColor: colors.accentMuted }]}
+                  style={[styles.keyBtn, { backgroundColor: colors.accentSoft }]}
                   onPress={() => handleCalcOperator('×')}
                 >
                   <Text style={[styles.keyText, { color: colors.accent }]}>×</Text>
@@ -641,14 +643,14 @@ export const ToolsScreen: React.FC = () => {
                 {['4', '5', '6'].map((n) => (
                   <TouchableOpacity
                     key={n}
-                    style={[styles.keyBtn, { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 }]}
+                    style={[styles.keyBtn, { backgroundColor: isDark ? colors.surfaceSubtle : colors.surfaceMuted }]}
                     onPress={() => handleCalcInput(n)}
                   >
                     <Text style={[styles.keyText, { color: colors.textPrimary }]}>{n}</Text>
                   </TouchableOpacity>
                 ))}
                 <TouchableOpacity
-                  style={[styles.keyBtn, { backgroundColor: colors.accentMuted }]}
+                  style={[styles.keyBtn, { backgroundColor: colors.accentSoft }]}
                   onPress={() => handleCalcOperator('−')}
                 >
                   <Text style={[styles.keyText, { color: colors.accent }]}>−</Text>
@@ -658,14 +660,14 @@ export const ToolsScreen: React.FC = () => {
                 {['1', '2', '3'].map((n) => (
                   <TouchableOpacity
                     key={n}
-                    style={[styles.keyBtn, { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 }]}
+                    style={[styles.keyBtn, { backgroundColor: isDark ? colors.surfaceSubtle : colors.surfaceMuted }]}
                     onPress={() => handleCalcInput(n)}
                   >
                     <Text style={[styles.keyText, { color: colors.textPrimary }]}>{n}</Text>
                   </TouchableOpacity>
                 ))}
                 <TouchableOpacity
-                  style={[styles.keyBtn, { backgroundColor: colors.accentMuted }]}
+                  style={[styles.keyBtn, { backgroundColor: colors.accentSoft }]}
                   onPress={() => handleCalcOperator('+')}
                 >
                   <Text style={[styles.keyText, { color: colors.accent }]}>+</Text>
@@ -679,13 +681,13 @@ export const ToolsScreen: React.FC = () => {
                   <Text style={[styles.keyText, { color: colors.textPrimary }]}>±</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[styles.keyBtn, { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 }]}
+                  style={[styles.keyBtn, { backgroundColor: isDark ? colors.surfaceSubtle : colors.surfaceMuted }]}
                   onPress={() => handleCalcInput('0')}
                 >
                   <Text style={[styles.keyText, { color: colors.textPrimary }]}>0</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[styles.keyBtn, { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 }]}
+                  style={[styles.keyBtn, { backgroundColor: isDark ? colors.surfaceSubtle : colors.surfaceMuted }]}
                   onPress={() => handleCalcInput('.')}
                 >
                   <Text style={[styles.keyText, { color: colors.textPrimary }]}>.</Text>
@@ -694,19 +696,14 @@ export const ToolsScreen: React.FC = () => {
                   style={[styles.keyBtn, { backgroundColor: colors.accent }]}
                   onPress={handleCalcEquals}
                 >
-                  <Text style={[styles.keyText, { color: '#FFF' }]}>=</Text>
+                  <Text style={[styles.keyText, { color: colors.accentForeground }]}>=</Text>
                 </TouchableOpacity>
               </View>
             </Card>
 
             {/* History Tape */}
             {calcHistory.length > 0 && (
-              <Card
-                style={[
-                  styles.card,
-                  { backgroundColor: colors.surface, borderColor: colors.border },
-                ]}
-              >
+              <Card style={styles.card}>
                 <View style={styles.historyHeader}>
                   <Text style={[styles.sectionHeading, { color: colors.textPrimary }]}>
                     Recent Calculations
@@ -749,12 +746,7 @@ export const ToolsScreen: React.FC = () => {
         {/* ===================== TAB 3: LOAN / IOU ===================== */}
         {activeTab === 'loan' && (
           <View style={styles.tabContent}>
-            <Card
-              style={[
-                styles.card,
-                { backgroundColor: colors.surface, borderColor: colors.border },
-              ]}
-            >
+            <Card style={styles.card}>
               <Text style={[styles.sectionHeading, { color: colors.textPrimary }]}>
                 Loan & IOU Repayment
               </Text>
@@ -796,7 +788,7 @@ export const ToolsScreen: React.FC = () => {
                   styles.resultBox,
                   {
                     backgroundColor: isDark ? colors.surfaceSubtle : colors.surfaceMuted,
-                    borderColor: colors.border,
+                    borderColor: colors.borderSubtle,
                   },
                 ]}
               >
@@ -820,12 +812,7 @@ export const ToolsScreen: React.FC = () => {
         {/* ===================== TAB 4: SAVINGS ===================== */}
         {activeTab === 'savings' && (
           <View style={styles.tabContent}>
-            <Card
-              style={[
-                styles.card,
-                { backgroundColor: colors.surface, borderColor: colors.border },
-              ]}
-            >
+            <Card style={styles.card}>
               <Text style={[styles.sectionHeading, { color: colors.textPrimary }]}>
                 Savings Growth Projector
               </Text>
@@ -876,7 +863,7 @@ export const ToolsScreen: React.FC = () => {
                   styles.resultBox,
                   {
                     backgroundColor: isDark ? colors.surfaceSubtle : colors.surfaceMuted,
-                    borderColor: colors.border,
+                    borderColor: colors.borderSubtle,
                   },
                 ]}
               >
@@ -914,7 +901,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.sm,
     marginBottom: spacing.xs,
     borderRadius: radius.full,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     padding: 3,
   },
   tabBtn: {
@@ -923,12 +910,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 4,
-    paddingVertical: 8,
+    paddingVertical: 7,
     borderRadius: radius.full,
   },
   tabBtnActive: {
-    borderWidth: 1,
-    elevation: 1,
+    borderWidth: StyleSheet.hairlineWidth,
+    elevation: 0,
   },
   tabText: {
     ...typography.caption,
@@ -945,7 +932,6 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: radius.xl,
     padding: spacing.base,
-    borderWidth: 1,
   },
   sectionHeading: {
     ...typography.title,
@@ -956,51 +942,61 @@ const styles = StyleSheet.create({
     ...typography.caption,
     marginBottom: spacing.base,
   },
-  currRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    marginBottom: spacing.base,
-  },
-  currCol: {
-    flex: 1,
+  currSection: {
+    marginBottom: spacing.sm,
   },
   inputLabel: {
     ...typography.caption,
-    fontWeight: '600',
-    marginBottom: 4,
+    fontWeight: '700',
+    fontSize: 10,
+    letterSpacing: 0.6,
+    marginBottom: 6,
   },
-  chipRow: {
-    flexDirection: 'row',
+  chipScroll: {
     gap: 6,
+    paddingVertical: 2,
   },
   currChip: {
-    borderWidth: 1,
-    borderRadius: radius.md,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: radius.full,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
   },
   currChipText: {
     ...typography.caption,
     fontSize: 11,
   },
-  swapBtn: {
-    borderWidth: 1,
-    borderRadius: radius.md,
-    padding: 8,
-    marginTop: 14,
+  swapDividerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: spacing.xs,
+    gap: spacing.sm,
+  },
+  swapDividerLine: {
+    flex: 1,
+    height: StyleSheet.hairlineWidth,
+  },
+  swapCircleBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    borderWidth: StyleSheet.hairlineWidth,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   resultBox: {
-    borderRadius: radius.xl,
-    padding: spacing.base + 2,
-    borderWidth: 1,
+    borderRadius: radius.lg,
+    padding: spacing.base,
+    borderWidth: StyleSheet.hairlineWidth,
     alignItems: 'center',
-    marginTop: spacing.xs,
+    marginTop: spacing.sm,
   },
   resultLabel: {
     ...typography.caption,
-    fontWeight: '600',
-    letterSpacing: 0.5,
+    fontWeight: '700',
+    fontSize: 10,
+    letterSpacing: 0.6,
     marginBottom: 4,
   },
   resultValue: {
@@ -1022,7 +1018,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: spacing.sm,
-    borderBottomWidth: 1,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
   benchmarkCode: {
     ...typography.body,
@@ -1038,9 +1034,8 @@ const styles = StyleSheet.create({
   },
   // Calculator styles
   calcScreen: {
-    borderRadius: radius.xl,
-    padding: spacing.base + 2,
-    borderWidth: 1,
+    borderRadius: radius.lg,
+    padding: spacing.base,
     alignItems: 'flex-end',
     justifyContent: 'center',
     minHeight: 84,
@@ -1064,8 +1059,8 @@ const styles = StyleSheet.create({
   },
   keyBtn: {
     width: '22.5%',
-    height: 54,
-    borderRadius: 16,
+    height: 52,
+    borderRadius: radius.md,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -1092,7 +1087,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: spacing.xs,
-    borderBottomWidth: 1,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
   historyExpr: {
     ...typography.caption,

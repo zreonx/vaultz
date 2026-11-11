@@ -178,15 +178,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) 
         {/* Balance Card with Fade-Slide Entry */}
         <FadeInView delay={50} translateY={12}>
           <View ref={balanceCardRef} onLayout={handleBalanceCardLayout}>
-            <Card
-              style={[
-                styles.balanceCard,
-                {
-                  backgroundColor: colors.surface,
-                  borderColor: colors.border,
-                },
-              ]}
-            >
+            <Card style={styles.balanceCard}>
               <View style={styles.balanceHeader}>
                 <Text style={[styles.balanceLabel, { color: colors.textMuted }]}>
                   {activeWorkspace
@@ -252,7 +244,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) 
           </View>
         </FadeInView>
 
-        {/* Quick Actions with Tactile Spring Press */}
+        {/* Quick Actions — Clean, modern borderless tap targets */}
         <FadeInView delay={120} translateY={12}>
           <View style={styles.sectionHeader}>
             <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
@@ -266,45 +258,34 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) 
             style={styles.quickActionsGrid}
           >
             <PressableScale
-              style={[
-                styles.actionBtn,
-                { backgroundColor: colors.surface, borderColor: colors.border },
-              ]}
+              style={styles.actionBtn}
               onPress={() => openTxModal('Expense')}
             >
               <View style={[styles.actionIconContainer, { backgroundColor: colors.dangerSoft }]}>
-                <Ionicons name="remove-circle-outline" size={20} color={colors.danger} />
+                <Ionicons name="arrow-up-outline" size={20} color={colors.danger} />
               </View>
               <Text style={[styles.actionText, { color: colors.textPrimary }]}>Expense</Text>
             </PressableScale>
 
             <PressableScale
-              style={[
-                styles.actionBtn,
-                { backgroundColor: colors.surface, borderColor: colors.border },
-              ]}
+              style={styles.actionBtn}
               onPress={() => openTxModal('Income')}
             >
               <View style={[styles.actionIconContainer, { backgroundColor: colors.accentSoft }]}>
-                <Ionicons name="add-circle-outline" size={20} color={colors.accent} />
+                <Ionicons name="arrow-down-outline" size={20} color={colors.accent} />
               </View>
               <Text style={[styles.actionText, { color: colors.textPrimary }]}>Income</Text>
             </PressableScale>
 
             <PressableScale
-              style={[
-                styles.actionBtn,
-                { backgroundColor: colors.surface, borderColor: colors.border },
-              ]}
+              style={styles.actionBtn}
               onPress={() => openTxModal('Transfer')}
             >
               <View
                 style={[
                   styles.actionIconContainer,
                   {
-                    backgroundColor: isDark
-                      ? 'rgba(59, 130, 246, 0.14)'
-                      : 'rgba(37, 99, 235, 0.08)',
+                    backgroundColor: isDark ? '#192538' : '#EFF6FF',
                   },
                 ]}
               >
@@ -318,10 +299,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) 
             </PressableScale>
 
             <PressableScale
-              style={[
-                styles.actionBtn,
-                { backgroundColor: colors.surface, borderColor: colors.border },
-              ]}
+              style={styles.actionBtn}
               onPress={openLendingModal}
             >
               <View style={[styles.actionIconContainer, { backgroundColor: colors.warningSoft }]}>
@@ -339,8 +317,8 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) 
               style={[
                 styles.syncBanner,
                 {
-                  backgroundColor: isDark ? 'rgba(217, 119, 6, 0.12)' : 'rgba(245, 158, 11, 0.12)',
-                  borderColor: colors.warning,
+                  backgroundColor: colors.warningSoft,
+                  borderColor: isDark ? colors.borderSubtle : colors.warning,
                 },
               ]}
             >
@@ -358,7 +336,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) 
               <TouchableOpacity
                 style={[
                   styles.syncBannerBtn,
-                  { backgroundColor: colors.surface, borderColor: colors.border },
+                  { backgroundColor: colors.surface, borderColor: colors.borderSubtle },
                 ]}
                 onPress={() => syncQueue()}
                 disabled={isSyncing}
@@ -421,8 +399,6 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) 
           ) : (
             <Card
               style={{
-                backgroundColor: colors.surface,
-                borderColor: colors.border,
                 padding: 0,
                 borderRadius: radius.lg,
                 overflow: 'hidden',
@@ -670,27 +646,28 @@ const styles = StyleSheet.create({
   },
   quickActionsGrid: {
     flexDirection: 'row',
-    gap: spacing.sm,
+    justifyContent: 'space-between',
+    paddingHorizontal: 2,
+    paddingVertical: spacing.xs,
   },
   actionBtn: {
     flex: 1,
     alignItems: 'center',
-    paddingVertical: spacing.md + 2,
-    borderRadius: radius.xl,
-    borderWidth: 1,
+    paddingVertical: spacing.xs,
   },
   actionIconContainer: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 6,
+    marginBottom: 7,
   },
   actionText: {
     ...typography.caption,
     fontWeight: '600',
     fontSize: 11,
+    letterSpacing: 0.2,
   },
   emptyCard: {
     alignItems: 'center',
@@ -785,7 +762,7 @@ const styles = StyleSheet.create({
     marginTop: 1,
   },
   syncBannerBtn: {
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: 10,
     paddingVertical: 5,
     borderRadius: radius.md,

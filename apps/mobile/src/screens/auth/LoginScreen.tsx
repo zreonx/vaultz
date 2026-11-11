@@ -53,7 +53,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
               styles.logoMark,
               {
                 backgroundColor: colors.surface,
-                borderColor: colors.border,
+                borderColor: colors.borderSubtle,
               },
             ]}
           >
@@ -71,7 +71,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
             styles.formContainer,
             {
               backgroundColor: colors.surface,
-              borderColor: colors.border,
+              borderColor: colors.borderSubtle,
             },
           ]}
         >
@@ -172,7 +172,7 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: radius.lg,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing.md,
@@ -193,7 +193,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   formContainer: {
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     borderRadius: radius.xl,
     padding: spacing.xl,
   },

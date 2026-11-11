@@ -140,7 +140,7 @@ export const CreateTransactionModal: React.FC<CreateTransactionModalProps> = ({
             styles.segmentedControl,
             {
               backgroundColor: isDark ? colors.surfaceSubtle : colors.surfaceMuted,
-              borderColor: colors.border,
+              borderColor: colors.borderSubtle,
             },
           ]}
         >
@@ -155,7 +155,7 @@ export const CreateTransactionModal: React.FC<CreateTransactionModalProps> = ({
                     styles.segmentBtnActive,
                     {
                       backgroundColor: colors.surface,
-                      shadowColor: '#000',
+                      borderColor: colors.borderSubtle,
                     },
                   ],
                 ]}
@@ -346,21 +346,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     borderRadius: radius.lg,
     padding: 3,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     marginBottom: spacing.base,
     gap: 4,
   },
   segmentBtn: {
     flex: 1,
-    paddingVertical: 8,
+    paddingVertical: 7,
     alignItems: 'center',
     borderRadius: radius.md,
   },
   segmentBtnActive: {
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.12,
-    shadowRadius: 2,
-    elevation: 2,
+    borderWidth: StyleSheet.hairlineWidth,
+    elevation: 0,
   },
   segmentText: {
     ...typography.caption,
@@ -385,7 +383,7 @@ const styles = StyleSheet.create({
     paddingVertical: 5,
     paddingHorizontal: spacing.sm + 3,
     borderRadius: radius.full,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
   },
   chipText: {
     ...typography.caption,

@@ -41,15 +41,15 @@ export const lightColors: ThemeColors = {
   textDisabled: "#A8A59E",
 
   accent: "#2A6B58", // Refined forest/emerald
-  accentSoft: "rgba(42, 107, 88, 0.12)",
-  accentMuted: "rgba(42, 107, 88, 0.12)",
+  accentSoft: "#EAF2EF", // Solid calibrated soft tone (matches web --accent-soft)
+  accentMuted: "#EAF2EF",
   accentForeground: "#FDFCFB",
 
   danger: "#B43C3C",
-  dangerSoft: "rgba(180, 60, 60, 0.12)",
+  dangerSoft: "#FBECEC", // Solid calibrated soft tone (matches web --danger-soft)
 
   warning: "#B4690E",
-  warningSoft: "rgba(180, 105, 14, 0.12)",
+  warningSoft: "#FBF3E6", // Solid calibrated soft tone (matches web --warning-soft)
 
   white: "#FFFFFF",
   black: "#000000",
@@ -59,12 +59,12 @@ export const darkColors: ThemeColors = {
   // Deep dark graphite & radiant emerald palette (matches web theme)
   background: "#121417",
   surface: "#181B1F",
-  surfaceSubtle: "#1F2328",
-  surfaceMuted: "#272B31",
+  surfaceSubtle: "#1B1F24",
+  surfaceMuted: "#1F2328", // Distinct muted surface (matches web --surface-muted)
   surfaceHover: "#272B31",
 
   border: "#272B31",
-  borderSubtle: "#202429",
+  borderSubtle: "#202429", // Delicate hairline divider (matches web --border-subtle)
   borderLight: "#333942",
 
   textPrimary: "#ECEBE6",
@@ -73,15 +73,15 @@ export const darkColors: ThemeColors = {
   textDisabled: "#4E545E",
 
   accent: "#479980", // Calm radiant emerald
-  accentSoft: "rgba(71, 153, 128, 0.18)",
-  accentMuted: "rgba(71, 153, 128, 0.18)",
+  accentSoft: "#192924", // Solid calibrated soft tone (matches web --accent-soft)
+  accentMuted: "#192924",
   accentForeground: "#101413",
 
   danger: "#E06C6C",
-  dangerSoft: "rgba(224, 108, 108, 0.18)",
+  dangerSoft: "#2B1919", // Solid calibrated soft tone (matches web --danger-soft)
 
   warning: "#D99B43",
-  warningSoft: "rgba(217, 155, 67, 0.18)",
+  warningSoft: "#292116", // Solid calibrated soft tone (matches web --warning-soft)
 
   white: "#FFFFFF",
   black: "#000000",

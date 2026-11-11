@@ -60,7 +60,8 @@ export const Input: React.FC<InputProps> = ({
               ? colors.danger
               : isFocused
               ? colors.accent
-              : colors.border,
+              : colors.borderSubtle,
+            borderWidth: isFocused ? 1 : StyleSheet.hairlineWidth,
           },
         ]}
       >

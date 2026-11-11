@@ -150,11 +150,11 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
                   styles.chip,
                   {
                     backgroundColor: isActive
-                      ? colors.accentMuted
+                      ? colors.accentSoft
                       : isDark
                       ? colors.surfaceSubtle
                       : colors.surfaceMuted,
-                    borderColor: isActive ? colors.accent : colors.border,
+                    borderColor: isActive ? colors.accent : colors.borderSubtle,
                   },
                 ]}
                 onPress={() => {
@@ -191,11 +191,11 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
                   styles.chip,
                   {
                     backgroundColor: isActive
-                      ? colors.accentMuted
+                      ? colors.accentSoft
                       : isDark
                       ? colors.surfaceSubtle
                       : colors.surfaceMuted,
-                    borderColor: isActive ? colors.accent : colors.border,
+                    borderColor: isActive ? colors.accent : colors.borderSubtle,
                   },
                 ]}
                 onPress={() => {
@@ -307,7 +307,7 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
     paddingHorizontal: spacing.sm + 4,
     borderRadius: radius.full,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
   },
   chipText: {
     ...typography.caption,

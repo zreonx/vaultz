@@ -87,7 +87,7 @@ export const LogRepaymentModal: React.FC<LogRepaymentModalProps> = ({
             styles.infoCard,
             {
               backgroundColor: isDark ? colors.surfaceSubtle : colors.surfaceMuted,
-              borderColor: colors.border,
+              borderColor: colors.borderSubtle,
             },
           ]}
         >
@@ -165,7 +165,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     padding: spacing.base,
     marginBottom: spacing.base,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     alignItems: 'center',
   },
   infoLabel: {

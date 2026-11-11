@@ -33,7 +33,7 @@ export const BiometricLockScreen: React.FC = () => {
             styles.content,
             {
               backgroundColor: colors.surface,
-              borderColor: colors.border,
+              borderColor: colors.borderSubtle,
             },
           ]}
         >
@@ -104,13 +104,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: spacing.xl,
     borderRadius: radius.xl,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
   },
   iconCircle: {
     width: 72,
     height: 72,
     borderRadius: 36,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: spacing.base,

@@ -101,7 +101,7 @@ export const Header: React.FC<HeaderProps> = ({
                   styles.workspacePill,
                   {
                     backgroundColor: isDark ? colors.surfaceSubtle : colors.surfaceMuted,
-                    borderColor: colors.border,
+                    borderColor: colors.borderSubtle,
                   },
                 ]}
                 onPress={() => {
@@ -139,8 +139,8 @@ export const Header: React.FC<HeaderProps> = ({
               style={[
                 styles.headerSyncPill,
                 {
-                  backgroundColor: isDark ? 'rgba(217, 119, 6, 0.15)' : 'rgba(245, 158, 11, 0.12)',
-                  borderColor: colors.warning,
+                  backgroundColor: colors.warningSoft,
+                  borderColor: isDark ? colors.borderSubtle : colors.warning,
                 },
               ]}
               onPress={() => syncQueue()}
@@ -175,7 +175,7 @@ export const Header: React.FC<HeaderProps> = ({
               styles.avatar,
               {
                 backgroundColor: isDark ? colors.surfaceSubtle : colors.surfaceMuted,
-                borderColor: colors.border,
+                borderColor: colors.borderSubtle,
               },
             ]}
           >
@@ -228,7 +228,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm + 2,
     paddingVertical: 5,
     borderRadius: radius.full,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     maxWidth: 190,
   },
   statusDot: {
@@ -262,7 +262,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 7,
     paddingVertical: 4,
     borderRadius: radius.full,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
   },
   headerSyncText: {
     ...typography.caption,
@@ -276,7 +276,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     alignItems: 'center',
     justifyContent: 'center',
   },
