@@ -399,8 +399,8 @@ const styles = StyleSheet.create({
   },
   summaryCard: {
     flex: 1,
-    padding: spacing.md,
-    borderRadius: radius.lg,
+    padding: spacing.base,
+    borderRadius: radius.xl,
   },
   summaryLabel: {
     ...typography.caption,
@@ -411,7 +411,7 @@ const styles = StyleSheet.create({
   },
   summaryValue: {
     ...typography.title,
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '800',
   },
   filterTabs: {
@@ -420,7 +420,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   tabBtn: {
-    paddingVertical: 6,
+    paddingVertical: 7,
     paddingHorizontal: spacing.md,
     borderRadius: radius.full,
     borderWidth: 1,
@@ -428,6 +428,7 @@ const styles = StyleSheet.create({
   tabText: {
     ...typography.caption,
     fontSize: 12,
+    fontWeight: '600',
   },
   loadingContainer: {
     paddingTop: spacing.xs,
@@ -437,8 +438,8 @@ const styles = StyleSheet.create({
   },
   itemCard: {
     marginBottom: spacing.md,
-    padding: spacing.base,
-    borderRadius: radius.lg,
+    padding: spacing.base + 2,
+    borderRadius: radius.xl,
   },
   cardHeader: {
     flexDirection: 'row',

@@ -87,7 +87,7 @@ export const Header: React.FC<HeaderProps> = ({
           styles.header,
           {
             backgroundColor: colors.background,
-            borderBottomColor: colors.border,
+            borderBottomColor: colors.borderSubtle,
           },
         ]}
       >
@@ -206,8 +206,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: spacing.base,
-    paddingVertical: spacing.md,
-    borderBottomWidth: 1,
+    paddingVertical: spacing.sm + 2,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
   leftContainer: {
     flexDirection: 'row',
@@ -217,8 +217,9 @@ const styles = StyleSheet.create({
   },
   brandTitle: {
     ...typography.label,
+    fontSize: 12,
     fontWeight: '800',
-    letterSpacing: 1.5,
+    letterSpacing: 2,
     marginRight: spacing.sm,
   },
   workspacePill: {

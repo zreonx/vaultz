@@ -913,7 +913,7 @@ const styles = StyleSheet.create({
     marginHorizontal: spacing.base,
     marginTop: spacing.sm,
     marginBottom: spacing.xs,
-    borderRadius: radius.lg,
+    borderRadius: radius.full,
     borderWidth: 1,
     padding: 3,
   },
@@ -923,8 +923,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 4,
-    paddingVertical: 7,
-    borderRadius: radius.md,
+    paddingVertical: 8,
+    borderRadius: radius.full,
   },
   tabBtnActive: {
     borderWidth: 1,
@@ -933,6 +933,7 @@ const styles = StyleSheet.create({
   tabText: {
     ...typography.caption,
     fontSize: 11,
+    fontWeight: '600',
   },
   scrollContainer: {
     padding: spacing.base,
@@ -990,8 +991,8 @@ const styles = StyleSheet.create({
     marginTop: 14,
   },
   resultBox: {
-    borderRadius: radius.lg,
-    padding: spacing.base,
+    borderRadius: radius.xl,
+    padding: spacing.base + 2,
     borderWidth: 1,
     alignItems: 'center',
     marginTop: spacing.xs,
@@ -1037,12 +1038,12 @@ const styles = StyleSheet.create({
   },
   // Calculator styles
   calcScreen: {
-    borderRadius: radius.lg,
-    padding: spacing.base,
+    borderRadius: radius.xl,
+    padding: spacing.base + 2,
     borderWidth: 1,
     alignItems: 'flex-end',
     justifyContent: 'center',
-    minHeight: 76,
+    minHeight: 84,
     marginBottom: spacing.base,
   },
   calcExpression: {
@@ -1063,8 +1064,8 @@ const styles = StyleSheet.create({
   },
   keyBtn: {
     width: '22.5%',
-    height: 52,
-    borderRadius: radius.lg,
+    height: 54,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },

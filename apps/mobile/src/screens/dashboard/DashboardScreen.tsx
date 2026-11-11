@@ -583,9 +583,10 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xxl * 2,
   },
   balanceCard: {
-    marginBottom: spacing.base,
-    padding: spacing.base,
-    borderRadius: radius.lg,
+    marginBottom: spacing.base + 2,
+    padding: spacing.lg,
+    borderRadius: radius.xl,
+    borderWidth: 1,
   },
   balanceHeader: {
     flexDirection: 'row',
@@ -601,8 +602,9 @@ const styles = StyleSheet.create({
   },
   balanceValue: {
     ...typography.display,
-    fontSize: 32,
+    fontSize: 34,
     fontWeight: '800',
+    letterSpacing: -0.6,
     marginVertical: 4,
   },
   statsRow: {
@@ -610,7 +612,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: spacing.md,
     paddingTop: spacing.md,
-    borderTopWidth: 1,
+    borderTopWidth: StyleSheet.hairlineWidth,
   },
   statItem: {
     flex: 1,
@@ -619,9 +621,9 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   statIconBadge: {
-    width: 28,
-    height: 28,
-    borderRadius: radius.full,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -641,7 +643,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   statDivider: {
-    width: 1,
+    width: StyleSheet.hairlineWidth,
     height: 28,
     marginHorizontal: spacing.sm,
   },
@@ -668,22 +670,22 @@ const styles = StyleSheet.create({
   },
   quickActionsGrid: {
     flexDirection: 'row',
-    gap: spacing.xs + 2,
+    gap: spacing.sm,
   },
   actionBtn: {
     flex: 1,
     alignItems: 'center',
-    paddingVertical: spacing.md,
-    borderRadius: radius.lg,
+    paddingVertical: spacing.md + 2,
+    borderRadius: radius.xl,
     borderWidth: 1,
   },
   actionIconContainer: {
-    width: 38,
-    height: 38,
-    borderRadius: radius.md,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 4,
+    marginBottom: 6,
   },
   actionText: {
     ...typography.caption,

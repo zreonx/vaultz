@@ -154,7 +154,7 @@ export const AccountsScreen: React.FC = () => {
                       )}
                     </View>
 
-                    <View style={[styles.balanceDivider, { backgroundColor: colors.border }]} />
+                    <View style={[styles.balanceDivider, { backgroundColor: colors.borderSubtle }]} />
 
                     <View style={styles.cardFooter}>
                       <Text style={[styles.balanceLabel, { color: colors.textMuted }]}>
@@ -234,8 +234,8 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   accountCard: {
-    padding: spacing.base,
-    borderRadius: radius.lg,
+    padding: spacing.base + 2,
+    borderRadius: radius.xl,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -249,9 +249,9 @@ const styles = StyleSheet.create({
     marginRight: spacing.sm,
   },
   iconBadge: {
-    width: 42,
-    height: 42,
-    borderRadius: radius.md,
+    width: 44,
+    height: 44,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: spacing.md,

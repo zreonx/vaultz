@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { StyleSheet, Platform, Dimensions } from 'react-native';
+import { StyleSheet, Platform, Dimensions, View } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -55,7 +55,7 @@ export const MainTabNavigator: React.FC = () => {
           styles.tabBar,
           {
             backgroundColor: colors.surface,
-            borderTopColor: colors.border,
+            borderTopColor: colors.borderSubtle,
             height: tabHeight,
             paddingBottom: bottomPadding,
           },
@@ -63,7 +63,7 @@ export const MainTabNavigator: React.FC = () => {
         tabBarActiveTintColor: colors.accent,
         tabBarInactiveTintColor: colors.textMuted,
         tabBarLabelStyle: styles.tabBarLabel,
-        tabBarIcon: ({ focused, color, size }) => {
+        tabBarIcon: ({ focused, color }) => {
           let iconName: keyof typeof Ionicons.glyphMap = 'ellipse-outline';
 
           switch (route.name) {
@@ -87,7 +87,19 @@ export const MainTabNavigator: React.FC = () => {
               break;
           }
 
-          return <Ionicons name={iconName} size={22} color={color} />;
+          return (
+            <View
+              style={[
+                styles.iconContainer,
+                focused && [
+                  styles.iconContainerActive,
+                  { backgroundColor: colors.accentSoft },
+                ],
+              ]}
+            >
+              <Ionicons name={iconName} size={19} color={color} />
+            </View>
+          );
         },
       })}
       screenListeners={{
@@ -132,13 +144,22 @@ export const MainTabNavigator: React.FC = () => {
 
 const styles = StyleSheet.create({
   tabBar: {
-    borderTopWidth: 1,
-    paddingTop: 6,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    paddingTop: 5,
   },
+  iconContainer: {
+    width: 38,
+    height: 26,
+    borderRadius: 13,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 2,
+  },
+  iconContainerActive: {},
   tabBarLabel: {
     ...typography.caption,
-    fontSize: 10,
+    fontSize: 9.5,
     fontWeight: '600',
-    marginTop: 2,
+    letterSpacing: 0.2,
   },
 });
