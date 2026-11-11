@@ -175,7 +175,7 @@ if (app.Environment.IsDevelopment())
                     "ALTER TABLE notifications ADD COLUMN IF NOT EXISTS updated_at_utc TIMESTAMPTZ NULL;",
                     "CREATE INDEX IF NOT EXISTS ix_notifications_user_id_created_at_utc ON notifications (user_id, created_at_utc DESC);",
                     "CREATE INDEX IF NOT EXISTS ix_notifications_user_id_is_read ON notifications (user_id, is_read);",
-                    "UPDATE users SET is_email_verified = TRUE WHERE email = 'demo@vaultz.local';"
+                    "UPDATE users SET is_email_verified = TRUE;"
                 };
 
                 foreach (var sql in sqlStatements)

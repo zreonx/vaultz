@@ -1,17 +1,31 @@
 import { Platform } from "react-native";
+import Constants from "expo-constants";
 import { secureStore } from "@/security/secureStore";
 
 // Dynamic default API base URL:
 // - Web: uses current window hostname (e.g. localhost or local IP) with port 5180
-// - Native Android / iOS: defaults to host machine LAN IP (192.168.254.194) or emulator loopback
+// - Native Android / iOS: dynamically detects Metro debugger host IP, or defaults to LAN IP / emulator loopback
 function getDefaultBaseUrl(): string {
   if (Platform.OS === "web" && typeof window !== "undefined" && window.location) {
     const host = window.location.hostname || "localhost";
     return `http://${host}:5180`;
   }
 
-  // Native defaults:
-  // 192.168.254.194 allows physical mobile devices on the same Wi-Fi to connect to the host API
+  // If running via Expo Go / Metro, use the exact host IP the device used to load the bundle
+  const hostUri = Constants.expoConfig?.hostUri || (Constants as any)?.manifest?.debuggerHost;
+  if (hostUri) {
+    const host = hostUri.split(":")[0];
+    if (host && host !== "localhost") {
+      return `http://${host}:5180`;
+    }
+  }
+
+  if (Platform.OS === "android") {
+    // Android emulator loopback alias to development host
+    return "http://10.0.2.2:5180";
+  }
+
+  // Physical devices on the same Wi-Fi
   return "http://192.168.254.194:5180";
 }
 
