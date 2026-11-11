@@ -100,12 +100,6 @@ export async function apiClient<T>(
     );
   }
 
-  if (response.status === 401) {
-    await secureStore.removeToken();
-    onUnauthorizedCallback?.();
-    throw new ApiError("Session expired. Please log in again.", 401);
-  }
-
   if (response.status === 204) {
     return {} as T;
   }
@@ -115,6 +109,28 @@ export async function apiClient<T>(
     data = await response.json();
   } catch {
     data = null;
+  }
+
+  if (response.status === 401) {
+    const isAuthEndpoint =
+      endpoint.includes("/auth/login") ||
+      endpoint.includes("/auth/register") ||
+      endpoint.includes("/auth/forgot-password");
+
+    if (!isAuthEndpoint) {
+      await secureStore.removeToken();
+      onUnauthorizedCallback?.();
+    }
+
+    const errorPayload = data as ApiErrorPayload | undefined;
+    const message =
+      errorPayload?.detail ||
+      errorPayload?.title ||
+      (isAuthEndpoint
+        ? "Invalid email or password."
+        : "Session expired. Please log in again.");
+
+    throw new ApiError(message, 401, errorPayload);
   }
 
   if (!response.ok) {

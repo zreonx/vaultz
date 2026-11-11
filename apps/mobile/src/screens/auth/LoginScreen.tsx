@@ -124,6 +124,19 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
             style={styles.loginButton}
           />
 
+          <Button
+            title="Fill Demo Credentials"
+            variant="secondary"
+            leftIcon="sparkles-outline"
+            onPress={() => {
+              haptics.selection();
+              setEmail('demo@vaultz.local');
+              setPassword('Password123');
+              if (error) setError(null);
+            }}
+            style={styles.demoButton}
+          />
+
           <View style={styles.switchRow}>
             <Text style={[styles.switchText, { color: colors.textSecondary }]}>
               Don't have an account?{' '}
@@ -202,6 +215,9 @@ const styles = StyleSheet.create({
   },
   loginButton: {
     marginTop: spacing.xs,
+  },
+  demoButton: {
+    marginTop: spacing.sm,
   },
   switchRow: {
     flexDirection: 'row',
