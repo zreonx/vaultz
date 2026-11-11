@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { transactionsApi } from '@/api/transactions';
 import { useWorkspace } from '@/context/WorkspaceContext';
+import { useOfflineSync } from '@/context/OfflineSyncContext';
 import { useTheme } from '@/context/ThemeContext';
 import { typography, radius, spacing } from '@/theme/tokens';
 import { haptics } from '@/utils/haptics';
@@ -40,6 +41,7 @@ export const CreateTransactionModal: React.FC<CreateTransactionModalProps> = ({
   onSuccess,
 }) => {
   const { activeWorkspace, accounts, refetchAll } = useWorkspace();
+  const { enqueueTransaction } = useOfflineSync();
   const { colors, isDark } = useTheme();
   const [type, setType] = useState<'Expense' | 'Income' | 'Transfer'>(defaultType);
   const [amount, setAmount] = useState('');
@@ -79,26 +81,30 @@ export const CreateTransactionModal: React.FC<CreateTransactionModalProps> = ({
       setIsLoading(true);
       setError(null);
 
-      await transactionsApi.create({
+      const destAccount = accounts.find((a) => a.id === destinationAccountId);
+
+      // Save locally to offline queue (which automatically attempts sync in background)
+      await enqueueTransaction({
         accountId: activeWorkspace.id,
+        accountName: activeWorkspace.name,
+        currency: activeWorkspace.currency || 'USD',
         type,
         amount: parsedAmount,
-        currency: activeWorkspace.currency,
         category,
         description: description.trim() || undefined,
         transactionDate: new Date().toISOString(),
         destinationAccountId: type === 'Transfer' ? destinationAccountId : undefined,
+        destinationAccountName: destAccount?.name,
       });
 
       haptics.success();
-      await refetchAll();
       setAmount('');
       setDescription('');
       onClose();
       if (onSuccess) onSuccess();
     } catch (err: any) {
       haptics.error();
-      setError(err.message || 'Failed to record transaction');
+      setError(err.message || 'Failed to save transaction');
     } finally {
       setIsLoading(false);
     }

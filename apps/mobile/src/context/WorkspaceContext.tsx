@@ -1,8 +1,11 @@
 import React, { createContext, useContext, useEffect, useState, useMemo, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { accountsApi } from "@/api/accounts";
+import { secureStore } from "@/security/secureStore";
 import { useAuth } from "./AuthContext";
 import { AccountResponse } from "@/types/api";
+
+const CACHED_ACCOUNTS_KEY = "vaultz_cached_accounts";
 
 interface WorkspaceContextValue {
   accounts: AccountResponse[];
@@ -31,6 +34,24 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   const queryClient = useQueryClient();
 
   const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
+  const [offlineAccounts, setOfflineAccounts] = useState<AccountResponse[]>([]);
+
+  // Load cached accounts from storage on cold start
+  useEffect(() => {
+    (async () => {
+      try {
+        const stored = await secureStore.getItemAsync(CACHED_ACCOUNTS_KEY);
+        if (stored) {
+          const parsed = JSON.parse(stored) as AccountResponse[];
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setOfflineAccounts(parsed);
+          }
+        }
+      } catch {
+        // Ignore parsing errors
+      }
+    })();
+  }, []);
 
   const {
     data: rawAccounts = [],
@@ -38,17 +59,26 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     refetch,
   } = useQuery({
     queryKey: ["accounts"],
-    queryFn: () => accountsApi.getAccounts(),
+    queryFn: async () => {
+      const fetched = await accountsApi.getAccounts();
+      if (Array.isArray(fetched) && fetched.length > 0) {
+        // Cache to storage for offline readiness
+        void secureStore.setItemAsync(CACHED_ACCOUNTS_KEY, JSON.stringify(fetched));
+        setOfflineAccounts(fetched);
+      }
+      return fetched;
+    },
     enabled: Boolean(token && user),
   });
 
   const accounts: AccountResponse[] = useMemo(() => {
-    return rawAccounts.map((a) => ({
+    const source = rawAccounts.length > 0 ? rawAccounts : offlineAccounts;
+    return source.map((a) => ({
       ...a,
       currency: a.currencyCode,
       currentBalance: a.balance,
     }));
-  }, [rawAccounts]);
+  }, [rawAccounts, offlineAccounts]);
 
   // Ensure an account is always selected (user's default account, or the first one)
   useEffect(() => {

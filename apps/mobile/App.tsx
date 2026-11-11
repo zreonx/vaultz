@@ -4,7 +4,8 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider, useTheme } from '@/context/ThemeContext';
 import { AuthProvider } from '@/context/AuthContext';
-import { WorkspaceProvider } from '@/context/WorkspaceContext';
+import { WorkspaceProvider, useWorkspace } from '@/context/WorkspaceContext';
+import { OfflineSyncProvider } from '@/context/OfflineSyncContext';
 import { TutorialProvider } from '@/context/TutorialContext';
 import { SpotlightTourModal } from '@/components/tutorial/SpotlightTourModal';
 import { RootNavigator } from '@/navigation/RootNavigator';
@@ -18,17 +19,26 @@ const queryClient = new QueryClient({
   },
 });
 
-function AppContent() {
+function InnerApp() {
   const { isDark } = useTheme();
+  const { refetchAll } = useWorkspace();
 
+  return (
+    <OfflineSyncProvider onSyncSuccess={refetchAll}>
+      <TutorialProvider>
+        <StatusBar style={isDark ? "light" : "dark"} />
+        <RootNavigator />
+        <SpotlightTourModal />
+      </TutorialProvider>
+    </OfflineSyncProvider>
+  );
+}
+
+function AppContent() {
   return (
     <AuthProvider>
       <WorkspaceProvider>
-        <TutorialProvider>
-          <StatusBar style={isDark ? "light" : "dark"} />
-          <RootNavigator />
-          <SpotlightTourModal />
-        </TutorialProvider>
+        <InnerApp />
       </WorkspaceProvider>
     </AuthProvider>
   );

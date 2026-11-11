@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Animated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useWorkspace } from '@/context/WorkspaceContext';
+import { useOfflineSync } from '@/context/OfflineSyncContext';
 import { useAuth } from '@/context/AuthContext';
 import { useTutorial } from '@/context/TutorialContext';
 import { useTheme } from '@/context/ThemeContext';
@@ -21,6 +22,7 @@ export const Header: React.FC<HeaderProps> = ({
   showAccountPicker = true,
 }) => {
   const { activeWorkspace, hideBalance, toggleHideBalance } = useWorkspace();
+  const { pendingCount, isSyncing, syncQueue } = useOfflineSync();
   const { user } = useAuth();
   const { registerTargetRect } = useTutorial();
   const { colors, isDark } = useTheme();
@@ -130,8 +132,32 @@ export const Header: React.FC<HeaderProps> = ({
           )}
         </View>
 
-        {/* Right Side: Privacy eye + Avatar */}
+        {/* Right Side: Sync pill + Privacy eye + Avatar */}
         <View style={styles.rightContainer}>
+          {pendingCount > 0 && (
+            <TouchableOpacity
+              style={[
+                styles.headerSyncPill,
+                {
+                  backgroundColor: isDark ? 'rgba(217, 119, 6, 0.15)' : 'rgba(245, 158, 11, 0.12)',
+                  borderColor: colors.warning,
+                },
+              ]}
+              onPress={() => syncQueue()}
+              disabled={isSyncing}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Ionicons
+                name={isSyncing ? 'sync' : 'cloud-upload-outline'}
+                size={13}
+                color={colors.warning}
+              />
+              <Text style={[styles.headerSyncText, { color: colors.warning }]}>
+                {pendingCount}
+              </Text>
+            </TouchableOpacity>
+          )}
+
           <TouchableOpacity
             style={styles.iconButton}
             onPress={handleToggleHide}
@@ -227,6 +253,20 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
+  },
+  headerSyncPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 7,
+    paddingVertical: 4,
+    borderRadius: radius.full,
+    borderWidth: 1,
+  },
+  headerSyncText: {
+    ...typography.caption,
+    fontSize: 11,
+    fontWeight: '700',
   },
   iconButton: {
     padding: spacing.xs,

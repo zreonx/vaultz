@@ -10,6 +10,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useWorkspace } from '@/context/WorkspaceContext';
+import { useOfflineSync } from '@/context/OfflineSyncContext';
 import { useTheme } from '@/context/ThemeContext';
 import { ScreenWrapper } from '@/components/ui/ScreenWrapper';
 import { Header } from '@/components/shared/Header';
@@ -30,6 +31,7 @@ const FILTER_TABS = ['All', 'Expense', 'Income', 'Transfer'] as const;
 
 export const TransactionsScreen: React.FC = () => {
   const { activeWorkspace, hideBalance, refetchAll } = useWorkspace();
+  const { pendingQueue, pendingCount, isSyncing, syncQueue } = useOfflineSync();
   const { colors, isDark } = useTheme();
   const [transactions, setTransactions] = useState<TransactionDto[]>([]);
   const [selectedTab, setSelectedTab] = useState<typeof FILTER_TABS[number]>('All');
@@ -37,6 +39,52 @@ export const TransactionsScreen: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [createModalVisible, setCreateModalVisible] = useState(false);
+
+  // Map pending offline items for the active workspace
+  const offlineTxList: TransactionDto[] = React.useMemo(() => {
+    return pendingQueue
+      .filter((q) => !activeWorkspace?.id || q.accountId === activeWorkspace.id)
+      .map((q) => ({
+        id: q.id,
+        accountId: q.accountId,
+        accountName: q.accountName,
+        type:
+          q.type === 'Income'
+            ? TransactionType.Income
+            : q.type === 'Transfer'
+            ? TransactionType.Transfer
+            : TransactionType.Expense,
+        typeName: q.type,
+        amount: q.amount,
+        currency: q.currency,
+        currencyCode: q.currency,
+        category: q.category,
+        categoryName: q.category,
+        description: q.description || q.category,
+        occurredOn: q.transactionDate.split('T')[0],
+        transactionDate: q.transactionDate,
+        createdAtUtc: q.createdAt,
+        isPendingSync: true,
+        syncStatus: q.syncStatus,
+      }));
+  }, [pendingQueue, activeWorkspace?.id]);
+
+  // Combine offline items at top with server transactions
+  const allDisplayedTransactions = React.useMemo(() => {
+    const filteredOffline = offlineTxList.filter((tx) => {
+      if (selectedTab !== 'All' && tx.typeName !== selectedTab) return false;
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        return (
+          tx.description?.toLowerCase().includes(q) ||
+          tx.category?.toLowerCase().includes(q)
+        );
+      }
+      return true;
+    });
+
+    return [...filteredOffline, ...transactions];
+  }, [offlineTxList, transactions, selectedTab, searchQuery]);
 
   const loadTransactions = useCallback(async () => {
     try {
@@ -49,7 +97,7 @@ export const TransactionsScreen: React.FC = () => {
       });
       setTransactions(res.items || []);
     } catch (err) {
-      console.error('Failed to load transactions:', err);
+      // Offline fallback: keep existing transactions or offline list
     } finally {
       setIsLoading(false);
     }
@@ -62,7 +110,7 @@ export const TransactionsScreen: React.FC = () => {
   const onRefresh = async () => {
     setRefreshing(true);
     haptics.light();
-    await Promise.all([refetchAll(), loadTransactions()]);
+    await Promise.all([syncQueue(), refetchAll(), loadTransactions()]);
     setRefreshing(false);
   };
 
@@ -151,6 +199,23 @@ export const TransactionsScreen: React.FC = () => {
               ? '••••'
               : `${isExpense ? '-' : isIncome ? '+' : ''}${formatMoney(item.amount, curr)}`}
           </Text>
+          {item.isPendingSync && (
+            <View style={styles.pendingBadgeRow}>
+              <Ionicons
+                name={item.syncStatus === 'failed' ? 'alert-circle' : 'cloud-upload-outline'}
+                size={11}
+                color={item.syncStatus === 'failed' ? colors.danger : colors.warning}
+              />
+              <Text
+                style={[
+                  styles.pendingBadgeText,
+                  { color: item.syncStatus === 'failed' ? colors.danger : colors.warning },
+                ]}
+              >
+                {item.syncStatus === 'failed' ? 'Sync Failed' : 'Pending Sync'}
+              </Text>
+            </View>
+          )}
         </View>
       </View>
     );
@@ -161,6 +226,43 @@ export const TransactionsScreen: React.FC = () => {
       <Header />
 
       <View style={styles.container}>
+        {/* Offline Sync Banner */}
+        {pendingCount > 0 && (
+          <View
+            style={[
+              styles.syncBanner,
+              {
+                backgroundColor: isDark ? 'rgba(217, 119, 6, 0.12)' : 'rgba(245, 158, 11, 0.12)',
+                borderColor: colors.warning,
+              },
+            ]}
+          >
+            <View style={styles.syncBannerLeft}>
+              <Ionicons name="cloud-upload-outline" size={18} color={colors.warning} />
+              <View style={styles.syncBannerTexts}>
+                <Text style={[styles.syncBannerTitle, { color: colors.textPrimary }]}>
+                  {pendingCount} {pendingCount === 1 ? 'transaction' : 'transactions'} queued offline
+                </Text>
+                <Text style={[styles.syncBannerSubtitle, { color: colors.textMuted }]}>
+                  Will sync automatically once connected
+                </Text>
+              </View>
+            </View>
+            <TouchableOpacity
+              style={[
+                styles.syncBannerBtn,
+                { backgroundColor: colors.surface, borderColor: colors.border },
+              ]}
+              onPress={() => syncQueue()}
+              disabled={isSyncing}
+            >
+              <Text style={[styles.syncBannerBtnText, { color: colors.accent }]}>
+                {isSyncing ? 'Syncing...' : 'Sync Now'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
         {/* Search Bar */}
         <View
           style={[
@@ -242,7 +344,7 @@ export const TransactionsScreen: React.FC = () => {
           </View>
         ) : (
           <FlatList
-            data={transactions}
+            data={allDisplayedTransactions}
             keyExtractor={(item) => item.id}
             renderItem={renderTransactionItem}
             contentContainerStyle={styles.listContent}
@@ -386,6 +488,58 @@ const styles = StyleSheet.create({
   },
   amountContainer: {
     alignItems: 'flex-end',
+  },
+  pendingBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    marginTop: 3,
+  },
+  pendingBadgeText: {
+    ...typography.caption,
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  syncBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    marginBottom: spacing.sm,
+  },
+  syncBannerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    flex: 1,
+  },
+  syncBannerTexts: {
+    flex: 1,
+  },
+  syncBannerTitle: {
+    ...typography.caption,
+    fontWeight: '700',
+    fontSize: 12,
+  },
+  syncBannerSubtitle: {
+    ...typography.caption,
+    fontSize: 10,
+    marginTop: 1,
+  },
+  syncBannerBtn: {
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: radius.md,
+    marginLeft: spacing.sm,
+  },
+  syncBannerBtnText: {
+    ...typography.caption,
+    fontWeight: '700',
+    fontSize: 11,
   },
   txAmount: {
     ...typography.bodyLarge,

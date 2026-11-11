@@ -74,6 +74,8 @@ export interface TransactionResponse {
   currency?: string;
   category?: string;
   transactionDate?: string;
+  isPendingSync?: boolean;
+  syncStatus?: 'pending' | 'syncing' | 'failed';
 }
 
 export interface PagedTransactionsResponse {

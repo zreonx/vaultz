@@ -11,6 +11,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { useAuth } from '@/context/AuthContext';
 import { useWorkspace } from '@/context/WorkspaceContext';
+import { useOfflineSync } from '@/context/OfflineSyncContext';
 import { useTutorial } from '@/context/TutorialContext';
 import { useTheme, type ThemeMode } from '@/context/ThemeContext';
 import { ScreenWrapper } from '@/components/ui/ScreenWrapper';
@@ -27,6 +28,7 @@ export const SettingsScreen: React.FC = () => {
   const navigation = useNavigation<any>();
   const { user, isBiometricEnabled, setBiometricEnabled, logout } = useAuth();
   const { hideBalance, toggleHideBalance } = useWorkspace();
+  const { pendingCount, isSyncing, isOnline, lastSyncAt, syncQueue } = useOfflineSync();
   const { resetTour } = useTutorial();
   const { themeMode, setThemeMode, colors, isDark } = useTheme();
   const [isUpdatingBio, setIsUpdatingBio] = useState(false);
@@ -454,6 +456,66 @@ export const SettingsScreen: React.FC = () => {
               onPress={() => {
                 haptics.selection();
                 navigation.navigate('Tools');
+              }}
+            />
+          </View>
+        </Card>
+
+        {/* Offline & Sync Status */}
+        <Text style={[styles.sectionTitle, { color: colors.textSecondary }]}>
+          OFFLINE & SYNC
+        </Text>
+        <Card
+          style={[
+            styles.settingGroup,
+            {
+              backgroundColor: colors.surface,
+              borderColor: colors.border,
+            },
+          ]}
+        >
+          <View style={styles.settingRow}>
+            <View style={styles.settingLeft}>
+              <View
+                style={[
+                  styles.settingIcon,
+                  {
+                    backgroundColor: isDark ? colors.surfaceSubtle : colors.surfaceMuted,
+                  },
+                ]}
+              >
+                <Ionicons
+                  name={isOnline === false ? 'cloud-offline-outline' : 'cloud-done-outline'}
+                  size={20}
+                  color={isOnline === false ? colors.warning : colors.accent}
+                />
+              </View>
+              <View style={styles.settingLabels}>
+                <Text style={[styles.settingTitle, { color: colors.textPrimary }]}>
+                  {isOnline === false ? 'Working Offline' : 'Connected to Server'}
+                </Text>
+                <Text style={[styles.settingSubtitle, { color: colors.textMuted }]}>
+                  {pendingCount > 0
+                    ? `${pendingCount} offline ${pendingCount === 1 ? 'record' : 'records'} queued for sync`
+                    : 'All offline records are synced'}
+                </Text>
+              </View>
+            </View>
+            <Button
+              title={isSyncing ? 'Syncing...' : 'Sync Now'}
+              variant="secondary"
+              size="sm"
+              disabled={isSyncing}
+              onPress={async () => {
+                haptics.selection();
+                const res = await syncQueue();
+                if (res.synced > 0) {
+                  Alert.alert('Sync Complete', `Successfully synced ${res.synced} transaction(s).`);
+                } else if (res.failed > 0) {
+                  Alert.alert('Sync Incomplete', `${res.failed} item(s) could not be synced.`);
+                } else {
+                  Alert.alert('Sync Status', 'Queue is up to date.');
+                }
               }}
             />
           </View>

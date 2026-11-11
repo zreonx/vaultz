@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useWorkspace } from '@/context/WorkspaceContext';
+import { useOfflineSync } from '@/context/OfflineSyncContext';
 import { useTheme } from '@/context/ThemeContext';
 import { ScreenWrapper } from '@/components/ui/ScreenWrapper';
 import { Header } from '@/components/shared/Header';
@@ -35,6 +36,7 @@ interface DashboardScreenProps {
 
 export const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) => {
   const { activeWorkspace, hideBalance, toggleHideBalance, refetchAll } = useWorkspace();
+  const { pendingQueue, pendingCount, isSyncing, syncQueue } = useOfflineSync();
   const { registerTargetRect, isTourActive, currentStepIndex, nextStep } = useTutorial();
   const { colors, isDark } = useTheme();
   const [summary, setSummary] = useState<DashboardSummaryDto | null>(null);
@@ -80,7 +82,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) 
       setSummary(sumData);
       setRecentTransactions(txData.items || []);
     } catch (err) {
-      console.error('Failed to load dashboard data:', err);
+      // Offline fallback: keep existing or empty
     } finally {
       setIsLoading(false);
     }
@@ -93,7 +95,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) 
   const onRefresh = async () => {
     setRefreshing(true);
     haptics.light();
-    await Promise.all([refetchAll(), loadData()]);
+    await Promise.all([syncQueue(), refetchAll(), loadData()]);
     setRefreshing(false);
   };
 
@@ -108,8 +110,54 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) 
     setLendingModalVisible(true);
   };
 
+  // Optimistic pending balance calculation
+  const pendingDelta = React.useMemo(() => {
+    if (!activeWorkspace?.id) return 0;
+    return pendingQueue
+      .filter((q) => q.accountId === activeWorkspace.id && q.syncStatus !== 'failed')
+      .reduce((acc, q) => {
+        if (q.type === 'Income') return acc + q.amount;
+        if (q.type === 'Expense' || q.type === 'Transfer') return acc - q.amount;
+        return acc;
+      }, 0);
+  }, [pendingQueue, activeWorkspace?.id]);
+
+  // Offline pending items for the recent list
+  const offlineRecent: TransactionDto[] = React.useMemo(() => {
+    return pendingQueue
+      .filter((q) => !activeWorkspace?.id || q.accountId === activeWorkspace.id)
+      .map((q) => ({
+        id: q.id,
+        accountId: q.accountId,
+        accountName: q.accountName,
+        type:
+          q.type === 'Income'
+            ? TransactionType.Income
+            : q.type === 'Transfer'
+            ? TransactionType.Transfer
+            : TransactionType.Expense,
+        typeName: q.type,
+        amount: q.amount,
+        currency: q.currency,
+        currencyCode: q.currency,
+        category: q.category,
+        categoryName: q.category,
+        description: q.description || q.category,
+        occurredOn: q.transactionDate.split('T')[0],
+        transactionDate: q.transactionDate,
+        createdAtUtc: q.createdAt,
+        isPendingSync: true,
+        syncStatus: q.syncStatus,
+      }));
+  }, [pendingQueue, activeWorkspace?.id]);
+
+  const displayedRecentTransactions = React.useMemo(() => {
+    return [...offlineRecent, ...recentTransactions].slice(0, 5);
+  }, [offlineRecent, recentTransactions]);
+
   const currency = activeWorkspace?.currency || 'USD';
-  const balance = activeWorkspace?.currentBalance ?? summary?.totalBalance ?? 0;
+  const rawBalance = activeWorkspace?.currentBalance ?? summary?.totalBalance ?? 0;
+  const balance = rawBalance + pendingDelta;
 
   return (
     <ScreenWrapper>
@@ -284,6 +332,45 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) 
           </View>
         </FadeInView>
 
+        {/* Offline Pending Sync Banner */}
+        {pendingCount > 0 && (
+          <FadeInView delay={150} translateY={12}>
+            <View
+              style={[
+                styles.syncBanner,
+                {
+                  backgroundColor: isDark ? 'rgba(217, 119, 6, 0.12)' : 'rgba(245, 158, 11, 0.12)',
+                  borderColor: colors.warning,
+                },
+              ]}
+            >
+              <View style={styles.syncBannerLeft}>
+                <Ionicons name="cloud-upload-outline" size={18} color={colors.warning} />
+                <View style={styles.syncBannerTexts}>
+                  <Text style={[styles.syncBannerTitle, { color: colors.textPrimary }]}>
+                    {pendingCount} {pendingCount === 1 ? 'transaction' : 'transactions'} saved offline
+                  </Text>
+                  <Text style={[styles.syncBannerSubtitle, { color: colors.textMuted }]}>
+                    Will sync automatically once connected
+                  </Text>
+                </View>
+              </View>
+              <TouchableOpacity
+                style={[
+                  styles.syncBannerBtn,
+                  { backgroundColor: colors.surface, borderColor: colors.border },
+                ]}
+                onPress={() => syncQueue()}
+                disabled={isSyncing}
+              >
+                <Text style={[styles.syncBannerBtnText, { color: colors.accent }]}>
+                  {isSyncing ? 'Syncing...' : 'Sync Now'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </FadeInView>
+        )}
+
         {/* Recent Activity with Fade-In Animation */}
         <FadeInView delay={180} translateY={12}>
           <View style={styles.sectionHeaderWithAction}>
@@ -313,7 +400,7 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) 
               <Skeleton height={28} style={{ marginBottom: 10, borderRadius: radius.sm }} />
               <Skeleton height={28} style={{ borderRadius: radius.sm }} />
             </Card>
-          ) : recentTransactions.length === 0 ? (
+          ) : displayedRecentTransactions.length === 0 ? (
             <Card
               style={[
                 styles.emptyCard,
@@ -341,10 +428,10 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) 
                 overflow: 'hidden',
               }}
             >
-              {recentTransactions.map((tx, idx) => {
+              {displayedRecentTransactions.map((tx, idx) => {
                 const isExpense = tx.type === TransactionType.Expense || tx.typeName === 'Expense';
                 const isIncome = tx.type === TransactionType.Income || tx.typeName === 'Income';
-                const isLast = idx === recentTransactions.length - 1;
+                const isLast = idx === displayedRecentTransactions.length - 1;
 
                 const iconBg = isExpense
                   ? colors.dangerSoft
@@ -400,22 +487,41 @@ export const DashboardScreen: React.FC<DashboardScreenProps> = ({ navigation }) 
                       </Text>
                     </View>
 
-                    <Text
-                      style={[
-                        styles.txAmount,
-                        {
-                          color: isExpense
-                            ? colors.danger
-                            : isIncome
-                            ? colors.accent
-                            : colors.textPrimary,
-                        },
-                      ]}
-                    >
-                      {hideBalance
-                        ? '••••'
-                        : `${isExpense ? '-' : isIncome ? '+' : ''}${formatMoney(tx.amount, tx.currency)}`}
-                    </Text>
+                    <View style={styles.txAmountContainer}>
+                      <Text
+                        style={[
+                          styles.txAmount,
+                          {
+                            color: isExpense
+                              ? colors.danger
+                              : isIncome
+                              ? colors.accent
+                              : colors.textPrimary,
+                          },
+                        ]}
+                      >
+                        {hideBalance
+                          ? '••••'
+                          : `${isExpense ? '-' : isIncome ? '+' : ''}${formatMoney(tx.amount, tx.currency)}`}
+                      </Text>
+                      {tx.isPendingSync && (
+                        <View style={styles.pendingBadgeRow}>
+                          <Ionicons
+                            name={tx.syncStatus === 'failed' ? 'alert-circle' : 'cloud-upload-outline'}
+                            size={10}
+                            color={tx.syncStatus === 'failed' ? colors.danger : colors.warning}
+                          />
+                          <Text
+                            style={[
+                              styles.pendingBadgeText,
+                              { color: tx.syncStatus === 'failed' ? colors.danger : colors.warning },
+                            ]}
+                          >
+                            {tx.syncStatus === 'failed' ? 'Failed' : 'Pending'}
+                          </Text>
+                        </View>
+                      )}
+                    </View>
                   </View>
                 );
               })}
@@ -632,5 +738,60 @@ const styles = StyleSheet.create({
     ...typography.bodyLarge,
     fontWeight: '700',
     fontSize: 14,
+  },
+  txAmountContainer: {
+    alignItems: 'flex-end',
+  },
+  pendingBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    marginTop: 2,
+  },
+  pendingBadgeText: {
+    ...typography.caption,
+    fontSize: 9,
+    fontWeight: '700',
+  },
+  syncBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    marginBottom: spacing.base,
+  },
+  syncBannerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    flex: 1,
+  },
+  syncBannerTexts: {
+    flex: 1,
+  },
+  syncBannerTitle: {
+    ...typography.caption,
+    fontWeight: '700',
+    fontSize: 12,
+  },
+  syncBannerSubtitle: {
+    ...typography.caption,
+    fontSize: 10,
+    marginTop: 1,
+  },
+  syncBannerBtn: {
+    borderWidth: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: radius.md,
+    marginLeft: spacing.sm,
+  },
+  syncBannerBtnText: {
+    ...typography.caption,
+    fontWeight: '700',
+    fontSize: 11,
   },
 });
