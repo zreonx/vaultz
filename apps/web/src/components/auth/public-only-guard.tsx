@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useCurrentUser } from "@/hooks/use-auth";
 
 export function PublicOnlyGuard({
@@ -10,19 +10,25 @@ export function PublicOnlyGuard({
   children: React.ReactNode;
 }) {
   const router = useRouter();
+  const pathname = usePathname();
   const searchParams = useSearchParams();
   const { data: user, isLoading } = useCurrentUser();
 
   useEffect(() => {
-    if (!isLoading && user) {
-      const redirectParam = searchParams.get("redirect");
-      const safeRedirect =
-        redirectParam && redirectParam.startsWith("/") && !redirectParam.startsWith("//")
-          ? redirectParam
-          : "/dashboard";
-      router.replace(safeRedirect);
+    if (isLoading || !user) return;
+
+    // If user is unverified and on /verify-email, let them stay and complete verification
+    if (pathname === "/verify-email" && !user.isEmailVerified) {
+      return;
     }
-  }, [isLoading, user, router, searchParams]);
+
+    const redirectParam = searchParams.get("redirect");
+    const safeRedirect =
+      redirectParam && redirectParam.startsWith("/") && !redirectParam.startsWith("//")
+        ? redirectParam
+        : "/dashboard";
+    router.replace(safeRedirect);
+  }, [isLoading, user, router, searchParams, pathname]);
 
   return <>{children}</>;
 }

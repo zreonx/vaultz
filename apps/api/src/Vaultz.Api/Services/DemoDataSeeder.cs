@@ -19,6 +19,7 @@ public static class DemoDataSeeder
         if (existingUser != null)
         {
             existingUser.UpdatePasswordHash(PasswordHasher.HashPassword("Password123"));
+            existingUser.VerifyEmail();
             var existingAccounts = await db.Accounts
                 .Where(a => a.UserId == existingUser.Id.ToString() && !a.IsArchived)
                 .ToListAsync();
@@ -40,6 +41,7 @@ public static class DemoDataSeeder
             passwordHash: PasswordHasher.HashPassword("Password123"),
             defaultCurrencyCode: "USD",
             id: DemoUserGuid);
+        user.VerifyEmail();
 
         var userId = user.Id.ToString();
         db.Users.Add(user);
