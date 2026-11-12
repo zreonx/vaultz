@@ -2,16 +2,20 @@
 
 import { useMemo, useState } from "react";
 import {
+  AlertCircle,
   ArrowDownRight,
   ArrowRightLeft,
   ArrowUpRight,
   Check,
+  CheckCircle2,
   ChevronRight,
   Layers,
   Percent,
+  PieChart,
   Plus,
   RefreshCw,
   Shield,
+  SlidersHorizontal,
   Sparkles,
   Trash2,
   Vault,
@@ -24,7 +28,11 @@ import {
   AllocationCategory,
   MonthlyBudgetSliceDto,
 } from "@/types/api";
-import { formatMoney } from "@/lib/utils/currency";
+import {
+  CURRENCY_METADATA,
+  formatMoney,
+  SupportedCurrencyCode,
+} from "@/lib/utils/currency";
 import {
   useAccountAllocations,
   useCloseMonthlyPlanMutation,
@@ -446,50 +454,78 @@ export function AccountAllocationsPanel({
           ) : (
             <div className="space-y-4">
               {/* Plan Header Card */}
-              <Card className="p-4 border-indigo-500/20 bg-indigo-500/5">
+              <Card className="p-4 border-indigo-500/20 bg-indigo-500/5 space-y-3">
                 <div className="flex items-center justify-between">
-                  <div>
+                  <div className="flex items-center gap-2">
+                    <span className="flex h-2 w-2 rounded-full bg-indigo-500 animate-pulse" />
                     <span className="text-xs font-semibold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
-                      Period: {activeBudgetPlan.year}-{String(activeBudgetPlan.month).padStart(2, "0")}
+                      Cycle: {activeBudgetPlan.year}-{String(activeBudgetPlan.month).padStart(2, "0")}
                     </span>
-                    <div className="mt-1 flex items-baseline gap-2">
-                      <span className="text-lg font-bold tabular-nums">
-                        {formatMoney(activeBudgetPlan.totalRemaining, currencyCode)}
-                      </span>
-                      <span className="text-xs text-[var(--muted-foreground)]">
-                        remaining of {formatMoney(activeBudgetPlan.totalBudgetAmount, currencyCode)}
-                      </span>
-                    </div>
+                    <Badge variant="neutral" className="text-[10px] px-1.5 py-0">
+                      Active Allowance
+                    </Badge>
                   </div>
-                  <div className="text-right">
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="text-xs text-[var(--muted-foreground)] hover:text-red-500 h-7"
-                      onClick={() => {
-                        if (confirm("Close this active plan? Unspent funds will safely return to available cash.")) {
-                          closePlanMutation.mutate({ accountId, planId: activeBudgetPlan.id });
-                        }
-                      }}
-                    >
-                      Close Plan
-                    </Button>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="text-xs text-[var(--muted-foreground)] hover:text-red-500 h-7 px-2"
+                    onClick={() => {
+                      if (confirm("Close this active plan? Unspent funds will safely return to available cash.")) {
+                        closePlanMutation.mutate({ accountId, planId: activeBudgetPlan.id });
+                      }
+                    }}
+                  >
+                    Close Plan
+                  </Button>
+                </div>
+
+                <div className="flex flex-col sm:flex-row sm:items-baseline justify-between gap-1">
+                  <div>
+                    <span className="text-2xl font-bold tracking-tight tabular-nums text-[var(--foreground)]">
+                      {formatMoney(activeBudgetPlan.totalRemaining, currencyCode)}
+                    </span>
+                    <span className="text-xs text-[var(--muted-foreground)] ml-2">
+                      remaining allowance
+                    </span>
+                  </div>
+                  <div className="text-xs text-[var(--muted-foreground)] tabular-nums">
+                    Spent {formatMoney(activeBudgetPlan.totalSpent, currencyCode)} of {formatMoney(activeBudgetPlan.totalBudgetAmount, currencyCode)} ({activeBudgetPlan.totalBudgetAmount > 0 ? Math.round((activeBudgetPlan.totalSpent / activeBudgetPlan.totalBudgetAmount) * 100) : 0}%)
                   </div>
                 </div>
+
+                {/* Overall Plan Progress Bar */}
+                <Progress
+                  value={
+                    activeBudgetPlan.totalBudgetAmount > 0
+                      ? Math.min(100, Math.round((activeBudgetPlan.totalSpent / activeBudgetPlan.totalBudgetAmount) * 100))
+                      : 0
+                  }
+                  className="h-2"
+                />
               </Card>
 
               {/* Slices List */}
               <div className="space-y-2.5">
-                {activeBudgetPlan.slices.map((slice) => {
+                {activeBudgetPlan.slices.map((slice, idx) => {
                   const spentPct = slice.allocatedAmount > 0
                     ? Math.min(100, Math.round((slice.spentAmount / slice.allocatedAmount) * 100))
                     : 0;
+                  const isExhausted = slice.remainingAmount <= 0;
+                  const palette = SLICE_PALETTE[idx % SLICE_PALETTE.length] ?? SLICE_PALETTE[0]!;
 
                   return (
-                    <Card key={slice.id} className="p-3.5 border-[var(--border)]">
+                    <Card
+                      key={slice.id}
+                      className={`p-3.5 border transition-all ${
+                        isExhausted
+                          ? "border-red-500/40 bg-red-500/5"
+                          : "border-[var(--border)] hover:border-[var(--border-strong)]"
+                      }`}
+                    >
                       <div className="flex items-center justify-between text-sm">
                         <div className="flex items-center gap-2">
+                          <span className={`h-2.5 w-2.5 rounded-full ${palette.bg}`} />
                           <span className="font-semibold text-sm">{slice.name}</span>
                           <Badge variant="neutral" className="text-[10px] tabular-nums">
                             {slice.allocationPercentage}%
@@ -501,10 +537,14 @@ export function AccountAllocationsPanel({
                           )}
                         </div>
                         <div className="text-right">
-                          <span className="font-bold tabular-nums text-sm">
+                          <span
+                            className={`font-bold tabular-nums text-sm ${
+                              isExhausted ? "text-red-500" : "text-[var(--foreground)]"
+                            }`}
+                          >
                             {formatMoney(slice.remainingAmount, currencyCode)}
                           </span>
-                          <span className="text-xs text-[var(--muted-foreground)] block">
+                          <span className="text-[11px] text-[var(--muted-foreground)] block">
                             Spent {formatMoney(slice.spentAmount, currencyCode)} of {formatMoney(slice.allocatedAmount, currencyCode)}
                           </span>
                         </div>
@@ -516,6 +556,22 @@ export function AccountAllocationsPanel({
                           className="h-1.5"
                         />
                       </div>
+
+                      {isExhausted && (
+                        <div className="mt-2 flex items-center justify-between text-[11px] text-red-500 bg-red-500/10 rounded px-2 py-1">
+                          <span className="flex items-center gap-1 font-medium">
+                            <AlertCircle className="h-3 w-3" />
+                            Overdrawn / Exhausted slice
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => setIsCoverDeficitOpen(true)}
+                            className="underline font-semibold hover:text-red-600 cursor-pointer"
+                          >
+                            Cover Deficit
+                          </button>
+                        </div>
+                      )}
                     </Card>
                   );
                 })}
@@ -830,6 +886,28 @@ function DepositWithdrawDialog({
   );
 }
 
+const SLICE_PALETTE = [
+  { fill: "#6366f1", bg: "bg-indigo-500", border: "border-indigo-500/40", text: "text-indigo-600 dark:text-indigo-400" },
+  { fill: "#8b5cf6", bg: "bg-violet-500", border: "border-violet-500/40", text: "text-violet-600 dark:text-violet-400" },
+  { fill: "#0ea5e9", bg: "bg-sky-500", border: "border-sky-500/40", text: "text-sky-600 dark:text-sky-400" },
+  { fill: "#10b981", bg: "bg-emerald-500", border: "border-emerald-500/40", text: "text-emerald-600 dark:text-emerald-400" },
+  { fill: "#f59e0b", bg: "bg-amber-500", border: "border-amber-500/40", text: "text-amber-600 dark:text-amber-400" },
+  { fill: "#f43f5e", bg: "bg-rose-500", border: "border-rose-500/40", text: "text-rose-600 dark:text-rose-400" },
+];
+
+function formatCleanNumber(num: number): string {
+  if (isNaN(num) || num <= 0) return "";
+  const rounded = Math.round(num * 100) / 100;
+  return Number.isInteger(rounded) ? String(rounded) : rounded.toFixed(2);
+}
+
+interface SliceFormItem {
+  id: string;
+  name: string;
+  percentage: string;
+  amount: string;
+}
+
 function CreateMonthlyPlanDialog({
   open,
   onOpenChange,
@@ -850,27 +928,98 @@ function CreateMonthlyPlanDialog({
   const [year] = useState<number>(now.getFullYear());
   const [month] = useState<number>(now.getMonth() + 1);
 
-  const [slices, setSlices] = useState<
-    { id: string; name: string; percentage: number }[]
-  >([
-    { id: "1", name: "Essentials & Needs", percentage: 50 },
-    { id: "2", name: "Lifestyle & Wants", percentage: 30 },
-    { id: "3", name: "Bills & Subscriptions", percentage: 20 },
-  ]);
+  const budgetNum = parseFloat(totalBudget) || 0;
+  const currencySymbol =
+    CURRENCY_METADATA[currencyCode as SupportedCurrencyCode]?.symbol ?? currencyCode;
+
+  const [slices, setSlices] = useState<SliceFormItem[]>(() => {
+    const initBudget = availableBalance > 0 ? Math.floor(availableBalance) : 0;
+    return [
+      {
+        id: "1",
+        name: "Essentials & Needs",
+        percentage: "50",
+        amount: formatCleanNumber(initBudget * 0.5),
+      },
+      {
+        id: "2",
+        name: "Lifestyle & Wants",
+        percentage: "30",
+        amount: formatCleanNumber(initBudget * 0.3),
+      },
+      {
+        id: "3",
+        name: "Bills & Subscriptions",
+        percentage: "20",
+        amount: formatCleanNumber(initBudget * 0.2),
+      },
+    ];
+  });
 
   const createPlanMutation = useCreateMonthlyPlanMutation();
 
-  const totalPercentage = useMemo(
-    () => slices.reduce((sum, s) => sum + (Number(s.percentage) || 0), 0),
-    [slices]
-  );
+  const totalPercentage = useMemo(() => {
+    const sum = slices.reduce((acc, s) => acc + (parseFloat(s.percentage) || 0), 0);
+    return Math.round(sum * 100) / 100;
+  }, [slices]);
 
-  const budgetNum = parseFloat(totalBudget) || 0;
+  const totalAllocatedAmount = useMemo(() => {
+    const sum = slices.reduce((acc, s) => acc + (parseFloat(s.amount) || 0), 0);
+    return Math.round(sum * 100) / 100;
+  }, [slices]);
+
+  const remainingPct = Math.round((100 - totalPercentage) * 100) / 100;
+  const remainingAmt = Math.round((budgetNum - totalAllocatedAmount) * 100) / 100;
+
+  const handleBudgetChange = (newBudgetStr: string) => {
+    setTotalBudget(newBudgetStr);
+    const newBudgetNum = parseFloat(newBudgetStr) || 0;
+    if (newBudgetNum > 0) {
+      setSlices((prev) =>
+        prev.map((s) => {
+          const pct = parseFloat(s.percentage) || 0;
+          return {
+            ...s,
+            amount: formatCleanNumber((pct / 100) * newBudgetNum),
+          };
+        })
+      );
+    }
+  };
+
+  const handleAmountChange = (id: string, val: string) => {
+    const num = parseFloat(val);
+    setSlices((prev) =>
+      prev.map((s) => {
+        if (s.id !== id) return s;
+        if (val === "" || isNaN(num) || num < 0) {
+          return { ...s, amount: val, percentage: "" };
+        }
+        const calcPct = budgetNum > 0 ? (num / budgetNum) * 100 : 0;
+        return {
+          ...s,
+          amount: val,
+          percentage: formatCleanNumber(calcPct),
+        };
+      })
+    );
+  };
 
   const handlePercentageChange = (id: string, val: string) => {
-    const num = parseFloat(val) || 0;
+    const num = parseFloat(val);
     setSlices((prev) =>
-      prev.map((s) => (s.id === id ? { ...s, percentage: num } : s))
+      prev.map((s) => {
+        if (s.id !== id) return s;
+        if (val === "" || isNaN(num) || num < 0) {
+          return { ...s, percentage: val, amount: "" };
+        }
+        const calcAmt = budgetNum > 0 ? (num / 100) * budgetNum : 0;
+        return {
+          ...s,
+          percentage: val,
+          amount: formatCleanNumber(calcAmt),
+        };
+      })
     );
   };
 
@@ -883,7 +1032,12 @@ function CreateMonthlyPlanDialog({
   const addSlice = () => {
     setSlices((prev) => [
       ...prev,
-      { id: String(Date.now()), name: "New Category Slice", percentage: 0 },
+      {
+        id: String(Date.now()),
+        name: "Custom Slice",
+        percentage: "0",
+        amount: "0",
+      },
     ]);
   };
 
@@ -892,10 +1046,117 @@ function CreateMonthlyPlanDialog({
     setSlices((prev) => prev.filter((s) => s.id !== id));
   };
 
+  const applyPreset = (presetType: "50-30-20" | "70-20-10" | "even") => {
+    if (presetType === "50-30-20") {
+      setSlices([
+        {
+          id: "1",
+          name: "Essentials & Needs",
+          percentage: "50",
+          amount: formatCleanNumber(budgetNum * 0.5),
+        },
+        {
+          id: "2",
+          name: "Lifestyle & Wants",
+          percentage: "30",
+          amount: formatCleanNumber(budgetNum * 0.3),
+        },
+        {
+          id: "3",
+          name: "Savings & Bills",
+          percentage: "20",
+          amount: formatCleanNumber(budgetNum * 0.2),
+        },
+      ]);
+    } else if (presetType === "70-20-10") {
+      setSlices([
+        {
+          id: "1",
+          name: "Living Expenses",
+          percentage: "70",
+          amount: formatCleanNumber(budgetNum * 0.7),
+        },
+        {
+          id: "2",
+          name: "Savings & Investments",
+          percentage: "20",
+          amount: formatCleanNumber(budgetNum * 0.2),
+        },
+        {
+          id: "3",
+          name: "Debt & Discretionary",
+          percentage: "10",
+          amount: formatCleanNumber(budgetNum * 0.1),
+        },
+      ]);
+    } else if (presetType === "even") {
+      const n = Math.max(1, slices.length);
+      const basePct = Math.floor((100 / n) * 100) / 100;
+      const remainder = Math.round((100 - basePct * n) * 100) / 100;
+      setSlices((prev) =>
+        prev.map((s, idx) => {
+          const pct = idx === 0 ? basePct + remainder : basePct;
+          return {
+            ...s,
+            percentage: formatCleanNumber(pct),
+            amount: formatCleanNumber((pct / 100) * budgetNum),
+          };
+        })
+      );
+    }
+  };
+
+  const handleFillRemainder = () => {
+    if (remainingPct <= 0 || slices.length === 0) return;
+    setSlices((prev) => {
+      if (prev.length === 0) return prev;
+      const copy = [...prev];
+      const lastIndex = copy.length - 1;
+      const last = copy[lastIndex];
+      if (!last) return prev;
+      const currentPct = parseFloat(last.percentage) || 0;
+      const newPct = Math.round((currentPct + remainingPct) * 100) / 100;
+      copy[lastIndex] = {
+        ...last,
+        percentage: formatCleanNumber(newPct),
+        amount: formatCleanNumber((newPct / 100) * budgetNum),
+      };
+      return copy;
+    });
+  };
+
+  const handleAddRemainderAsSlice = () => {
+    if (remainingPct <= 0) return;
+    setSlices((prev) => [
+      ...prev,
+      {
+        id: String(Date.now()),
+        name: "Remaining Allowance",
+        percentage: formatCleanNumber(remainingPct),
+        amount: formatCleanNumber((remainingPct / 100) * budgetNum),
+      },
+    ]);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (Math.abs(totalPercentage - 100) > 0.01) return;
     if (budgetNum <= 0 || budgetNum > availableBalance) return;
+    if (Math.abs(totalPercentage - 100) > 0.05) return;
+
+    // Normalize any slight rounding difference so sum equals exactly 100.00%
+    const normalized = [...slices];
+    const diff = Math.round((100 - totalPercentage) * 100) / 100;
+    if (Math.abs(diff) > 0 && normalized.length > 0) {
+      const lastIndex = normalized.length - 1;
+      const lastSlice = normalized[lastIndex];
+      if (lastSlice) {
+        const lastPct = parseFloat(lastSlice.percentage) || 0;
+        normalized[lastIndex] = {
+          ...lastSlice,
+          percentage: String(Math.round((lastPct + diff) * 100) / 100),
+        };
+      }
+    }
 
     createPlanMutation.mutate(
       {
@@ -904,9 +1165,9 @@ function CreateMonthlyPlanDialog({
           year,
           month,
           totalBudgetAmount: budgetNum,
-          slices: slices.map((s) => ({
-            name: s.name.trim(),
-            allocationPercentage: s.percentage,
+          slices: normalized.map((s) => ({
+            name: s.name.trim() || "Slice",
+            allocationPercentage: parseFloat(s.percentage) || 0,
           })),
         },
       },
@@ -918,94 +1179,241 @@ function CreateMonthlyPlanDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>Setup Monthly Finance Plan (Tier 2)</DialogTitle>
-          <DialogDescription>
-            Divide an active spending allowance into logical percentage slices.
+      <DialogContent className="sm:max-w-xl max-h-[90vh] flex flex-col p-6">
+        <DialogHeader className="pb-2">
+          <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400">
+            <Sparkles className="h-5 w-5" />
+            <DialogTitle className="text-lg font-bold">
+              Setup Monthly Finance Plan (Tier 2)
+            </DialogTitle>
+          </div>
+          <DialogDescription className="text-xs">
+            Partition your active spending allowance into logical fragments. You can edit either the monetary amount or percentage—they synchronize automatically.
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4 py-2">
-          <div className="space-y-1.5">
+        <form onSubmit={handleSubmit} className="space-y-4 overflow-y-auto pr-1 flex-1 py-1">
+          {/* Total Budget Input with Helper Chips */}
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--muted)]/20 p-3.5 space-y-2.5">
             <div className="flex justify-between items-center">
-              <Label htmlFor="plan-budget">Total Monthly Allowance ({currencyCode})</Label>
+              <Label htmlFor="plan-budget" className="text-xs font-semibold uppercase tracking-wider text-[var(--muted-foreground)]">
+                Total Monthly Allowance ({currencyCode})
+              </Label>
               <span className="text-xs text-[var(--muted-foreground)]">
-                Available: {formatMoney(availableBalance, currencyCode)}
+                Available: <span className="font-semibold text-[var(--foreground)]">{formatMoney(availableBalance, currencyCode)}</span>
               </span>
             </div>
-            <Input
-              id="plan-budget"
-              type="number"
-              step="any"
-              min="1"
-              max={availableBalance}
-              value={totalBudget}
-              onChange={(e) => setTotalBudget(e.target.value)}
-              required
-            />
+
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-semibold text-[var(--muted-foreground)]">
+                {currencySymbol}
+              </span>
+              <Input
+                id="plan-budget"
+                type="number"
+                step="any"
+                min="1"
+                max={availableBalance}
+                value={totalBudget}
+                onChange={(e) => handleBudgetChange(e.target.value)}
+                className="pl-8 text-base font-bold tabular-nums"
+                required
+              />
+            </div>
+
+            {/* Quick Allowance Presets */}
+            {availableBalance > 0 && (
+              <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                <span className="text-[11px] text-[var(--muted-foreground)] mr-1">Quick fill:</span>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-6 px-2 text-[11px] rounded-full"
+                  onClick={() => handleBudgetChange(String(Math.floor(availableBalance)))}
+                >
+                  100% Max ({formatMoney(availableBalance, currencyCode)})
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-6 px-2 text-[11px] rounded-full"
+                  onClick={() => handleBudgetChange(String(Math.floor(availableBalance * 0.75)))}
+                >
+                  75%
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-6 px-2 text-[11px] rounded-full"
+                  onClick={() => handleBudgetChange(String(Math.floor(availableBalance * 0.5)))}
+                >
+                  50%
+                </Button>
+              </div>
+            )}
           </div>
 
+          {/* Preset Buttons */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <Label className="text-xs font-semibold uppercase tracking-wider text-[var(--muted-foreground)] flex items-center gap-1.5">
+                <SlidersHorizontal className="h-3.5 w-3.5" />
+                Budget Presets
+              </Label>
+              <span className="text-[11px] text-[var(--muted-foreground)]">
+                Standard budgeting rules
+              </span>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-8 text-xs font-medium hover:border-indigo-500/50 hover:bg-indigo-50/50 dark:hover:bg-indigo-950/20"
+                onClick={() => applyPreset("50-30-20")}
+              >
+                50 / 30 / 20
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-8 text-xs font-medium hover:border-indigo-500/50 hover:bg-indigo-50/50 dark:hover:bg-indigo-950/20"
+                onClick={() => applyPreset("70-20-10")}
+              >
+                70 / 20 / 10
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="h-8 text-xs font-medium hover:border-indigo-500/50 hover:bg-indigo-50/50 dark:hover:bg-indigo-950/20"
+                onClick={() => applyPreset("even")}
+              >
+                Even Split
+              </Button>
+            </div>
+          </div>
+
+          {/* Slices Section */}
           <div className="space-y-2">
             <div className="flex justify-between items-center">
-              <Label className="text-xs font-semibold uppercase tracking-wider text-[var(--muted-foreground)]">
-                Percentage Distribution Slices
+              <Label className="text-xs font-semibold uppercase tracking-wider text-[var(--muted-foreground)] flex items-center gap-1.5">
+                <PieChart className="h-3.5 w-3.5" />
+                Budget Slices (Edit Price or %)
               </Label>
               <span
-                className={`text-xs font-semibold tabular-nums ${
-                  Math.abs(totalPercentage - 100) < 0.01
+                className={`text-xs font-bold tabular-nums flex items-center gap-1 ${
+                  Math.abs(totalPercentage - 100) <= 0.05
                     ? "text-emerald-500"
                     : "text-red-500"
                 }`}
               >
+                {Math.abs(totalPercentage - 100) <= 0.05 ? (
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                ) : (
+                  <AlertCircle className="h-3.5 w-3.5" />
+                )}
                 Total: {totalPercentage}% / 100%
               </span>
             </div>
 
-            <div className="max-h-60 overflow-y-auto space-y-2 pr-1">
-              {slices.map((slice) => {
-                const calculatedSliceAmount =
-                  budgetNum > 0 ? (slice.percentage / 100) * budgetNum : 0;
+            {/* Visualizer segment bar */}
+            {totalPercentage > 0 && (
+              <div className="h-2 w-full overflow-hidden rounded-full bg-[var(--muted)] flex">
+                {slices.map((slice, idx) => {
+                  const pct = Math.max(0, parseFloat(slice.percentage) || 0);
+                  const palette = SLICE_PALETTE[idx % SLICE_PALETTE.length] ?? SLICE_PALETTE[0]!;
+                  return (
+                    <div
+                      key={slice.id}
+                      className={`h-full ${palette.bg} transition-all duration-300`}
+                      style={{
+                        width: `${Math.min(100, (pct / Math.max(100, totalPercentage)) * 100)}%`,
+                      }}
+                      title={`${slice.name}: ${pct}%`}
+                    />
+                  );
+                })}
+              </div>
+            )}
 
+            {/* Slices List */}
+            <div className="space-y-2.5 max-h-64 overflow-y-auto pr-1">
+              {slices.map((slice, idx) => {
+                const palette = SLICE_PALETTE[idx % SLICE_PALETTE.length] ?? SLICE_PALETTE[0]!;
                 return (
                   <div
                     key={slice.id}
-                    className="flex items-center gap-2 p-2 rounded-lg border border-[var(--border)] bg-[var(--card)]"
+                    className="p-2.5 rounded-xl border border-[var(--border)] bg-[var(--card)] space-y-2 transition-all hover:border-[var(--border-strong)]"
                   >
-                    <Input
-                      value={slice.name}
-                      onChange={(e) => handleNameChange(slice.id, e.target.value)}
-                      placeholder="Slice Name"
-                      className="h-8 text-xs flex-1"
-                      required
-                    />
-                    <div className="flex items-center gap-1 w-24">
+                    <div className="flex items-center gap-2">
+                      <div
+                        className={`h-6 w-6 rounded-md flex items-center justify-center text-xs font-bold ${palette.bg} text-white flex-shrink-0`}
+                      >
+                        {idx + 1}
+                      </div>
                       <Input
-                        type="number"
-                        step="any"
-                        min="0"
-                        max="100"
-                        value={slice.percentage}
-                        onChange={(e) => handlePercentageChange(slice.id, e.target.value)}
-                        className="h-8 text-xs text-right tabular-nums"
+                        value={slice.name}
+                        onChange={(e) => handleNameChange(slice.id, e.target.value)}
+                        placeholder="Slice Name (e.g. Groceries)"
+                        className="h-8 text-xs font-medium flex-1"
                         required
                       />
-                      <Percent className="h-3 w-3 text-[var(--muted-foreground)]" />
+                      {slices.length > 1 && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 w-7 p-0 text-[var(--muted-foreground)] hover:text-red-500 flex-shrink-0"
+                          onClick={() => removeSlice(slice.id)}
+                          title="Delete slice"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
                     </div>
-                    <span className="w-24 text-right text-xs font-medium tabular-nums text-[var(--muted-foreground)]">
-                      {formatMoney(calculatedSliceAmount, currencyCode)}
-                    </span>
-                    {slices.length > 1 && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 w-7 p-0 text-[var(--muted-foreground)] hover:text-red-500"
-                        onClick={() => removeSlice(slice.id)}
-                      >
-                        <X className="h-3.5 w-3.5" />
-                      </Button>
-                    )}
+
+                    {/* Dual Input Row: Price & Percentage */}
+                    <div className="flex items-center gap-2 pl-8">
+                      {/* Price / Amount Input */}
+                      <div className="relative flex-1">
+                        <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs font-semibold text-[var(--muted-foreground)]">
+                          {currencySymbol}
+                        </span>
+                        <Input
+                          type="number"
+                          step="any"
+                          min="0"
+                          value={slice.amount}
+                          onChange={(e) => handleAmountChange(slice.id, e.target.value)}
+                          placeholder="Amount"
+                          className="h-8 text-xs pl-6 text-right tabular-nums font-semibold"
+                        />
+                      </div>
+
+                      {/* Sync arrow indicator */}
+                      <ArrowRightLeft className="h-3.5 w-3.5 text-[var(--muted-foreground)] flex-shrink-0 opacity-60" />
+
+                      {/* Percentage Input */}
+                      <div className="relative w-28">
+                        <Input
+                          type="number"
+                          step="any"
+                          min="0"
+                          max="100"
+                          value={slice.percentage}
+                          onChange={(e) => handlePercentageChange(slice.id, e.target.value)}
+                          placeholder="0"
+                          className="h-8 text-xs pr-6 text-right tabular-nums font-semibold"
+                          required
+                        />
+                        <Percent className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3 w-3 text-[var(--muted-foreground)] pointer-events-none" />
+                      </div>
+                    </div>
                   </div>
                 );
               })}
@@ -1015,12 +1423,61 @@ function CreateMonthlyPlanDialog({
               type="button"
               variant="outline"
               size="sm"
-              className="w-full text-xs gap-1.5 h-8 mt-1"
+              className="w-full text-xs gap-1.5 h-8 border-dashed"
               onClick={addSlice}
             >
-              <Plus className="h-3 w-3" />
-              Add Slice
+              <Plus className="h-3.5 w-3.5" />
+              Add Custom Slice
             </Button>
+          </div>
+
+          {/* Allocation Health & Helper Card */}
+          <div className="rounded-xl border border-[var(--border)] p-3 text-xs space-y-2 bg-[var(--muted)]/10">
+            <div className="flex items-center justify-between">
+              <span className="text-[var(--muted-foreground)]">Allocated Funds:</span>
+              <span className="font-bold tabular-nums">
+                {formatMoney(totalAllocatedAmount, currencyCode)} of {formatMoney(budgetNum, currencyCode)}
+              </span>
+            </div>
+
+            {Math.abs(totalPercentage - 100) <= 0.05 ? (
+              <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-medium">
+                <CheckCircle2 className="h-4 w-4" />
+                <span>100% of allowance allocated. Ready to activate.</span>
+              </div>
+            ) : totalPercentage < 100 ? (
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1 border-t border-[var(--border)]">
+                <span className="text-amber-600 dark:text-amber-400 font-medium flex items-center gap-1">
+                  <AlertCircle className="h-3.5 w-3.5" />
+                  {formatMoney(remainingAmt, currencyCode)} ({remainingPct}%) unallocated
+                </span>
+                <div className="flex items-center gap-1.5">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-6 px-2 text-[11px] border-amber-500/30 text-amber-600 dark:text-amber-400"
+                    onClick={handleFillRemainder}
+                  >
+                    Auto-fill last slice
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="h-6 px-2 text-[11px] border-amber-500/30 text-amber-600 dark:text-amber-400"
+                    onClick={handleAddRemainderAsSlice}
+                  >
+                    + Add as slice
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="text-red-500 font-medium flex items-center gap-1 pt-1 border-t border-[var(--border)]">
+                <AlertCircle className="h-3.5 w-3.5" />
+                Over-allocated by {formatMoney(Math.abs(remainingAmt), currencyCode)} (+{Math.abs(remainingPct)}%). Please reduce slice amounts.
+              </div>
+            )}
           </div>
 
           <DialogFooter className="pt-2">
@@ -1031,11 +1488,11 @@ function CreateMonthlyPlanDialog({
               type="submit"
               disabled={
                 createPlanMutation.isPending ||
-                Math.abs(totalPercentage - 100) > 0.01 ||
+                Math.abs(totalPercentage - 100) > 0.05 ||
                 budgetNum <= 0 ||
                 budgetNum > availableBalance
               }
-              className="bg-indigo-600 hover:bg-indigo-700 text-white"
+              className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium"
             >
               {createPlanMutation.isPending ? "Activating..." : "Activate Monthly Plan"}
             </Button>
