@@ -74,6 +74,21 @@ public static class DemoDataSeeder
         var budgetFood = new Budget(userId, catFood.Id, today.Year, today.Month, 600.00m, "USD");
         db.Budgets.AddRange(budgetRent, budgetFood);
 
+        var vaultEmergency = new AccountAllocation(
+            userId, accUsd.Id, "Emergency Fund Vault", AllocationCategory.Emergency, 10000.00m, 25000.00m, "#10b981", "shield");
+        db.AccountAllocations.Add(vaultEmergency);
+
+        var demoPlan = new MonthlyBudgetPlan(
+            userId, accUsd.Id, today.Year, today.Month, 6000.00m);
+        var sliceNeeds = new MonthlyBudgetSlice(userId, demoPlan.Id, "Essentials & Needs", 50.00m, 3000.00m, catRent.Id, "#6366f1");
+        sliceNeeds.RecordExpense(2150.00m);
+        var sliceWants = new MonthlyBudgetSlice(userId, demoPlan.Id, "Lifestyle & Wants", 30.00m, 1800.00m, catFood.Id, "#8b5cf6");
+        var sliceBills = new MonthlyBudgetSlice(userId, demoPlan.Id, "Bills & Subscriptions", 20.00m, 1200.00m, null, "#0ea5e9");
+        demoPlan.AddSlice(sliceNeeds);
+        demoPlan.AddSlice(sliceWants);
+        demoPlan.AddSlice(sliceBills);
+        db.MonthlyBudgetPlans.Add(demoPlan);
+
         var goalEmergency = new SavingsGoal(
             userId, "6-Month Emergency Fund", 45000.00m, "USD", 40000.00m, new DateOnly(2027, 6, 30));
         var goalTrip = new SavingsGoal(

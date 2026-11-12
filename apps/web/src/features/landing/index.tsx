@@ -67,9 +67,9 @@ const FEATURE_CARDS = [
   {
     icon: Target,
     badge: "Monthly Pacing",
-    title: "Calm Category Budgets",
+    title: "Funds Partition & Monthly Finance",
     description:
-      "Set monthly spending targets per category and track how much you have left to spend with gentle visual progress bars.",
+      "Wall off emergency reserves in protected purpose vaults and partition spending into disciplined monthly allowance fragments.",
   },
   {
     icon: PiggyBank,
@@ -713,7 +713,7 @@ export function LandingPageFeature() {
                   <Link href="/transactions">Transactions</Link>
                 </Button>
                 <Button asChild variant="ghost" size="sm">
-                  <Link href="/budgets">Budgets</Link>
+                  <Link href="/budgets">Monthly Finance</Link>
                 </Button>
                 <Button asChild variant="ghost" size="sm">
                   <Link href="/reports">Reports</Link>

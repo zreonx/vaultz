@@ -397,13 +397,13 @@ export function DashboardOverviewFeature() {
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between">
                   <div>
-                    <CardTitle>Monthly Budgets</CardTitle>
+                    <CardTitle>Monthly Finance & Pacing</CardTitle>
                     <CardDescription>
                       {activeWorkspace
-                        ? `Budgets for ${activeWorkspace.name}`
+                        ? `Allowance slices for ${activeWorkspace.name}`
                         : summary
                           ? `Spending pace for ${summary.year}-${String(summary.month).padStart(2, "0")}`
-                          : "Spending pace for current month"}
+                          : "Spending pace for current cycle"}
                     </CardDescription>
                   </div>
                   <Button asChild variant="ghost" size="sm">
@@ -425,10 +425,9 @@ export function DashboardOverviewFeature() {
                     ))
                   ) : !summary || summary.budgets.length === 0 ? (
                     <Alert variant="muted">
-                      <AlertTitle>No monthly budgets set yet</AlertTitle>
+                      <AlertTitle>No active monthly plan yet</AlertTitle>
                       <AlertDescription>
-                        Set monthly category limits in Budgets to track your
-                        spending pace.
+                        Partition your available cash into disciplined percentage slices (50/30/20) under Monthly Finance.
                       </AlertDescription>
                     </Alert>
                   ) : (

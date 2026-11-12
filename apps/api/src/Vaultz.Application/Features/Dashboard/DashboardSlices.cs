@@ -235,7 +235,56 @@ public sealed class DashboardHandlers
             convertedTransfers,
             ExchangeRateCatalog.GetRatesToBase(resolvedBaseCurrency));
 
-        var budgets = await _budgetHandlers.GetMonthlyBudgetsAsync(targetYear, targetMonth, accountId, cancellationToken);
+        var activePlansQuery = _dbContext.MonthlyBudgetPlans
+            .Include(p => p.Slices)
+            .AsNoTracking()
+            .Where(p => p.UserId == userId && p.IsActive && !p.IsSwept && p.Year == targetYear && p.Month == targetMonth);
+
+        if (accountId.HasValue)
+        {
+            activePlansQuery = activePlansQuery.Where(p => p.AccountId == accountId.Value);
+        }
+
+        var activePlans = await activePlansQuery.ToListAsync(cancellationToken);
+
+        IReadOnlyList<BudgetProgressResponse> budgets;
+
+        if (activePlans.Count > 0)
+        {
+            var accountDict = accounts.ToDictionary(a => a.Id);
+            var sliceBudgets = new List<BudgetProgressResponse>();
+            foreach (var plan in activePlans)
+            {
+                accountDict.TryGetValue(plan.AccountId, out var planAccount);
+                var currency = planAccount?.CurrencyCode ?? resolvedBaseCurrency;
+                var accName = planAccount?.Name ?? "Account";
+
+                foreach (var slice in plan.Slices)
+                {
+                    sliceBudgets.Add(new BudgetProgressResponse(
+                        slice.Id,
+                        slice.CategoryId ?? Guid.Empty,
+                        slice.Name,
+                        slice.Color ?? "#6366f1",
+                        plan.Year,
+                        plan.Month,
+                        slice.AllocatedAmount,
+                        slice.SpentAmount,
+                        slice.RemainingAmount,
+                        slice.AllocatedAmount > 0 ? Math.Round((slice.SpentAmount / slice.AllocatedAmount) * 100, 2) : 0m,
+                        currency,
+                        slice.RemainingAmount <= 0,
+                        plan.AccountId,
+                        accName));
+                }
+            }
+            budgets = sliceBudgets;
+        }
+        else
+        {
+            budgets = await _budgetHandlers.GetMonthlyBudgetsAsync(targetYear, targetMonth, accountId, cancellationToken);
+        }
+
         var savingsGoals = await _savingsGoalHandlers.GetSavingsGoalsAsync(accountId, cancellationToken);
         var recentTransactions = await _transactionHandlers.GetTransactionsAsync(
             new GetTransactionsFilter(AccountId: accountId, Limit: 8),
