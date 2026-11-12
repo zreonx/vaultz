@@ -432,12 +432,40 @@ export function DashboardOverviewFeature() {
                     </Alert>
                   ) : (
                     summary.budgets.map((b) => (
-                      <div key={b.id} className="space-y-1.5">
-                        <div className="flex justify-between text-xs">
-                          <span className="font-medium">{b.categoryName}</span>
-                          <span className="tabular-nums text-[var(--muted-foreground)]">
-                            {formatMoney(b.spentAmount, b.currencyCode)} /{" "}
-                            {formatMoney(b.limitAmount, b.currencyCode)}
+                      <div
+                        key={b.id}
+                        className="space-y-1.5 p-2 rounded-xl hover:bg-[var(--surface-muted)] transition-colors"
+                      >
+                        <div className="flex items-center justify-between text-xs">
+                          <div className="flex items-center gap-1.5 min-w-0">
+                            <span
+                              className="h-2.5 w-2.5 rounded-full shrink-0"
+                              style={{
+                                backgroundColor: b.categoryColorHex || "#6366f1",
+                              }}
+                            />
+                            <span className="font-semibold text-[var(--foreground)] truncate">
+                              {b.categoryName}
+                            </span>
+                            {!activeWorkspace && b.accountName && (
+                              <Badge
+                                variant="neutral"
+                                className="text-[10px] px-1.5 py-0 shrink-0"
+                              >
+                                {b.accountName}
+                              </Badge>
+                            )}
+                          </div>
+                          <span
+                            className={`text-[11px] font-semibold tabular-nums shrink-0 ml-2 ${
+                              b.isOverBudget
+                                ? "text-red-500 font-bold"
+                                : "text-emerald-600 dark:text-emerald-400"
+                            }`}
+                          >
+                            {b.isOverBudget
+                              ? `Over by ${formatMoney(Math.abs(b.remainingAmount), b.currencyCode)}`
+                              : `${formatMoney(b.remainingAmount, b.currencyCode)} left`}
                           </span>
                         </div>
                         <Progress
@@ -448,6 +476,13 @@ export function DashboardOverviewFeature() {
                               : "bg-[var(--accent)]"
                           }
                         />
+                        <div className="flex justify-between text-[11px] text-[var(--muted-foreground)] tabular-nums">
+                          <span>
+                            Spent: {formatMoney(b.spentAmount, b.currencyCode)} of{" "}
+                            {formatMoney(b.limitAmount, b.currencyCode)}
+                          </span>
+                          <span>{b.utilizationPercent.toFixed(0)}%</span>
+                        </div>
                       </div>
                     ))
                   )}
