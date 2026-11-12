@@ -70,4 +70,14 @@ export const accountsApi = {
       method: "PUT",
     });
   },
+
+  async deleteAccount(id: string): Promise<void> {
+    return apiClient<void>(`/api/v1/accounts/${id}`, {
+      method: "DELETE",
+    });
+  },
+
+  async delete(id: string): Promise<void> {
+    return accountsApi.deleteAccount(id);
+  },
 };

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { ModalSheet } from '@/components/ui/ModalSheet';
 import { Input } from '@/components/ui/Input';
@@ -27,7 +27,7 @@ export const EditAccountModal: React.FC<EditAccountModalProps> = ({
   onClose,
   onSuccess,
 }) => {
-  const { refreshAccounts, activeWorkspace, setActiveWorkspace } = useWorkspace();
+  const { refreshAccounts, activeWorkspace, setActiveWorkspace, accounts } = useWorkspace();
   const { colors, isDark } = useTheme();
 
   const [name, setName] = useState('');
@@ -46,6 +46,44 @@ export const EditAccountModal: React.FC<EditAccountModalProps> = ({
   if (!account) return null;
 
   const currencyCode = account.currency || account.currencyCode || 'USD';
+
+  const handleDelete = () => {
+    if (accounts.length <= 1) {
+      Alert.alert(
+        'Cannot Delete Account',
+        'You cannot delete your only account. Vaultz requires at least one active account to function.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
+    Alert.alert(
+      'Delete Account',
+      `Are you sure you want to permanently delete "${account.name}"? All transactions, budgets, and allocations for this account will be erased. This action cannot be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setIsLoading(true);
+              setError(null);
+              await accountsApi.deleteAccount(account.id);
+              haptics.success();
+              await refreshAccounts();
+              onClose();
+            } catch (err: any) {
+              haptics.error();
+              setError(err.message || 'Failed to delete account');
+            } finally {
+              setIsLoading(false);
+            }
+          },
+        },
+      ]
+    );
+  };
 
   const handleSubmit = async () => {
     if (!name.trim()) {
@@ -208,6 +246,20 @@ export const EditAccountModal: React.FC<EditAccountModalProps> = ({
             style={styles.submitBtn}
           />
         </View>
+
+        {/* Delete Account */}
+        {accounts.length > 1 && (
+          <View style={styles.deleteWrapper}>
+            <Button
+              title="Delete Account"
+              variant="ghost"
+              leftIcon="trash-outline"
+              onPress={handleDelete}
+              disabled={isLoading}
+              textStyle={{ color: colors.danger, fontWeight: '600' }}
+            />
+          </View>
+        )}
       </View>
     </ModalSheet>
   );
@@ -216,6 +268,10 @@ export const EditAccountModal: React.FC<EditAccountModalProps> = ({
 const styles = StyleSheet.create({
   container: {
     paddingBottom: spacing.lg,
+  },
+  deleteWrapper: {
+    marginTop: spacing.md,
+    alignItems: 'center',
   },
   errorBox: {
     padding: spacing.md,

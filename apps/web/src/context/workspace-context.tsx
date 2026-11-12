@@ -10,7 +10,7 @@ import React, {
 } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertCircle, ArrowLeftRight, Globe, Pencil, Plus, Wallet } from "lucide-react";
+import { AlertCircle, ArrowLeftRight, Globe, Pencil, Plus, Trash2, Wallet } from "lucide-react";
 import { apiClient } from "@/lib/api/client";
 import {
   CURRENCY_METADATA,
@@ -66,6 +66,7 @@ interface WorkspaceContextValue {
   setSelectedWorkspaceId: (id: string) => void;
   openCreateWorkspaceDialog: () => void;
   openEditWorkspaceDialog: (workspaceId?: string) => void;
+  openDeleteWorkspaceDialog: (workspaceId?: string) => void;
   openTransferDialog: (fromWorkspaceId?: string, toWorkspaceId?: string) => void;
   openCreateTransactionDialog: (
     initialType?: TransactionType,
@@ -292,6 +293,41 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
+  // --- Delete Account Modal State ---
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
+  const [deletingWorkspace, setDeletingWorkspace] = useState<AccountResponse | null>(null);
+
+  const openDeleteWorkspaceDialog = useCallback(
+    (workspaceId?: string) => {
+      const target = workspaceId
+        ? workspaces.find((w) => w.id === workspaceId)
+        : activeWorkspace;
+      if (!target) return;
+      setDeletingWorkspace(target);
+      setIsDeleteOpen(true);
+    },
+    [activeWorkspace, workspaces]
+  );
+
+  const deleteWorkspaceMutation = useMutation({
+    mutationFn: (id: string) => apiClient.delete(`/api/v1/accounts/${id}`),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["accounts"] });
+      void queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      void queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      void queryClient.invalidateQueries({ queryKey: ["budgets"] });
+      void queryClient.invalidateQueries({ queryKey: ["account-allocations"] });
+      setIsDeleteOpen(false);
+      setDeletingWorkspace(null);
+      toast.success("Account deleted successfully.");
+    },
+    onError: (err) => {
+      const msg =
+        err instanceof Error ? err.message : "Failed to delete account.";
+      toast.error(msg);
+    },
+  });
+
   // --- Create Transaction Modal State ---
   const [isTransactionOpen, setIsTransactionOpen] = useState(false);
   const [txInitialType, setTxInitialType] = useState<TransactionType>(
@@ -450,6 +486,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       setSelectedWorkspaceId,
       openCreateWorkspaceDialog,
       openEditWorkspaceDialog,
+      openDeleteWorkspaceDialog,
       openTransferDialog,
       openCreateTransactionDialog,
     }),
@@ -463,6 +500,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       setSelectedWorkspaceId,
       openCreateWorkspaceDialog,
       openEditWorkspaceDialog,
+      openDeleteWorkspaceDialog,
       openTransferDialog,
       openCreateTransactionDialog,
     ]
@@ -927,21 +965,40 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
                 </div>
               </div>
 
-              <DialogFooter>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setIsEditOpen(false)}
-                  disabled={updateWorkspaceMutation.isPending}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  disabled={updateWorkspaceMutation.isPending}
-                >
-                  {updateWorkspaceMutation.isPending ? "Saving..." : "Save Changes"}
-                </Button>
+              <DialogFooter className="flex items-center justify-between sm:justify-between w-full">
+                {workspaces.length > 1 ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => {
+                      const targetId = editingWorkspace.id;
+                      setIsEditOpen(false);
+                      openDeleteWorkspaceDialog(targetId);
+                    }}
+                    className="text-red-500 hover:text-red-600 hover:bg-red-500/10 gap-1.5 text-xs mr-auto"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    Delete Account
+                  </Button>
+                ) : (
+                  <div />
+                )}
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsEditOpen(false)}
+                    disabled={updateWorkspaceMutation.isPending}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={updateWorkspaceMutation.isPending}
+                  >
+                    {updateWorkspaceMutation.isPending ? "Saving..." : "Save Changes"}
+                  </Button>
+                </div>
               </DialogFooter>
             </form>
           )}
@@ -956,6 +1013,98 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
         defaultType={txInitialType}
         lockAccount={txLockAccount}
       />
+
+      {/* Global Dialog 5: Delete Account Confirmation */}
+      <Dialog open={isDeleteOpen} onOpenChange={setIsDeleteOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600 dark:text-red-400">
+              <Trash2 className="h-4 w-4" />
+              Delete Financial Account
+            </DialogTitle>
+            <DialogDescription>
+              Are you sure you want to permanently delete{" "}
+              <strong className="text-[var(--foreground)]">
+                {deletingWorkspace?.name}
+              </strong>
+              ?
+            </DialogDescription>
+          </DialogHeader>
+
+          {workspaces.length <= 1 ? (
+            <div className="space-y-4 py-2">
+              <Alert variant="muted">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Cannot Delete Only Account</AlertTitle>
+                <AlertDescription>
+                  You cannot delete your only account. Vaultz requires at least one active account to function.
+                </AlertDescription>
+              </Alert>
+              <DialogFooter>
+                <Button type="button" onClick={() => setIsDeleteOpen(false)}>
+                  Close
+                </Button>
+              </DialogFooter>
+            </div>
+          ) : (
+            <div className="space-y-4 py-1">
+              <div className="rounded-xl border border-red-500/20 bg-red-500/10 p-3.5 text-xs text-red-600 dark:text-red-400 space-y-1.5">
+                <p className="font-semibold flex items-center gap-1.5">
+                  <AlertCircle className="h-4 w-4 shrink-0" />
+                  This action is permanent and cannot be undone.
+                </p>
+                <p className="text-[11px] leading-relaxed text-red-600/90 dark:text-red-400/90">
+                  Deleting this account will permanently delete all its recorded
+                  transactions, budget allocations, and history. If this was your
+                  default account, default status will automatically reassign to another account.
+                </p>
+              </div>
+
+              {deletingWorkspace && (
+                <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-subtle)] p-3 text-xs space-y-1">
+                  <div className="flex justify-between">
+                    <span className="text-[var(--muted-foreground)]">Account Name:</span>
+                    <span className="font-semibold text-[var(--foreground)]">{deletingWorkspace.name}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-[var(--muted-foreground)]">Current Balance:</span>
+                    <span className="font-semibold tabular-nums text-[var(--foreground)]">
+                      {formatMoney(deletingWorkspace.balance, deletingWorkspace.currencyCode)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-[var(--muted-foreground)]">Base Currency:</span>
+                    <span className="font-semibold text-[var(--foreground)]">{deletingWorkspace.currencyCode}</span>
+                  </div>
+                </div>
+              )}
+
+              <DialogFooter className="gap-2 sm:gap-0">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsDeleteOpen(false)}
+                  disabled={deleteWorkspaceMutation.isPending}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  onClick={() => {
+                    if (deletingWorkspace) {
+                      deleteWorkspaceMutation.mutate(deletingWorkspace.id);
+                    }
+                  }}
+                  disabled={deleteWorkspaceMutation.isPending}
+                >
+                  {deleteWorkspaceMutation.isPending ? "Deleting..." : "Delete Account"}
+                </Button>
+              </DialogFooter>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </WorkspaceContext.Provider>
   );
 }

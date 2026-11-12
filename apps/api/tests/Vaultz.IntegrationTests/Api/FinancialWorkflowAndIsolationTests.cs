@@ -309,5 +309,23 @@ public sealed class FinancialWorkflowAndIsolationTests
         // User B cannot set User A's account as default (must return 404)
         var crossTenantDefaultAttempt = await userBClient.PutAsync($"/api/v1/accounts/{checking.Id}/default", null);
         Assert.Equal(HttpStatusCode.NotFound, crossTenantDefaultAttempt.StatusCode);
+
+        // 11. Delete Account & Tenant Isolation
+        // User B cannot delete User A's account (must return 404)
+        var crossTenantDeleteAttempt = await userBClient.DeleteAsync($"/api/v1/accounts/{checking.Id}");
+        Assert.Equal(HttpStatusCode.NotFound, crossTenantDeleteAttempt.StatusCode);
+
+        // User A deletes checking account
+        var deleteResponse = await userAClient.DeleteAsync($"/api/v1/accounts/{checking.Id}");
+        Assert.Equal(HttpStatusCode.NoContent, deleteResponse.StatusCode);
+
+        var accountsAfterDeleteAcc = (await userAClient.GetFromJsonAsync<List<AccountResponse>>("/api/v1/accounts"))!;
+        Assert.Single(accountsAfterDeleteAcc);
+        Assert.Equal(savings.Id, accountsAfterDeleteAcc[0].Id);
+        Assert.True(accountsAfterDeleteAcc[0].IsDefault);
+
+        // User A cannot delete their only remaining account (must return 422 Unprocessable Entity)
+        var deleteOnlyAccountAttempt = await userAClient.DeleteAsync($"/api/v1/accounts/{savings.Id}");
+        Assert.Equal(HttpStatusCode.UnprocessableEntity, deleteOnlyAccountAttempt.StatusCode);
     }
 }

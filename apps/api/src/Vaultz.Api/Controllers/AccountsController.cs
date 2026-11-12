@@ -62,4 +62,14 @@ public sealed class AccountsController : ControllerBase
         var updated = await _handlers.SetDefaultAccountAsync(id, cancellationToken);
         return Ok(updated);
     }
+
+    [HttpDelete("{id:guid}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public async Task<IActionResult> DeleteAccount(
+        Guid id,
+        CancellationToken cancellationToken = default)
+    {
+        await _handlers.DeleteAccountAsync(id, cancellationToken);
+        return NoContent();
+    }
 }

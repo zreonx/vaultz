@@ -193,6 +193,90 @@ public sealed class AccountHandlers
         return MapToResponse(account);
     }
 
+    public async Task DeleteAccountAsync(
+        Guid accountId,
+        CancellationToken cancellationToken = default)
+    {
+        var userId = _currentUser.GetRequiredUserId();
+
+        await _dbContext.ExecuteInTransactionAsync(async ct =>
+        {
+            var account = await _dbContext.Accounts
+                .FirstOrDefaultAsync(a => a.Id == accountId && a.UserId == userId, ct)
+                ?? throw new NotFoundException(nameof(FinancialAccount), accountId);
+
+            var totalAccounts = await _dbContext.Accounts
+                .CountAsync(a => a.UserId == userId, ct);
+
+            if (totalAccounts <= 1)
+            {
+                throw new DomainException("You cannot delete your only account. Vaultz requires at least one account.", "cannot_delete_only_account");
+            }
+
+            // If deleting the default account, reassign default status to another account
+            if (account.IsDefault)
+            {
+                var nextDefault = await _dbContext.Accounts
+                    .Where(a => a.UserId == userId && a.Id != accountId && !a.IsArchived)
+                    .OrderBy(a => a.CreatedAtUtc)
+                    .FirstOrDefaultAsync(ct)
+                    ?? await _dbContext.Accounts
+                        .Where(a => a.UserId == userId && a.Id != accountId)
+                        .OrderBy(a => a.CreatedAtUtc)
+                        .FirstOrDefaultAsync(ct);
+
+                nextDefault?.SetAsDefault();
+            }
+
+            // Clean up dependent account-scoped allocations and budget plans
+            var allocations = await _dbContext.AccountAllocations
+                .Where(a => a.AccountId == accountId && a.UserId == userId)
+                .ToListAsync(ct);
+            _dbContext.AccountAllocations.RemoveRange(allocations);
+
+            var budgetPlans = await _dbContext.MonthlyBudgetPlans
+                .Include(p => p.Slices)
+                .Where(p => p.AccountId == accountId && p.UserId == userId)
+                .ToListAsync(ct);
+            _dbContext.MonthlyBudgetPlans.RemoveRange(budgetPlans);
+
+            var budgets = await _dbContext.Budgets
+                .Where(b => b.AccountId == accountId && b.UserId == userId)
+                .ToListAsync(ct);
+            _dbContext.Budgets.RemoveRange(budgets);
+
+            var scopedCategories = await _dbContext.Categories
+                .Where(c => c.AccountId == accountId && c.UserId == userId)
+                .ToListAsync(ct);
+            _dbContext.Categories.RemoveRange(scopedCategories);
+
+            var scopedGoals = await _dbContext.SavingsGoals
+                .Where(s => s.AccountId == accountId && s.UserId == userId)
+                .ToListAsync(ct);
+            _dbContext.SavingsGoals.RemoveRange(scopedGoals);
+
+            var recurrings = await _dbContext.RecurringTransactions
+                .Where(r => (r.AccountId == accountId || r.DestinationAccountId == accountId) && r.UserId == userId)
+                .ToListAsync(ct);
+            _dbContext.RecurringTransactions.RemoveRange(recurrings);
+
+            var lendings = await _dbContext.LendingRecords
+                .Include(l => l.Payments)
+                .Where(l => l.AccountId == accountId && l.UserId == userId)
+                .ToListAsync(ct);
+            _dbContext.LendingRecords.RemoveRange(lendings);
+
+            var transactions = await _dbContext.Transactions
+                .Where(t => (t.AccountId == accountId || t.DestinationAccountId == accountId) && t.UserId == userId)
+                .ToListAsync(ct);
+            _dbContext.Transactions.RemoveRange(transactions);
+
+            _dbContext.Accounts.Remove(account);
+
+            await _dbContext.SaveChangesAsync(ct);
+        }, cancellationToken);
+    }
+
     private static AccountResponse MapToResponse(FinancialAccount account) =>
         new(
             account.Id,

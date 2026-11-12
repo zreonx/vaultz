@@ -8,6 +8,7 @@ import {
   Pencil,
   Plus,
   Star,
+  Trash2,
   Wallet,
 } from "lucide-react";
 import { apiClient } from "@/lib/api/client";
@@ -70,6 +71,7 @@ export function AccountsFeatureView() {
     setSelectedWorkspaceId,
     openCreateWorkspaceDialog,
     openEditWorkspaceDialog,
+    openDeleteWorkspaceDialog,
     openTransferDialog,
     openCreateTransactionDialog,
   } = useWorkspace();
@@ -320,6 +322,25 @@ export function AccountsFeatureView() {
                         <ArrowLeftRight className="h-3.5 w-3.5" />
                         Transfer
                       </Button>
+                      <SimpleTooltip
+                        content={
+                          accounts.length <= 1
+                            ? "Cannot delete your only account"
+                            : `Delete ${account.name}`
+                        }
+                      >
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => openDeleteWorkspaceDialog(account.id)}
+                          disabled={accounts.length <= 1}
+                          className="gap-1 text-xs text-[var(--muted-foreground)] hover:text-red-500 hover:bg-red-500/10"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                          Delete
+                        </Button>
+                      </SimpleTooltip>
                     </div>
                   </TableCell>
                 </TableRow>

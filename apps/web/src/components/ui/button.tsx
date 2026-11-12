@@ -10,6 +10,8 @@ export const buttonVariants = cva(
       variant: {
         default:
           "bg-[var(--accent)] text-[var(--accent-foreground)] hover:opacity-90",
+        destructive:
+          "bg-red-600 text-white hover:bg-red-700 dark:bg-red-600 dark:hover:bg-red-700",
         secondary:
           "bg-[var(--surface-muted)] text-[var(--foreground)] hover:bg-[var(--border)]",
         outline:
