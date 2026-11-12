@@ -18,7 +18,6 @@ import { PressableScale } from '@/components/ui/PressableScale';
 import { FadeInView } from '@/components/ui/FadeInView';
 import { CreateAccountModal } from '@/components/shared/CreateAccountModal';
 import { EditAccountModal } from '@/components/shared/EditAccountModal';
-import { AccountAllocationsCard } from '@/components/shared/AccountAllocationsCard';
 import { typography, radius, spacing } from '@/theme/tokens';
 import { formatMoney } from '@/utils/currency';
 import { haptics } from '@/utils/haptics';
@@ -202,18 +201,6 @@ export const AccountsScreen: React.FC = () => {
             );
           })}
         </View>
-
-        {/* 2-Tier Allocations & Monthly Logical Finance */}
-        {activeWorkspace && (
-          <FadeInView delay={100 + accounts.length * 40} translateY={12}>
-            <AccountAllocationsCard
-              accountId={activeWorkspace.id}
-              accountName={activeWorkspace.name}
-              currencyCode={activeWorkspace.currency || activeWorkspace.currencyCode || 'USD'}
-              onRefreshParent={refreshAccounts}
-            />
-          </FadeInView>
-        )}
 
         <FadeInView delay={120 + accounts.length * 40} translateY={12}>
           <Button

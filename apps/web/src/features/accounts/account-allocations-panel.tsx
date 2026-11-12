@@ -6,9 +6,7 @@ import {
   ArrowDownRight,
   ArrowRightLeft,
   ArrowUpRight,
-  Check,
   CheckCircle2,
-  ChevronRight,
   Layers,
   Percent,
   PieChart,
@@ -20,13 +18,11 @@ import {
   Trash2,
   Vault,
   Wallet,
-  X,
 } from "lucide-react";
 import {
   AccountAllocationDto,
   AccountAllocationsOverviewResponse,
   AllocationCategory,
-  MonthlyBudgetSliceDto,
 } from "@/types/api";
 import {
   CURRENCY_METADATA,

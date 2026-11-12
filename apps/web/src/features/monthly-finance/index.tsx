@@ -1,12 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
 import Link from "next/link";
 import {
   Layers,
   Sparkles,
-  Shield,
-  Wallet,
   ArrowRight,
   Plus,
   Building2,
@@ -21,9 +18,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
-  CardContent,
   CardDescription,
-  CardHeader,
   CardTitle,
 } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -31,25 +26,12 @@ import { AccountAllocationsPanel } from "@/features/accounts/account-allocations
 
 export function MonthlyFinanceFeatureView() {
   const { data: user, isLoading: isAuthLoading } = useCurrentUser();
-  const { activeWorkspace } = useWorkspace();
+  const { activeWorkspace, setSelectedWorkspaceId } = useWorkspace();
   const { data: accounts = [], isLoading: isLoadingAccounts } = useAccounts();
-
-  const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
 
   const now = new Date();
   const currentMonthName = now.toLocaleString("default", { month: "long" });
   const currentYear = now.getFullYear();
-
-  // If a specific workspace account is active in the top navbar, use it.
-  // Otherwise, fallback to user's selected account or first available account.
-  const effectiveAccount = useMemo(() => {
-    if (activeWorkspace) return activeWorkspace;
-    if (selectedAccountId) {
-      const found = accounts.find((a) => a.id === selectedAccountId);
-      if (found) return found;
-    }
-    return accounts[0] ?? null;
-  }, [activeWorkspace, selectedAccountId, accounts]);
 
   if (!isAuthLoading && !user) {
     return <AuthRequiredBanner featureName="Monthly Finance" />;
@@ -70,7 +52,9 @@ export function MonthlyFinanceFeatureView() {
             </Badge>
           </div>
           <p className="text-sm text-[var(--muted-foreground)]">
-            Discipline-first budgeting: wall off permanent purpose vaults (Tier 1) and partition active monthly spending allowances (Tier 2).
+            {activeWorkspace
+              ? `Discipline-first budgeting: purpose vaults & monthly allowance slices for ${activeWorkspace.name} (${activeWorkspace.currencyCode}).`
+              : "Discipline-first budgeting: wall off permanent purpose vaults (Tier 1) and partition active monthly spending allowances (Tier 2)."}
           </p>
         </div>
 
@@ -104,21 +88,65 @@ export function MonthlyFinanceFeatureView() {
             </Link>
           </Button>
         </Card>
+      ) : !activeWorkspace ? (
+        /* Prompt user to select an account when currently viewing All Accounts scope */
+        <Card className="p-8 text-center border-dashed">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600 dark:bg-indigo-950/40 dark:text-indigo-400 mb-3">
+            <Layers className="h-6 w-6" />
+          </div>
+          <CardTitle className="text-lg font-semibold">Select an Account</CardTitle>
+          <CardDescription className="max-w-md mx-auto mt-1 mb-6">
+            Monthly Finance and Purpose Vaults are configured per account. Choose which account you want to partition and manage:
+          </CardDescription>
+
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 max-w-3xl mx-auto text-left">
+            {accounts.map((acc) => (
+              <button
+                key={acc.id}
+                type="button"
+                onClick={() => setSelectedWorkspaceId(acc.id)}
+                className="group relative flex flex-col justify-between p-4 rounded-xl border border-[var(--border)] bg-[var(--card)] hover:border-indigo-500 hover:shadow-md transition-all text-left"
+              >
+                <div>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-semibold text-sm group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors truncate">
+                      {acc.name}
+                    </span>
+                    <Badge variant="neutral" className="text-[10px] px-1.5 py-0">
+                      {acc.currencyCode}
+                    </Badge>
+                  </div>
+                  <div className="text-xs text-[var(--muted-foreground)] mt-0.5">
+                    {acc.typeName}
+                  </div>
+                </div>
+                <div className="mt-3 flex items-center justify-between pt-2 border-t border-[var(--border-subtle)]">
+                  <span className="text-xs font-semibold tabular-nums text-[var(--foreground)]">
+                    {formatMoney(acc.balance, acc.currencyCode)}
+                  </span>
+                  <span className="inline-flex items-center text-xs text-indigo-600 dark:text-indigo-400 font-medium group-hover:translate-x-0.5 transition-transform">
+                    Select <ArrowRight className="h-3 w-3 ml-1" />
+                  </span>
+                </div>
+              </button>
+            ))}
+          </div>
+        </Card>
       ) : (
         <div className="space-y-6">
-          {/* Account Selector Strip (Visible when viewing All Accounts portfolio scope) */}
-          {!activeWorkspace && accounts.length > 1 && (
+          {/* Account Switcher Strip (if multiple accounts exist) */}
+          {accounts.length > 1 && (
             <div className="flex items-center gap-2 overflow-x-auto pb-1">
               <span className="text-xs font-semibold uppercase tracking-wider text-[var(--muted-foreground)] shrink-0 mr-1">
-                Select Account:
+                Account:
               </span>
               {accounts.map((acc) => {
-                const isSelected = effectiveAccount?.id === acc.id;
+                const isSelected = activeWorkspace.id === acc.id;
                 return (
                   <button
                     key={acc.id}
                     type="button"
-                    onClick={() => setSelectedAccountId(acc.id)}
+                    onClick={() => setSelectedWorkspaceId(acc.id)}
                     className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-medium transition-all ${
                       isSelected
                         ? "border-indigo-600 bg-indigo-50 text-indigo-900 dark:border-indigo-500 dark:bg-indigo-950/40 dark:text-indigo-200 shadow-sm"
@@ -135,15 +163,13 @@ export function MonthlyFinanceFeatureView() {
             </div>
           )}
 
-          {/* 2-Tier Allocation Panel for the Effective Account */}
-          {effectiveAccount && (
-            <AccountAllocationsPanel
-              key={effectiveAccount.id}
-              accountId={effectiveAccount.id}
-              accountName={effectiveAccount.name}
-              currencyCode={effectiveAccount.currencyCode}
-            />
-          )}
+          {/* 2-Tier Allocation Panel for the Active Account */}
+          <AccountAllocationsPanel
+            key={activeWorkspace.id}
+            accountId={activeWorkspace.id}
+            accountName={activeWorkspace.name}
+            currencyCode={activeWorkspace.currencyCode}
+          />
         </div>
       )}
     </div>

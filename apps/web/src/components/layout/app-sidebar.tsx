@@ -63,6 +63,7 @@ const ICONS: Record<string, React.ComponentType<{ className?: string }>> = {
   "Transaction History": ArrowLeftRight,
   Categories: FolderKanban,
   Budgets: Target,
+  "Monthly Finance": Target,
   "Savings Goals": PiggyBank,
   IOUs: Handshake,
   Recurring: CalendarClock,
