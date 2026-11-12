@@ -25,6 +25,8 @@ export interface QueuedTransaction {
   destinationAccountId?: string;
   destinationAccountName?: string;
   destinationAmount?: number | null;
+  budgetSliceId?: string | null;
+  accountAllocationId?: string | null;
   createdAt: string;
   syncStatus: 'pending' | 'syncing' | 'failed';
   errorMessage?: string;
@@ -165,6 +167,8 @@ export const OfflineSyncProvider: React.FC<{
           occurredOn: item.transactionDate.split('T')[0],
           destinationAccountId: item.destinationAccountId || null,
           destinationAmount: item.destinationAmount || null,
+          budgetSliceId: item.budgetSliceId || null,
+          accountAllocationId: item.accountAllocationId || null,
         };
 
         // Post to API

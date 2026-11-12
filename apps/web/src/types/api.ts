@@ -45,6 +45,69 @@ export enum CategoryType {
   Expense = 2,
 }
 
+export enum AllocationCategory {
+  Emergency = 1,
+  Savings = 2,
+  Bills = 3,
+  Custom = 4,
+}
+
+export interface AccountAllocationDto {
+  id: string;
+  accountId: string;
+  name: string;
+  category: AllocationCategory;
+  categoryName: string;
+  balance: number;
+  targetAmount?: number | null;
+  color?: string | null;
+  icon?: string | null;
+  isArchived: boolean;
+  createdAtUtc: string;
+}
+
+export interface MonthlyBudgetSliceDto {
+  id: string;
+  monthlyBudgetPlanId: string;
+  categoryId?: string | null;
+  categoryName?: string | null;
+  name: string;
+  allocationPercentage: number;
+  allocatedAmount: number;
+  spentAmount: number;
+  remainingAmount: number;
+  color?: string | null;
+}
+
+export interface MonthlyBudgetPlanDto {
+  id: string;
+  accountId: string;
+  year: number;
+  month: number;
+  totalBudgetAmount: number;
+  totalAllocated: number;
+  totalSpent: number;
+  totalRemaining: number;
+  isActive: boolean;
+  isSwept: boolean;
+  sweptAtUtc?: string | null;
+  sweptToAllocationId?: string | null;
+  sweptToAllocationName?: string | null;
+  slices: MonthlyBudgetSliceDto[];
+}
+
+export interface AccountAllocationsOverviewResponse {
+  accountId: string;
+  accountName: string;
+  currencyCode: string;
+  accountBalance: number;
+  totalAllocatedInVaults: number;
+  activePlanRemaining: number;
+  unallocatedBalance: number;
+  allocations: AccountAllocationDto[];
+  activeBudgetPlan?: MonthlyBudgetPlanDto | null;
+}
+
 export enum RecurrenceFrequency {
   Daily = 1,
   Weekly = 2,
@@ -124,6 +187,8 @@ export interface TransactionResponse {
   description: string;
   notes?: string | null;
   createdAtUtc: string;
+  budgetSliceId?: string | null;
+  accountAllocationId?: string | null;
 }
 
 export interface PagedTransactionsResponse {

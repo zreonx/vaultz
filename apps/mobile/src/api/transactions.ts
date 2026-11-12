@@ -10,6 +10,8 @@ export interface CreateTransactionRequest {
   destinationAccountId?: string | null;
   categoryId?: string | null;
   category?: string;
+  budgetSliceId?: string | null;
+  accountAllocationId?: string | null;
   type: TransactionType | 'Expense' | 'Income' | 'Transfer' | string;
   amount: number;
   destinationAmount?: number | null;
@@ -106,6 +108,8 @@ export const transactionsApi = {
       occurredOn: (data.occurredOn || data.transactionDate || new Date().toISOString()).split('T')[0],
       description: data.description || data.category || 'Transaction',
       notes: data.notes || null,
+      budgetSliceId: data.budgetSliceId || null,
+      accountAllocationId: data.accountAllocationId || null,
     };
 
     return apiClient<TransactionResponse>("/api/v1/transactions", {

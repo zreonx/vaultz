@@ -25,6 +25,7 @@ import { toast } from "@/components/ui/toast";
 import { useAccounts, ACCOUNTS_QUERY_KEY } from "@/hooks/use-accounts";
 import { useCategories } from "@/hooks/use-categories";
 import { useExchangeRates } from "@/hooks/use-exchange-rates";
+import { useAccountAllocations } from "@/hooks/use-account-allocations";
 import {
   CategoryType,
   TransactionType,
@@ -61,6 +62,8 @@ const createTransactionSchema = z
     accountId: z.string().min(1, "Select an account"),
     destinationAccountId: z.string().optional(),
     categoryId: z.string().optional(),
+    budgetSliceId: z.string().optional(),
+    accountAllocationId: z.string().optional(),
     type: z.coerce.number(),
     amount: z.coerce.number().positive("Amount must be greater than zero"),
     destinationAmount: z.coerce.number().optional(),
@@ -128,6 +131,8 @@ export function CreateTransactionDialog({
       accountId: defaultAccountId || "",
       destinationAccountId: "",
       categoryId: "none",
+      budgetSliceId: "none",
+      accountAllocationId: "none",
       type: defaultType,
       occurredOn: todayIso,
       amount: undefined as unknown as number,
@@ -140,6 +145,9 @@ export function CreateTransactionDialog({
   const watchedSourceId = watch("accountId");
   const watchedDestId = watch("destinationAccountId");
   const watchedAmount = Number(watch("amount")) || 0;
+  const watchedSliceId = watch("budgetSliceId");
+
+  const { data: allocationsOverview } = useAccountAllocations(watchedSourceId);
 
   // Set default account when dialog opens or accounts load
   useEffect(() => {
@@ -216,6 +224,16 @@ export function CreateTransactionDialog({
           values.categoryId !== "none"
             ? values.categoryId
             : null,
+        budgetSliceId:
+          Number(values.type) === TransactionType.Expense &&
+          values.budgetSliceId &&
+          values.budgetSliceId !== "none"
+            ? values.budgetSliceId
+            : null,
+        accountAllocationId:
+          values.accountAllocationId && values.accountAllocationId !== "none"
+            ? values.accountAllocationId
+            : null,
         type: Number(values.type),
         amount: values.amount,
         destinationAmount:
@@ -232,6 +250,9 @@ export function CreateTransactionDialog({
       void queryClient.invalidateQueries({ queryKey: ACCOUNTS_QUERY_KEY });
       void queryClient.invalidateQueries({ queryKey: ["budgets"] });
       void queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      void queryClient.invalidateQueries({
+        queryKey: ["account-allocations", created.accountId],
+      });
       onOpenChange(false);
       toast.success(
         `Transaction of ${formatMoney(created.amount, created.currencyCode)} recorded successfully!`
@@ -245,6 +266,8 @@ export function CreateTransactionDialog({
         accountId: watchedSourceId || accounts[0]?.id || "",
         destinationAccountId: "",
         categoryId: "none",
+        budgetSliceId: "none",
+        accountAllocationId: "none",
       });
     },
     onError: (err) => {
@@ -509,6 +532,94 @@ export function CreateTransactionDialog({
               />
             </div>
           )}
+
+          {/* Monthly Budget Slice Selector (Tier 2) */}
+          {selectedType === TransactionType.Expense &&
+            allocationsOverview?.activeBudgetPlan?.slices &&
+            allocationsOverview.activeBudgetPlan.slices.length > 0 && (
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="tx-slice" className="text-xs font-semibold">
+                    Deduct From Budget Slice (Logical Finance)
+                  </Label>
+                  <Badge variant="neutral" className="text-[10px] border-indigo-500/30 text-indigo-500">
+                    Tier 2 Active Plan
+                  </Badge>
+                </div>
+                <Controller
+                  control={control}
+                  name="budgetSliceId"
+                  render={({ field }) => (
+                    <Select
+                      value={field.value ?? "none"}
+                      onValueChange={field.onChange}
+                    >
+                      <SelectTrigger id="tx-slice">
+                        <SelectValue placeholder="Select budget slice" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">
+                          General Account Balance (No Slice)
+                        </SelectItem>
+                        {allocationsOverview.activeBudgetPlan!.slices.map((s) => (
+                          <SelectItem key={s.id} value={s.id}>
+                            {s.name} ({formatMoney(s.remainingAmount, sourceAccount?.currencyCode || "PHP")} remaining)
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+                {(() => {
+                  const selectedSlice = allocationsOverview.activeBudgetPlan!.slices.find(
+                    (s) => s.id === watchedSliceId
+                  );
+                  if (selectedSlice && watchedAmount > selectedSlice.remainingAmount) {
+                    return (
+                      <p className="text-xs font-medium text-[var(--danger)]">
+                        ⚠️ Amount exceeds remaining slice budget ({formatMoney(selectedSlice.remainingAmount, sourceAccount?.currencyCode || "PHP")}). Strict rules will block this transaction unless you cover the deficit first.
+                      </p>
+                    );
+                  }
+                  return null;
+                })()}
+              </div>
+            )}
+
+          {/* Income Direct to Vault Selector (Tier 1) */}
+          {selectedType === TransactionType.Income &&
+            allocationsOverview?.allocations &&
+            allocationsOverview.allocations.length > 0 && (
+              <div className="space-y-1.5">
+                <Label htmlFor="tx-allocation" className="text-xs font-semibold">
+                  Direct Deposit to Purpose Vault (Optional)
+                </Label>
+                <Controller
+                  control={control}
+                  name="accountAllocationId"
+                  render={({ field }) => (
+                    <Select
+                      value={field.value ?? "none"}
+                      onValueChange={field.onChange}
+                    >
+                      <SelectTrigger id="tx-allocation">
+                        <SelectValue placeholder="Deposit destination" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">
+                          Available Cash (General Account Balance)
+                        </SelectItem>
+                        {allocationsOverview.allocations.map((a) => (
+                          <SelectItem key={a.id} value={a.id}>
+                            Vault: {a.name} ({a.categoryName})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                />
+              </div>
+            )}
 
           {/* Amount Inputs */}
           <div

@@ -42,3 +42,11 @@ public enum LendingStatus
     Settled = 2,
     WrittenOff = 3
 }
+
+public enum AllocationCategory
+{
+    Emergency = 1,
+    Savings = 2,
+    Bills = 3,
+    Custom = 4
+}

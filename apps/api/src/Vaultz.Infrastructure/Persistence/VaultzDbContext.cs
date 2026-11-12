@@ -26,6 +26,9 @@ public sealed class VaultzDbContext : DbContext, IVaultzDbContext
     public DbSet<LendingRecord> LendingRecords => Set<LendingRecord>();
     public DbSet<LendingPayment> LendingPayments => Set<LendingPayment>();
     public DbSet<Notification> Notifications => Set<Notification>();
+    public DbSet<AccountAllocation> AccountAllocations => Set<AccountAllocation>();
+    public DbSet<MonthlyBudgetPlan> MonthlyBudgetPlans => Set<MonthlyBudgetPlan>();
+    public DbSet<MonthlyBudgetSlice> MonthlyBudgetSlices => Set<MonthlyBudgetSlice>();
 
     public async Task<bool> CanConnectAsync(CancellationToken cancellationToken = default)
     {

@@ -18,6 +18,9 @@ public interface IVaultzDbContext
     DbSet<LendingRecord> LendingRecords { get; }
     DbSet<LendingPayment> LendingPayments { get; }
     DbSet<Notification> Notifications { get; }
+    DbSet<AccountAllocation> AccountAllocations { get; }
+    DbSet<MonthlyBudgetPlan> MonthlyBudgetPlans { get; }
+    DbSet<MonthlyBudgetSlice> MonthlyBudgetSlices { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
     Task<bool> CanConnectAsync(CancellationToken cancellationToken = default);

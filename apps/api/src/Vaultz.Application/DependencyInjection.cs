@@ -1,6 +1,7 @@
 using FluentValidation;
 using Microsoft.Extensions.DependencyInjection;
 using Vaultz.Application.Features.Accounts;
+using Vaultz.Application.Features.AccountAllocations;
 using Vaultz.Application.Features.Auth;
 using Vaultz.Application.Features.Budgets;
 using Vaultz.Application.Features.Categories;
@@ -24,6 +25,7 @@ public static class DependencyInjection
         services.AddScoped<GetSystemStatusHandler>();
         services.AddScoped<AuthHandlers>();
         services.AddScoped<AccountHandlers>();
+        services.AddScoped<AccountAllocationHandlers>();
         services.AddScoped<CategoryHandlers>();
         services.AddScoped<TransactionHandlers>();
         services.AddScoped<BudgetHandlers>();

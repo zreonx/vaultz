@@ -107,6 +107,8 @@ public sealed class FinancialTransactionConfiguration : IEntityTypeConfiguration
         builder.Property(x => x.OccurredOn).HasColumnName("occurred_on").IsRequired();
         builder.Property(x => x.Description).HasColumnName("description").HasMaxLength(200).IsRequired();
         builder.Property(x => x.Notes).HasColumnName("notes").HasMaxLength(500);
+        builder.Property(x => x.BudgetSliceId).HasColumnName("budget_slice_id");
+        builder.Property(x => x.AccountAllocationId).HasColumnName("account_allocation_id");
         builder.Property(x => x.CreatedAtUtc).HasColumnName("created_at_utc").IsRequired();
         builder.Property(x => x.UpdatedAtUtc).HasColumnName("updated_at_utc");
 
@@ -255,5 +257,80 @@ public sealed class NotificationConfiguration : IEntityTypeConfiguration<Notific
 
         builder.HasIndex(x => new { x.UserId, x.IsRead }).HasDatabaseName("ix_notifications_user_id_is_read");
         builder.HasIndex(x => new { x.UserId, x.CreatedAtUtc }).HasDatabaseName("ix_notifications_user_id_created_at_utc");
+    }
+}
+
+public sealed class AccountAllocationConfiguration : IEntityTypeConfiguration<AccountAllocation>
+{
+    public void Configure(EntityTypeBuilder<AccountAllocation> builder)
+    {
+        builder.ToTable("account_allocations");
+        builder.HasKey(x => x.Id);
+
+        builder.Property(x => x.UserId).HasColumnName("user_id").HasMaxLength(128).IsRequired();
+        builder.Property(x => x.AccountId).HasColumnName("account_id").IsRequired();
+        builder.Property(x => x.Name).HasColumnName("name").HasMaxLength(100).IsRequired();
+        builder.Property(x => x.Category).HasColumnName("category").IsRequired();
+        builder.Property(x => x.Balance).HasColumnName("balance").HasPrecision(19, 4).IsRequired();
+        builder.Property(x => x.TargetAmount).HasColumnName("target_amount").HasPrecision(19, 4);
+        builder.Property(x => x.Color).HasColumnName("color").HasMaxLength(50);
+        builder.Property(x => x.Icon).HasColumnName("icon").HasMaxLength(50);
+        builder.Property(x => x.IsArchived).HasColumnName("is_archived").IsRequired();
+        builder.Property(x => x.CreatedAtUtc).HasColumnName("created_at_utc").IsRequired();
+        builder.Property(x => x.UpdatedAtUtc).HasColumnName("updated_at_utc");
+
+        builder.HasIndex(x => new { x.UserId, x.AccountId }).HasDatabaseName("ix_account_allocations_user_id_account_id");
+    }
+}
+
+public sealed class MonthlyBudgetPlanConfiguration : IEntityTypeConfiguration<MonthlyBudgetPlan>
+{
+    public void Configure(EntityTypeBuilder<MonthlyBudgetPlan> builder)
+    {
+        builder.ToTable("monthly_budget_plans");
+        builder.HasKey(x => x.Id);
+
+        builder.Property(x => x.UserId).HasColumnName("user_id").HasMaxLength(128).IsRequired();
+        builder.Property(x => x.AccountId).HasColumnName("account_id").IsRequired();
+        builder.Property(x => x.Year).HasColumnName("year").IsRequired();
+        builder.Property(x => x.Month).HasColumnName("month").IsRequired();
+        builder.Property(x => x.TotalBudgetAmount).HasColumnName("total_budget_amount").HasPrecision(19, 4).IsRequired();
+        builder.Property(x => x.IsActive).HasColumnName("is_active").IsRequired();
+        builder.Property(x => x.IsSwept).HasColumnName("is_swept").IsRequired();
+        builder.Property(x => x.SweptAtUtc).HasColumnName("swept_at_utc");
+        builder.Property(x => x.SweptToAllocationId).HasColumnName("swept_to_allocation_id");
+        builder.Property(x => x.CreatedAtUtc).HasColumnName("created_at_utc").IsRequired();
+        builder.Property(x => x.UpdatedAtUtc).HasColumnName("updated_at_utc");
+
+        builder.HasMany(x => x.Slices)
+            .WithOne()
+            .HasForeignKey(x => x.MonthlyBudgetPlanId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Navigation(x => x.Slices).UsePropertyAccessMode(PropertyAccessMode.Field);
+
+        builder.HasIndex(x => new { x.UserId, x.AccountId, x.Year, x.Month }).HasDatabaseName("ix_monthly_budget_plans_user_account_period");
+    }
+}
+
+public sealed class MonthlyBudgetSliceConfiguration : IEntityTypeConfiguration<MonthlyBudgetSlice>
+{
+    public void Configure(EntityTypeBuilder<MonthlyBudgetSlice> builder)
+    {
+        builder.ToTable("monthly_budget_slices");
+        builder.HasKey(x => x.Id);
+
+        builder.Property(x => x.UserId).HasColumnName("user_id").HasMaxLength(128).IsRequired();
+        builder.Property(x => x.MonthlyBudgetPlanId).HasColumnName("monthly_budget_plan_id").IsRequired();
+        builder.Property(x => x.CategoryId).HasColumnName("category_id");
+        builder.Property(x => x.Name).HasColumnName("name").HasMaxLength(100).IsRequired();
+        builder.Property(x => x.AllocationPercentage).HasColumnName("allocation_percentage").HasPrecision(5, 2).IsRequired();
+        builder.Property(x => x.AllocatedAmount).HasColumnName("allocated_amount").HasPrecision(19, 4).IsRequired();
+        builder.Property(x => x.SpentAmount).HasColumnName("spent_amount").HasPrecision(19, 4).IsRequired();
+        builder.Property(x => x.Color).HasColumnName("color").HasMaxLength(50);
+        builder.Property(x => x.CreatedAtUtc).HasColumnName("created_at_utc").IsRequired();
+        builder.Property(x => x.UpdatedAtUtc).HasColumnName("updated_at_utc");
+
+        builder.HasIndex(x => x.MonthlyBudgetPlanId).HasDatabaseName("ix_monthly_budget_slices_plan_id");
     }
 }

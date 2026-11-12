@@ -27,6 +27,9 @@ public sealed class GetSystemStatusHandlerTests
         public DbSet<LendingRecord> LendingRecords => throw new NotImplementedException();
         public DbSet<LendingPayment> LendingPayments => throw new NotImplementedException();
         public DbSet<Notification> Notifications => throw new NotImplementedException();
+        public DbSet<AccountAllocation> AccountAllocations => throw new NotImplementedException();
+        public DbSet<MonthlyBudgetPlan> MonthlyBudgetPlans => throw new NotImplementedException();
+        public DbSet<MonthlyBudgetSlice> MonthlyBudgetSlices => throw new NotImplementedException();
 
         public Task<int> SaveChangesAsync(CancellationToken cancellationToken = default) =>
             Task.FromResult(0);

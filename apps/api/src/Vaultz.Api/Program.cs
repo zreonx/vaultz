@@ -175,6 +175,60 @@ if (app.Environment.IsDevelopment())
                     "ALTER TABLE notifications ADD COLUMN IF NOT EXISTS updated_at_utc TIMESTAMPTZ NULL;",
                     "CREATE INDEX IF NOT EXISTS ix_notifications_user_id_created_at_utc ON notifications (user_id, created_at_utc DESC);",
                     "CREATE INDEX IF NOT EXISTS ix_notifications_user_id_is_read ON notifications (user_id, is_read);",
+                    "ALTER TABLE transactions ADD COLUMN IF NOT EXISTS budget_slice_id UUID NULL;",
+                    "ALTER TABLE transactions ADD COLUMN IF NOT EXISTS account_allocation_id UUID NULL;",
+                    "CREATE INDEX IF NOT EXISTS ix_transactions_budget_slice_id ON transactions (budget_slice_id);",
+                    "CREATE INDEX IF NOT EXISTS ix_transactions_account_allocation_id ON transactions (account_allocation_id);",
+                    """
+                    CREATE TABLE IF NOT EXISTS account_allocations (
+                        "Id" UUID PRIMARY KEY,
+                        user_id VARCHAR(128) NOT NULL,
+                        account_id UUID NOT NULL REFERENCES accounts("Id") ON DELETE CASCADE,
+                        name VARCHAR(100) NOT NULL,
+                        category INT NOT NULL,
+                        balance NUMERIC(19, 4) NOT NULL,
+                        target_amount NUMERIC(19, 4) NULL,
+                        color VARCHAR(50) NULL,
+                        icon VARCHAR(50) NULL,
+                        is_archived BOOLEAN NOT NULL DEFAULT FALSE,
+                        created_at_utc TIMESTAMPTZ NOT NULL,
+                        updated_at_utc TIMESTAMPTZ NULL
+                    );
+                    """,
+                    "CREATE INDEX IF NOT EXISTS ix_account_allocations_user_id_account_id ON account_allocations (user_id, account_id);",
+                    """
+                    CREATE TABLE IF NOT EXISTS monthly_budget_plans (
+                        "Id" UUID PRIMARY KEY,
+                        user_id VARCHAR(128) NOT NULL,
+                        account_id UUID NOT NULL REFERENCES accounts("Id") ON DELETE CASCADE,
+                        year INT NOT NULL,
+                        month INT NOT NULL,
+                        total_budget_amount NUMERIC(19, 4) NOT NULL,
+                        is_active BOOLEAN NOT NULL DEFAULT TRUE,
+                        is_swept BOOLEAN NOT NULL DEFAULT FALSE,
+                        swept_at_utc TIMESTAMPTZ NULL,
+                        swept_to_allocation_id UUID NULL,
+                        created_at_utc TIMESTAMPTZ NOT NULL,
+                        updated_at_utc TIMESTAMPTZ NULL
+                    );
+                    """,
+                    "CREATE INDEX IF NOT EXISTS ix_monthly_budget_plans_user_account_period ON monthly_budget_plans (user_id, account_id, year, month);",
+                    """
+                    CREATE TABLE IF NOT EXISTS monthly_budget_slices (
+                        "Id" UUID PRIMARY KEY,
+                        user_id VARCHAR(128) NOT NULL,
+                        monthly_budget_plan_id UUID NOT NULL REFERENCES monthly_budget_plans("Id") ON DELETE CASCADE,
+                        category_id UUID NULL REFERENCES categories("Id") ON DELETE SET NULL,
+                        name VARCHAR(100) NOT NULL,
+                        allocation_percentage NUMERIC(5, 2) NOT NULL,
+                        allocated_amount NUMERIC(19, 4) NOT NULL,
+                        spent_amount NUMERIC(19, 4) NOT NULL DEFAULT 0,
+                        color VARCHAR(50) NULL,
+                        created_at_utc TIMESTAMPTZ NOT NULL,
+                        updated_at_utc TIMESTAMPTZ NULL
+                    );
+                    """,
+                    "CREATE INDEX IF NOT EXISTS ix_monthly_budget_slices_plan_id ON monthly_budget_slices (monthly_budget_plan_id);",
                     "UPDATE users SET is_email_verified = TRUE;"
                 };
 

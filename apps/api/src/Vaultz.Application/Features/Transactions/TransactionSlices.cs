@@ -27,7 +27,9 @@ public sealed record TransactionResponse(
     DateOnly OccurredOn,
     string Description,
     string? Notes,
-    DateTimeOffset CreatedAtUtc);
+    DateTimeOffset CreatedAtUtc,
+    Guid? BudgetSliceId = null,
+    Guid? AccountAllocationId = null);
 
 public sealed record PagedTransactionsResponse(
     IReadOnlyList<TransactionResponse> Items,
@@ -66,7 +68,9 @@ public sealed record CreateTransactionCommand(
     DateOnly OccurredOn,
     string Description,
     string? Notes = null,
-    decimal? DestinationAmount = null);
+    decimal? DestinationAmount = null,
+    Guid? BudgetSliceId = null,
+    Guid? AccountAllocationId = null);
 
 public sealed class CreateTransactionValidator : AbstractValidator<CreateTransactionCommand>
 {
@@ -352,6 +356,38 @@ public sealed class TransactionHandlers
                 categoryMap[category.Id] = category;
             }
 
+            if (command.BudgetSliceId.HasValue && command.Type == TransactionType.Expense)
+            {
+                var slice = await _dbContext.MonthlyBudgetSlices
+                    .FirstOrDefaultAsync(s => s.Id == command.BudgetSliceId.Value && s.UserId == userId, ct)
+                    ?? throw new NotFoundException(nameof(MonthlyBudgetSlice), command.BudgetSliceId.Value);
+
+                if (command.Amount > slice.RemainingAmount)
+                {
+                    throw new DomainException(
+                        $"Budget slice '{slice.Name}' only has {slice.RemainingAmount:N2} remaining. You need to transfer funds from another slice to cover the deficit.",
+                        "insufficient_slice_budget");
+                }
+
+                slice.RecordExpense(command.Amount);
+            }
+
+            if (command.AccountAllocationId.HasValue)
+            {
+                var allocation = await _dbContext.AccountAllocations
+                    .FirstOrDefaultAsync(a => a.Id == command.AccountAllocationId.Value && a.AccountId == command.AccountId && a.UserId == userId, ct)
+                    ?? throw new NotFoundException(nameof(AccountAllocation), command.AccountAllocationId.Value);
+
+                if (command.Type == TransactionType.Expense)
+                {
+                    allocation.Withdraw(command.Amount);
+                }
+                else if (command.Type == TransactionType.Income)
+                {
+                    allocation.Deposit(command.Amount);
+                }
+            }
+
             created = FinancialTransaction.CreateAndApply(
                 userId,
                 sourceAccount,
@@ -362,7 +398,9 @@ public sealed class TransactionHandlers
                 command.OccurredOn,
                 command.Description,
                 command.Notes,
-                command.DestinationAmount);
+                command.DestinationAmount,
+                command.BudgetSliceId,
+                command.AccountAllocationId);
 
             _dbContext.Transactions.Add(created);
             await _dbContext.SaveChangesAsync(ct);
@@ -541,6 +579,31 @@ public sealed class TransactionHandlers
             }
 
             transaction.ReverseBalanceImpact(sourceAccount, destinationAccount);
+
+            if (transaction.BudgetSliceId.HasValue && transaction.Type == TransactionType.Expense)
+            {
+                var slice = await _dbContext.MonthlyBudgetSlices
+                    .FirstOrDefaultAsync(s => s.Id == transaction.BudgetSliceId.Value && s.UserId == userId, ct);
+                slice?.ReverseExpense(transaction.Amount);
+            }
+
+            if (transaction.AccountAllocationId.HasValue)
+            {
+                var allocation = await _dbContext.AccountAllocations
+                    .FirstOrDefaultAsync(a => a.Id == transaction.AccountAllocationId.Value && a.AccountId == transaction.AccountId && a.UserId == userId, ct);
+                if (allocation != null)
+                {
+                    if (transaction.Type == TransactionType.Expense)
+                    {
+                        allocation.Deposit(transaction.Amount);
+                    }
+                    else if (transaction.Type == TransactionType.Income)
+                    {
+                        allocation.Withdraw(transaction.Amount);
+                    }
+                }
+            }
+
             _dbContext.Transactions.Remove(transaction);
 
             await _dbContext.SaveChangesAsync(ct);
@@ -597,6 +660,8 @@ public sealed class TransactionHandlers
             t.OccurredOn,
             t.Description,
             t.Notes,
-            t.CreatedAtUtc);
+            t.CreatedAtUtc,
+            t.BudgetSliceId,
+            t.AccountAllocationId);
     }
 }

@@ -35,6 +35,7 @@ import {
 } from "@/components/ui/table";
 
 import { ACCOUNTS_QUERY_KEY, useAccounts } from "@/hooks/use-accounts";
+import { AccountAllocationsPanel } from "./account-allocations-panel";
 export { ACCOUNTS_QUERY_KEY, useAccounts };
 
 export function useSetDefaultAccountMutation() {
@@ -85,6 +86,10 @@ export function AccountsFeatureView() {
         a.typeName.toLowerCase().includes(q)
     );
   }, [accounts, search]);
+
+  const activeAccount = useMemo(() => {
+    return accounts.find((a) => a.id === selectedWorkspaceId) || accounts[0] || null;
+  }, [accounts, selectedWorkspaceId]);
 
   if (!isAuthLoading && !user) {
     return <AuthRequiredBanner featureName="Accounts" />;
@@ -322,6 +327,14 @@ export function AccountsFeatureView() {
           </TableBody>
         </Table>
       </DataTableShell>
+
+      {activeAccount && (
+        <AccountAllocationsPanel
+          accountId={activeAccount.id}
+          accountName={activeAccount.name}
+          currencyCode={activeAccount.currencyCode}
+        />
+      )}
     </div>
   );
 }

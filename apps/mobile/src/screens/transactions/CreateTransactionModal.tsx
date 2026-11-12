@@ -1,15 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { ModalSheet } from '@/components/ui/ModalSheet';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
+import { Badge } from '@/components/ui/Badge';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { transactionsApi } from '@/api/transactions';
+import { accountAllocationsApi } from '@/api/accountAllocations';
 import { useWorkspace } from '@/context/WorkspaceContext';
 import { useOfflineSync } from '@/context/OfflineSyncContext';
 import { useTheme } from '@/context/ThemeContext';
 import { typography, radius, spacing } from '@/theme/tokens';
+import { formatMoney } from '@/utils/currency';
 import { haptics } from '@/utils/haptics';
+import { AccountAllocationsOverviewResponse } from '@/types/api';
 
 interface CreateTransactionModalProps {
   visible: boolean;
@@ -50,6 +54,19 @@ export const CreateTransactionModal: React.FC<CreateTransactionModalProps> = ({
   const [destinationAccountId, setDestinationAccountId] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [allocationsData, setAllocationsData] = useState<AccountAllocationsOverviewResponse | null>(null);
+  const [selectedSliceId, setSelectedSliceId] = useState<string>('');
+
+  useEffect(() => {
+    if (visible && activeWorkspace) {
+      accountAllocationsApi
+        .getOverview(activeWorkspace.id)
+        .then((data) => {
+          setAllocationsData(data);
+        })
+        .catch(() => {});
+    }
+  }, [visible, activeWorkspace]);
 
   const handleTypeChange = (newType: 'Expense' | 'Income' | 'Transfer') => {
     haptics.selection();
@@ -95,6 +112,7 @@ export const CreateTransactionModal: React.FC<CreateTransactionModalProps> = ({
         transactionDate: new Date().toISOString(),
         destinationAccountId: type === 'Transfer' ? destinationAccountId : undefined,
         destinationAccountName: destAccount?.name,
+        budgetSliceId: type === 'Expense' && selectedSliceId ? selectedSliceId : undefined,
       });
 
       haptics.success();
@@ -251,6 +269,101 @@ export const CreateTransactionModal: React.FC<CreateTransactionModalProps> = ({
           </View>
         )}
 
+        {/* Tier 2: Budget Slice Selector */}
+        {type === 'Expense' &&
+          allocationsData?.activeBudgetPlan?.slices &&
+          allocationsData.activeBudgetPlan.slices.length > 0 && (
+            <View style={styles.section}>
+              <View style={styles.sectionHeaderRow}>
+                <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>
+                  BUDGET SLICE (TIER 2)
+                </Text>
+                <Badge label="Active Plan" variant="outline" />
+              </View>
+
+              <View style={styles.chipRow}>
+                <PressableScale
+                  style={[
+                    styles.chip,
+                    {
+                      backgroundColor: !selectedSliceId
+                        ? colors.accentMuted
+                        : isDark
+                        ? colors.surfaceSubtle
+                        : colors.surfaceMuted,
+                      borderColor: !selectedSliceId ? colors.accent : colors.border,
+                    },
+                  ]}
+                  onPress={() => {
+                    haptics.selection();
+                    setSelectedSliceId('');
+                  }}
+                >
+                  <Text
+                    style={[
+                      styles.chipText,
+                      {
+                        color: !selectedSliceId ? colors.accent : colors.textSecondary,
+                        fontWeight: !selectedSliceId ? '700' : '500',
+                      },
+                    ]}
+                  >
+                    General Balance
+                  </Text>
+                </PressableScale>
+
+                {allocationsData.activeBudgetPlan.slices.map((slice) => {
+                  const isSelected = selectedSliceId === slice.id;
+                  return (
+                    <PressableScale
+                      key={slice.id}
+                      style={[
+                        styles.chip,
+                        {
+                          backgroundColor: isSelected
+                            ? colors.accentMuted
+                            : isDark
+                            ? colors.surfaceSubtle
+                            : colors.surfaceMuted,
+                          borderColor: isSelected ? colors.accent : colors.border,
+                        },
+                      ]}
+                      onPress={() => {
+                        haptics.selection();
+                        setSelectedSliceId(slice.id);
+                      }}
+                    >
+                      <Text
+                        style={[
+                          styles.chipText,
+                          {
+                            color: isSelected ? colors.accent : colors.textSecondary,
+                            fontWeight: isSelected ? '700' : '500',
+                          },
+                        ]}
+                      >
+                        {slice.name} ({formatMoney(slice.remainingAmount, activeWorkspace?.currency || 'USD')})
+                      </Text>
+                    </PressableScale>
+                  );
+                })}
+              </View>
+
+              {(() => {
+                const selected = allocationsData.activeBudgetPlan.slices.find((s) => s.id === selectedSliceId);
+                const parsedAmt = parseFloat(amount) || 0;
+                if (selected && parsedAmt > selected.remainingAmount) {
+                  return (
+                    <Text style={[styles.errorText, { marginTop: 4, color: '#ef4444' }]}>
+                      ⚠️ Amount exceeds remaining budget ({formatMoney(selected.remainingAmount, activeWorkspace?.currency || 'USD')}). Strict rules will block this.
+                    </Text>
+                  );
+                }
+                return null;
+              })()}
+            </View>
+          )}
+
         {/* Category Chips */}
         <View style={styles.section}>
           <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>
@@ -366,6 +479,12 @@ const styles = StyleSheet.create({
   },
   section: {
     marginBottom: spacing.md,
+  },
+  sectionHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
   },
   sectionLabel: {
     ...typography.label,

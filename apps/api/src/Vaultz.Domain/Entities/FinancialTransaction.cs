@@ -22,6 +22,8 @@ public sealed class FinancialTransaction : UserOwnedEntity
     public DateOnly OccurredOn { get; private set; }
     public string Description { get; private set; } = string.Empty;
     public string? Notes { get; private set; }
+    public Guid? BudgetSliceId { get; private set; }
+    public Guid? AccountAllocationId { get; private set; }
 
     private FinancialTransaction()
     {
@@ -77,7 +79,9 @@ public sealed class FinancialTransaction : UserOwnedEntity
         DateOnly occurredOn,
         string description,
         string? notes = null,
-        decimal? destinationAmount = null)
+        decimal? destinationAmount = null,
+        Guid? budgetSliceId = null,
+        Guid? accountAllocationId = null)
     {
         EnsureOwnership(userId, sourceAccount, destinationAccount);
 
@@ -103,8 +107,28 @@ public sealed class FinancialTransaction : UserOwnedEntity
             description,
             notes);
 
+        if (budgetSliceId.HasValue)
+        {
+            transaction.BudgetSliceId = budgetSliceId.Value;
+        }
+
+        if (accountAllocationId.HasValue)
+        {
+            transaction.AccountAllocationId = accountAllocationId.Value;
+        }
+
         transaction.ApplyBalanceImpact(sourceAccount, destinationAccount);
         return transaction;
+    }
+
+    public void AssignBudgetSlice(Guid budgetSliceId)
+    {
+        BudgetSliceId = budgetSliceId;
+    }
+
+    public void AssignAccountAllocation(Guid accountAllocationId)
+    {
+        AccountAllocationId = accountAllocationId;
     }
 
     /// <summary>
@@ -190,6 +214,18 @@ public sealed class FinancialTransaction : UserOwnedEntity
 
         // Step 3: Apply new balance impact
         ApplyBalanceImpact(newSourceAccount, newDestinationAccount);
+    }
+
+    public void AssignBudgetSlice(Guid? sliceId)
+    {
+        BudgetSliceId = sliceId;
+        MarkUpdated(DateTimeOffset.UtcNow);
+    }
+
+    public void AssignAccountAllocation(Guid? allocationId)
+    {
+        AccountAllocationId = allocationId;
+        MarkUpdated(DateTimeOffset.UtcNow);
     }
 
     private void ApplyBalanceImpact(FinancialAccount sourceAccount, FinancialAccount? destinationAccount)
