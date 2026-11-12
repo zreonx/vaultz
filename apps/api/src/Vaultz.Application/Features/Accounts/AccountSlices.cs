@@ -43,8 +43,8 @@ public sealed class CreateAccountValidator : AbstractValidator<CreateAccountComm
 public sealed record UpdateAccountCommand(
     Guid Id,
     string Name,
-    AccountType Type,
-    bool IsArchived);
+    AccountType? Type = null,
+    bool? IsArchived = null);
 
 public sealed class UpdateAccountValidator : AbstractValidator<UpdateAccountCommand>
 {
@@ -52,7 +52,7 @@ public sealed class UpdateAccountValidator : AbstractValidator<UpdateAccountComm
     {
         RuleFor(x => x.Id).NotEmpty();
         RuleFor(x => x.Name).NotEmpty().MaximumLength(100);
-        RuleFor(x => x.Type).IsInEnum();
+        RuleFor(x => x.Type!.Value).IsInEnum().When(x => x.Type.HasValue);
     }
 }
 
@@ -185,7 +185,9 @@ public sealed class AccountHandlers
             .FirstOrDefaultAsync(a => a.Id == command.Id && a.UserId == userId, cancellationToken)
             ?? throw new NotFoundException(nameof(FinancialAccount), command.Id);
 
-        account.UpdateDetails(command.Name, command.Type, command.IsArchived);
+        var newType = command.Type ?? account.Type;
+        var newIsArchived = command.IsArchived ?? account.IsArchived;
+        account.UpdateDetails(command.Name, newType, newIsArchived);
         await _dbContext.SaveChangesAsync(cancellationToken);
 
         return MapToResponse(account);

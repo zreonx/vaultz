@@ -14,6 +14,7 @@ import {
   LayoutDashboard,
   LogIn,
   LogOut,
+  Pencil,
   PiggyBank,
   Plus,
   Settings,
@@ -82,6 +83,7 @@ export function AppSidebar() {
     activeWorkspace,
     setSelectedWorkspaceId,
     openCreateWorkspaceDialog,
+    openEditWorkspaceDialog,
     openTransferDialog,
   } = useWorkspace();
   const isCollapsed = state === "collapsed" && !isMobile;
@@ -198,6 +200,12 @@ export function AppSidebar() {
                 })}
 
                 <DropdownMenuSeparator />
+                {activeWorkspace && (
+                  <DropdownMenuItem onSelect={() => openEditWorkspaceDialog(activeWorkspace.id)}>
+                    <Pencil className="h-3.5 w-3.5 text-[var(--accent)]" />
+                    Edit Current Account ({activeWorkspace.name})
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem onSelect={() => openCreateWorkspaceDialog()}>
                   <Plus className="h-3.5 w-3.5 text-[var(--accent)]" />
                   Add New Account

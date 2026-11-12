@@ -179,4 +179,18 @@ public sealed class FinancialEntitiesTests
         account.RemoveDefault();
         Assert.False(account.IsDefault);
     }
+
+    [Fact]
+    public void FinancialAccount_UpdateDetails_UpdatesNameAndPreservesInvariants()
+    {
+        var account = new FinancialAccount("user-1", "Original Name", AccountType.Checking, "USD", 500m);
+        Assert.Equal("Original Name", account.Name);
+
+        account.UpdateDetails("Renamed Checking", AccountType.Checking, false);
+        Assert.Equal("Renamed Checking", account.Name);
+
+        // Rejects null or whitespace names
+        Assert.Throws<DomainException>(() => account.UpdateDetails("", AccountType.Checking, false));
+        Assert.Throws<DomainException>(() => account.UpdateDetails("   ", AccountType.Checking, false));
+    }
 }

@@ -10,6 +10,12 @@ export interface CreateAccountRequest {
   isDefault?: boolean;
 }
 
+export interface UpdateAccountRequest {
+  name: string;
+  type?: AccountType | string;
+  isArchived?: boolean;
+}
+
 function resolveAccountType(type: AccountType | string): AccountType {
   if (typeof type === 'number') return type;
   const lower = String(type).toLowerCase();
@@ -41,6 +47,22 @@ export const accountsApi = {
 
   async create(data: CreateAccountRequest): Promise<AccountResponse> {
     return accountsApi.createAccount(data);
+  },
+
+  async updateAccount(id: string, data: UpdateAccountRequest): Promise<AccountResponse> {
+    const payload = {
+      name: data.name,
+      type: data.type !== undefined ? resolveAccountType(data.type) : undefined,
+      isArchived: data.isArchived,
+    };
+    return apiClient<AccountResponse>(`/api/v1/accounts/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async update(id: string, data: UpdateAccountRequest): Promise<AccountResponse> {
+    return accountsApi.updateAccount(id, data);
   },
 
   async setDefaultAccount(id: string): Promise<AccountResponse> {

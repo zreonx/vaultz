@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   ArrowLeftRight,
+  Pencil,
   Plus,
   Star,
   Wallet,
@@ -67,6 +68,7 @@ export function AccountsFeatureView() {
     selectedWorkspaceId,
     setSelectedWorkspaceId,
     openCreateWorkspaceDialog,
+    openEditWorkspaceDialog,
     openTransferDialog,
     openCreateTransactionDialog,
   } = useWorkspace();
@@ -204,7 +206,15 @@ export function AccountsFeatureView() {
                 <TableRow key={account.id}>
                   <TableCell className="font-medium">
                     <div className="flex items-center gap-2">
-                      <span>{account.name}</span>
+                      <button
+                        type="button"
+                        onClick={() => openEditWorkspaceDialog(account.id)}
+                        className="group inline-flex items-center gap-1.5 font-semibold hover:text-[var(--accent)] transition-colors text-left"
+                        title="Click to edit account name"
+                      >
+                        <span>{account.name}</span>
+                        <Pencil className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity text-[var(--muted-foreground)]" />
+                      </button>
                       {account.isDefault && (
                         <Badge
                           variant="warning"
@@ -251,6 +261,17 @@ export function AccountsFeatureView() {
                           Set Default
                         </Button>
                       )}
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => openEditWorkspaceDialog(account.id)}
+                        title={`Edit ${account.name}`}
+                        className="gap-1 text-xs"
+                      >
+                        <Pencil className="h-3.5 w-3.5 text-[var(--muted-foreground)]" />
+                        Edit
+                      </Button>
                       <Button
                         type="button"
                         variant="ghost"

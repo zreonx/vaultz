@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/Button';
 import { PressableScale } from '@/components/ui/PressableScale';
 import { FadeInView } from '@/components/ui/FadeInView';
 import { CreateAccountModal } from '@/components/shared/CreateAccountModal';
+import { EditAccountModal } from '@/components/shared/EditAccountModal';
 import { typography, radius, spacing } from '@/theme/tokens';
 import { formatMoney } from '@/utils/currency';
 import { haptics } from '@/utils/haptics';
@@ -28,12 +29,20 @@ export const AccountsScreen: React.FC = () => {
   const { colors, isDark } = useTheme();
   const [refreshing, setRefreshing] = useState(false);
   const [createModalVisible, setCreateModalVisible] = useState(false);
+  const [editingAccount, setEditingAccount] = useState<AccountDto | null>(null);
+  const [editModalVisible, setEditModalVisible] = useState(false);
 
   const onRefresh = async () => {
     setRefreshing(true);
     haptics.light();
     await refreshAccounts();
     setRefreshing(false);
+  };
+
+  const handleOpenEdit = (account: AccountDto) => {
+    haptics.light();
+    setEditingAccount(account);
+    setEditModalVisible(true);
   };
 
   const handleSelectAccount = (account: AccountDto) => {
@@ -145,9 +154,25 @@ export const AccountsScreen: React.FC = () => {
                         </View>
                       </View>
 
-                      {isActive && (
-                        <Badge label="Active" variant="success" />
-                      )}
+                      <View style={styles.cardTopRight}>
+                        {isActive && (
+                          <Badge label="Active" variant="success" />
+                        )}
+                        <PressableScale
+                          onPress={() => handleOpenEdit(acc)}
+                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                          style={[
+                            styles.editIconBtn,
+                            {
+                              backgroundColor: isDark ? colors.surfaceSubtle : colors.surfaceMuted,
+                              borderColor: colors.borderSubtle,
+                            },
+                          ]}
+                          accessibilityLabel={`Edit ${acc.name}`}
+                        >
+                          <Ionicons name="pencil-outline" size={13} color={colors.textSecondary} />
+                        </PressableScale>
+                      </View>
                     </View>
 
                     <View style={[styles.balanceDivider, { backgroundColor: colors.borderSubtle }]} />
@@ -195,6 +220,15 @@ export const AccountsScreen: React.FC = () => {
         visible={createModalVisible}
         onClose={() => setCreateModalVisible(false)}
       />
+
+      <EditAccountModal
+        visible={editModalVisible}
+        account={editingAccount}
+        onClose={() => {
+          setEditModalVisible(false);
+          setEditingAccount(null);
+        }}
+      />
     </ScreenWrapper>
   );
 };
@@ -237,6 +271,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+  },
+  cardTopRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  editIconBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: radius.full,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   cardLeft: {
     flexDirection: 'row',

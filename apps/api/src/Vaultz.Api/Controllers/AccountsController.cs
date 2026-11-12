@@ -38,7 +38,7 @@ public sealed class AccountsController : ControllerBase
         return Created($"/api/v1/accounts/{created.Id}", created);
     }
 
-    public sealed record UpdateAccountRequest(string Name, AccountType Type, bool IsArchived);
+    public sealed record UpdateAccountRequest(string Name, AccountType? Type = null, bool? IsArchived = null);
 
     [HttpPut("{id:guid}")]
     [ProducesResponseType(typeof(AccountResponse), StatusCodes.Status200OK)]

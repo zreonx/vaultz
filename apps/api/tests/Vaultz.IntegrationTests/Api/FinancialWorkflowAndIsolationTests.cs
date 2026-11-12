@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Vaultz.Api.Controllers;
 using Vaultz.Application.Features.Accounts;
 using Vaultz.Application.Features.Auth;
 using Vaultz.Application.Features.Budgets;
@@ -102,6 +103,16 @@ public sealed class FinancialWorkflowAndIsolationTests
             new CreateAccountCommand("High-Yield Savings", AccountType.Savings, "USD", 500.00m));
         Assert.Equal(HttpStatusCode.Created, createSavingsResponse.StatusCode);
         var savings = (await createSavingsResponse.Content.ReadFromJsonAsync<AccountResponse>())!;
+
+        // Update account name
+        var updateCheckingResponse = await userAClient.PutAsJsonAsync(
+            $"/api/v1/accounts/{checking.Id}",
+            new AccountsController.UpdateAccountRequest("Primary Checking Premium", null, null));
+        Assert.Equal(HttpStatusCode.OK, updateCheckingResponse.StatusCode);
+        var updatedChecking = (await updateCheckingResponse.Content.ReadFromJsonAsync<AccountResponse>())!;
+        Assert.Equal("Primary Checking Premium", updatedChecking.Name);
+        Assert.Equal(checking.Type, updatedChecking.Type);
+        Assert.Equal(checking.CurrencyCode, updatedChecking.CurrencyCode);
 
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
 

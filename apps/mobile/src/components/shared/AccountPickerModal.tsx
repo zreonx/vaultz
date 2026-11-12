@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -13,6 +13,7 @@ import { ModalSheet } from '@/components/ui/ModalSheet';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { PressableScale } from '@/components/ui/PressableScale';
+import { EditAccountModal } from '@/components/shared/EditAccountModal';
 import { typography, radius, spacing } from '@/theme/tokens';
 import { formatMoney } from '@/utils/currency';
 import { haptics } from '@/utils/haptics';
@@ -31,11 +32,19 @@ export const AccountPickerModal: React.FC<AccountPickerModalProps> = ({
 }) => {
   const { accounts, activeWorkspace, setActiveWorkspace, hideBalance } = useWorkspace();
   const { colors, isDark } = useTheme();
+  const [editingAccount, setEditingAccount] = useState<AccountDto | null>(null);
+  const [editModalVisible, setEditModalVisible] = useState(false);
 
   const handleSelectAccount = (account: AccountDto) => {
     haptics.selection();
     setActiveWorkspace(account);
     onClose();
+  };
+
+  const handleOpenEdit = (account: AccountDto) => {
+    haptics.light();
+    setEditingAccount(account);
+    setEditModalVisible(true);
   };
 
   const handleCreateNew = () => {
@@ -134,6 +143,14 @@ export const AccountPickerModal: React.FC<AccountPickerModalProps> = ({
                       style={styles.checkIcon}
                     />
                   )}
+                  <PressableScale
+                    onPress={() => handleOpenEdit(acc)}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    style={styles.pickerEditBtn}
+                    accessibilityLabel={`Edit ${acc.name}`}
+                  >
+                    <Ionicons name="pencil-outline" size={13} color={colors.textMuted} />
+                  </PressableScale>
                 </View>
               </PressableScale>
             );
@@ -148,6 +165,15 @@ export const AccountPickerModal: React.FC<AccountPickerModalProps> = ({
           style={styles.createButton}
         />
       </View>
+
+      <EditAccountModal
+        visible={editModalVisible}
+        account={editingAccount}
+        onClose={() => {
+          setEditModalVisible(false);
+          setEditingAccount(null);
+        }}
+      />
     </ModalSheet>
   );
 };
@@ -208,6 +234,10 @@ const styles = StyleSheet.create({
   },
   checkIcon: {
     marginTop: 2,
+  },
+  pickerEditBtn: {
+    marginTop: 4,
+    padding: 2,
   },
   createButton: {
     marginTop: spacing.xs,

@@ -10,7 +10,7 @@ import React, {
 } from "react";
 import { useRouter } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { AlertCircle, ArrowLeftRight, Globe, Plus, Wallet } from "lucide-react";
+import { AlertCircle, ArrowLeftRight, Globe, Pencil, Plus, Wallet } from "lucide-react";
 import { apiClient } from "@/lib/api/client";
 import {
   CURRENCY_METADATA,
@@ -65,6 +65,7 @@ interface WorkspaceContextValue {
   activeCurrencyCode: string;
   setSelectedWorkspaceId: (id: string) => void;
   openCreateWorkspaceDialog: () => void;
+  openEditWorkspaceDialog: (workspaceId?: string) => void;
   openTransferDialog: (fromWorkspaceId?: string, toWorkspaceId?: string) => void;
   openCreateTransactionDialog: (
     initialType?: TransactionType,
@@ -229,6 +230,68 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
+  // --- Edit Account Modal State ---
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [editingWorkspace, setEditingWorkspace] = useState<AccountResponse | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editType, setEditType] = useState<number>(AccountType.Checking);
+  const [editError, setEditError] = useState<string | null>(null);
+
+  const openEditWorkspaceDialog = useCallback(
+    (workspaceId?: string) => {
+      const target = workspaceId
+        ? workspaces.find((w) => w.id === workspaceId)
+        : activeWorkspace;
+      if (!target) return;
+      setEditingWorkspace(target);
+      setEditName(target.name);
+      setEditType(target.type);
+      setEditError(null);
+      setIsEditOpen(true);
+    },
+    [activeWorkspace, workspaces]
+  );
+
+  const updateWorkspaceMutation = useMutation({
+    mutationFn: (payload: { id: string; name: string; type: number }) =>
+      apiClient.put<AccountResponse>(`/api/v1/accounts/${payload.id}`, {
+        name: payload.name,
+        type: payload.type,
+      }),
+    onSuccess: (updated) => {
+      void queryClient.invalidateQueries({ queryKey: ["accounts"] });
+      void queryClient.invalidateQueries({ queryKey: ["dashboard"] });
+      setIsEditOpen(false);
+      toast.success(`Account renamed to "${updated.name}" successfully!`);
+    },
+    onError: (err) => {
+      const msg =
+        err instanceof Error
+          ? err.message
+          : "Could not update account. Please try again.";
+      setEditError(msg);
+      toast.error(msg);
+    },
+  });
+
+  const handleEditSubmit = (event: React.FormEvent) => {
+    event.preventDefault();
+    setEditError(null);
+
+    if (!editName.trim()) {
+      setEditError("Please enter an account name.");
+      return;
+    }
+
+    if (!editingWorkspace) return;
+
+    updateWorkspaceMutation.mutate({
+      id: editingWorkspace.id,
+      name: editName.trim(),
+      type: editType,
+    });
+  };
+
   // --- Create Transaction Modal State ---
   const [isTransactionOpen, setIsTransactionOpen] = useState(false);
   const [txInitialType, setTxInitialType] = useState<TransactionType>(
@@ -386,6 +449,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       activeCurrencyCode,
       setSelectedWorkspaceId,
       openCreateWorkspaceDialog,
+      openEditWorkspaceDialog,
       openTransferDialog,
       openCreateTransactionDialog,
     }),
@@ -398,6 +462,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       activeCurrencyCode,
       setSelectedWorkspaceId,
       openCreateWorkspaceDialog,
+      openEditWorkspaceDialog,
       openTransferDialog,
       openCreateTransactionDialog,
     ]
@@ -783,7 +848,107 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
           )}
         </DialogContent>
       </Dialog>
-      {/* Global Dialog 3: Create Transaction */}
+      {/* Global Dialog 3: Edit Account */}
+      <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Pencil className="h-4 w-4 text-[var(--accent)]" />
+              Edit Account
+            </DialogTitle>
+            <DialogDescription>
+              Update the name or classification of your financial account.
+            </DialogDescription>
+          </DialogHeader>
+
+          {editingWorkspace && (
+            <form onSubmit={handleEditSubmit} className="space-y-4">
+              {editError && (
+                <div className="rounded-xl border border-[var(--danger)]/30 bg-[var(--danger)]/10 p-3 text-xs text-[var(--danger)]">
+                  {editError}
+                </div>
+              )}
+
+              <div className="space-y-1.5">
+                <Label htmlFor="edit-account-name">Account Name</Label>
+                <Input
+                  id="edit-account-name"
+                  placeholder="e.g. Main Checking, Daily Cash"
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  autoFocus
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="edit-account-type">Account Type</Label>
+                  <Select
+                    value={String(editType)}
+                    onValueChange={(val) => setEditType(Number(val))}
+                  >
+                    <SelectTrigger id="edit-account-type">
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={String(AccountType.Checking)}>
+                        Checking
+                      </SelectItem>
+                      <SelectItem value={String(AccountType.Savings)}>
+                        Savings
+                      </SelectItem>
+                      <SelectItem value={String(AccountType.CreditCard)}>
+                        Credit Card
+                      </SelectItem>
+                      <SelectItem value={String(AccountType.Cash)}>
+                        Cash
+                      </SelectItem>
+                      <SelectItem value={String(AccountType.Investment)}>
+                        Investment
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label>Fixed Currency</Label>
+                  <div className="flex h-9 items-center justify-between rounded-md border border-[var(--border-subtle)] bg-[var(--surface-muted)]/50 px-3 text-xs text-[var(--muted-foreground)]">
+                    <span className="font-semibold text-[var(--foreground)]">
+                      {editingWorkspace.currencyCode}
+                    </span>
+                    <Badge variant="neutral" className="text-[10px]">
+                      Locked
+                    </Badge>
+                  </div>
+                  <p className="text-[10px] text-[var(--muted-foreground)]">
+                    Currency is locked to preserve ledger integrity.
+                  </p>
+                </div>
+              </div>
+
+              <DialogFooter>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsEditOpen(false)}
+                  disabled={updateWorkspaceMutation.isPending}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={updateWorkspaceMutation.isPending}
+                >
+                  {updateWorkspaceMutation.isPending ? "Saving..." : "Save Changes"}
+                </Button>
+              </DialogFooter>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Global Dialog 4: Create Transaction */}
       <CreateTransactionDialog
         open={isTransactionOpen}
         onOpenChange={setIsTransactionOpen}
