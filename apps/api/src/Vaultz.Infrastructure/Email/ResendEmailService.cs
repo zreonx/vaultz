@@ -180,9 +180,15 @@ public sealed class ResendEmailService : IEmailService
 
     private async Task SendEmailAsync(string toEmail, string subject, string htmlContent, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(_options.ApiKey))
+        if (!_options.Enabled)
         {
-            _logger.LogWarning("Resend API key is not configured. Email to {ToEmail} with subject '{Subject}' was not sent.", toEmail, subject);
+            _logger.LogInformation("Email sending is disabled (Resend:Enabled=false). Suppressed email to {ToEmail} with subject '{Subject}' to preserve Resend quota.", toEmail, subject);
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(_options.ApiKey) || _options.ApiKey.StartsWith("test", StringComparison.OrdinalIgnoreCase))
+        {
+            _logger.LogWarning("Resend API key is not configured or in test mode. Email to {ToEmail} with subject '{Subject}' was not sent.", toEmail, subject);
             return;
         }
 

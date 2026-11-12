@@ -5,15 +5,18 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Vaultz.Api.Controllers;
+using Vaultz.Application.Common.Interfaces;
 using Vaultz.Application.Features.AccountAllocations;
 using Vaultz.Application.Features.Accounts;
 using Vaultz.Application.Features.Auth;
 using Vaultz.Application.Features.Transactions;
 using Vaultz.Domain.Enums;
 using Vaultz.Infrastructure.Persistence;
+using Vaultz.IntegrationTests.Fakes;
 
 namespace Vaultz.IntegrationTests.Api;
 
@@ -24,6 +27,14 @@ public sealed class AccountAllocationsAndBudgetPlanTests
         return new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
         {
             builder.UseEnvironment("Testing");
+            builder.ConfigureAppConfiguration((_, config) =>
+            {
+                config.AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    ["Resend:Enabled"] = "false",
+                    ["Resend:ApiKey"] = "",
+                });
+            });
             builder.ConfigureServices(services =>
             {
                 services.RemoveAll<DbContextOptions<VaultzDbContext>>();
@@ -33,6 +44,9 @@ public sealed class AccountAllocationsAndBudgetPlanTests
                 {
                     options.UseInMemoryDatabase(databaseName);
                 });
+
+                services.RemoveAll<IEmailService>();
+                services.AddSingleton<IEmailService, FakeEmailService>();
             });
         });
     }

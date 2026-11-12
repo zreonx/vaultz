@@ -2,9 +2,14 @@ using System.Net;
 using System.Net.Http.Json;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
+using Vaultz.Application.Common.Interfaces;
 using Vaultz.Application.Features.System.GetSystemStatus;
 using Vaultz.Domain.Common;
 using Vaultz.Infrastructure.Persistence;
+using Vaultz.IntegrationTests.Fakes;
 
 namespace Vaultz.IntegrationTests.Api;
 
@@ -17,6 +22,19 @@ public sealed class HealthAndPipelineIntegrationTests : IClassFixture<WebApplica
         _factory = factory.WithWebHostBuilder(builder =>
         {
             builder.UseEnvironment("Development");
+            builder.ConfigureAppConfiguration((_, config) =>
+            {
+                config.AddInMemoryCollection(new Dictionary<string, string?>
+                {
+                    ["Resend:Enabled"] = "false",
+                    ["Resend:ApiKey"] = "",
+                });
+            });
+            builder.ConfigureServices(services =>
+            {
+                services.RemoveAll<IEmailService>();
+                services.AddSingleton<IEmailService, FakeEmailService>();
+            });
         });
     }
 

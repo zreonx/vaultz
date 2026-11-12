@@ -7,6 +7,7 @@ public sealed class ResendOptions
     public string ApiKey { get; set; } = string.Empty;
     public string FromEmail { get; set; } = "onboarding@resend.dev";
     public string FromName { get; set; } = "Vaultz Security";
+    public bool Enabled { get; set; } = true;
 
     /// <summary>
     /// In Resend's free sandbox (using onboarding@resend.dev), emails can ONLY be delivered to the
