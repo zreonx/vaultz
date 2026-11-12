@@ -133,15 +133,15 @@ export function AccountAllocationsPanel({
                 </span>
               </div>
               <CardTitle className="text-xl font-bold tracking-tight">
-                Funds Partition & Logical Finance
+                Funds Partition & Monthly Budgets
               </CardTitle>
               <CardDescription>
-                Walled-off permanent purpose vaults & active monthly percentage fragments.
+                Protected savings vaults and planned monthly spending budgets.
               </CardDescription>
             </div>
             <div className="text-right">
               <span className="text-xs uppercase font-medium tracking-wider text-[var(--muted-foreground)]">
-                Physical Account Balance
+                Account Balance
               </span>
               <div className="text-2xl font-bold tracking-tight text-[var(--foreground)]">
                 {formatMoney(accountBalance, currencyCode)}
@@ -157,7 +157,7 @@ export function AccountAllocationsPanel({
               <div className="flex items-center justify-between text-xs font-semibold text-emerald-600 dark:text-emerald-400">
                 <span className="flex items-center gap-1.5">
                   <Shield className="h-4 w-4" />
-                  Tier 1: Purpose Vaults
+                  Purpose Vaults
                 </span>
                 <span className="tabular-nums">
                   {accountBalance > 0
@@ -177,7 +177,7 @@ export function AccountAllocationsPanel({
               <div className="flex items-center justify-between text-xs font-semibold text-indigo-600 dark:text-indigo-400">
                 <span className="flex items-center gap-1.5">
                   <Sparkles className="h-4 w-4" />
-                  Tier 2: Active Allowance
+                  Budget Allowance
                 </span>
                 <span className="tabular-nums">
                   {accountBalance > 0
@@ -197,7 +197,7 @@ export function AccountAllocationsPanel({
               <div className="flex items-center justify-between text-xs font-semibold text-amber-600 dark:text-amber-400">
                 <span className="flex items-center gap-1.5">
                   <Wallet className="h-4 w-4" />
-                  Available Cash
+                  Available Free Cash
                 </span>
                 <span className="tabular-nums">
                   {accountBalance > 0
@@ -386,22 +386,22 @@ export function AccountAllocationsPanel({
           )}
         </div>
 
-        {/* Tier 2: Monthly Logical Finance Plan */}
+        {/* Monthly Budget Plan */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <div className="space-y-0.5">
               <h3 className="text-base font-semibold tracking-tight flex items-center gap-2">
                 <Sparkles className="h-4 w-4 text-indigo-500" />
-                Tier 2: Monthly Logical Finance Plan
+                Monthly Budget Plan
               </h3>
               <p className="text-xs text-[var(--muted-foreground)]">
-                Percentage spending fragments that do not auto-adjust across expenses.
+                Pre-allocated category budgets to pace your monthly spending.
               </p>
             </div>
 
             {activeBudgetPlan ? (
               <div className="flex items-center gap-1.5">
-                <SimpleTooltip content="Strict Rule: Transfer between slices to cover overdrafts">
+                <SimpleTooltip content="Transfer between budgets to cover an overdrawn category">
                   <Button
                     type="button"
                     size="sm"

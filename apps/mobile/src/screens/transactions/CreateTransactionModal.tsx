@@ -269,16 +269,16 @@ export const CreateTransactionModal: React.FC<CreateTransactionModalProps> = ({
           </View>
         )}
 
-        {/* Tier 2: Budget Slice Selector */}
+        {/* Monthly Budget Selector */}
         {type === 'Expense' &&
           allocationsData?.activeBudgetPlan?.slices &&
           allocationsData.activeBudgetPlan.slices.length > 0 && (
             <View style={styles.section}>
               <View style={styles.sectionHeaderRow}>
                 <Text style={[styles.sectionLabel, { color: colors.textSecondary }]}>
-                  BUDGET SLICE (TIER 2)
+                  MONTHLY BUDGET
                 </Text>
-                <Badge label="Active Plan" variant="outline" />
+                <Badge label="Active Budget" variant="outline" />
               </View>
 
               <View style={styles.chipRow}>
@@ -355,7 +355,7 @@ export const CreateTransactionModal: React.FC<CreateTransactionModalProps> = ({
                 if (selected && parsedAmt > selected.remainingAmount) {
                   return (
                     <Text style={[styles.errorText, { marginTop: 4, color: '#ef4444' }]}>
-                      ⚠️ Amount exceeds remaining budget ({formatMoney(selected.remainingAmount, activeWorkspace?.currency || 'USD')}). Strict rules will block this.
+                      ⚠️ Amount exceeds remaining budget ({formatMoney(selected.remainingAmount, activeWorkspace?.currency || 'USD')} left).
                     </Text>
                   );
                 }

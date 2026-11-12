@@ -45,7 +45,7 @@ export function MonthlyFinanceFeatureView() {
             </h2>
             <Badge variant="neutral" className="gap-1 border-indigo-500/30 text-indigo-600 dark:text-indigo-400">
               <Sparkles className="h-3 w-3" />
-              2-Tier System
+              Vaults &amp; Budgets
             </Badge>
             {activeWorkspace && (
               <Badge variant="neutral" className="text-xs font-semibold">
@@ -55,8 +55,8 @@ export function MonthlyFinanceFeatureView() {
           </div>
           <p className="text-sm text-[var(--muted-foreground)]">
             {activeWorkspace
-              ? `Discipline-first budgeting: purpose vaults & monthly allowance slices for ${activeWorkspace.name} (${activeWorkspace.currencyCode}).`
-              : "Discipline-first budgeting: wall off permanent purpose vaults (Tier 1) and partition active monthly spending allowances (Tier 2)."}
+              ? `Discipline-first budgeting: purpose vaults & monthly spending budgets for ${activeWorkspace.name} (${activeWorkspace.currencyCode}).`
+              : "Discipline-first budgeting: wall off protected savings vaults and partition active monthly spending budgets."}
           </p>
         </div>
 

@@ -51,7 +51,7 @@ export const ACCOUNT_NAVIGATION: NavItem[] = [
     title: "Monthly Finance",
     href: "/monthly-finance",
     status: "active",
-    description: "Funds partition, purpose vaults & monthly allowance slices",
+    description: "Funds partition, purpose vaults & monthly spending budgets",
     scope: "account",
   },
   {

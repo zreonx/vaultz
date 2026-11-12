@@ -400,7 +400,7 @@ export function DashboardOverviewFeature() {
                     <CardTitle>Monthly Finance & Pacing</CardTitle>
                     <CardDescription>
                       {activeWorkspace
-                        ? `Allowance slices for ${activeWorkspace.name}`
+                        ? `Monthly budgets for ${activeWorkspace.name}`
                         : summary
                           ? `Spending pace for ${summary.year}-${String(summary.month).padStart(2, "0")}`
                           : "Spending pace for current cycle"}
@@ -427,7 +427,7 @@ export function DashboardOverviewFeature() {
                     <Alert variant="muted">
                       <AlertTitle>No active monthly plan yet</AlertTitle>
                       <AlertDescription>
-                        Partition your available cash into disciplined percentage slices (50/30/20) under Monthly Finance.
+                        Allocate your available cash into monthly budgets (e.g. 50/30/20) under Monthly Finance.
                       </AlertDescription>
                     </Alert>
                   ) : (
