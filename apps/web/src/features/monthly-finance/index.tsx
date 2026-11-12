@@ -43,10 +43,6 @@ export function MonthlyFinanceFeatureView() {
             <h2 className="text-2xl font-bold tracking-tight">
               Monthly Finance & Funds Partition
             </h2>
-            <Badge variant="neutral" className="gap-1 border-indigo-500/30 text-indigo-600 dark:text-indigo-400">
-              <Sparkles className="h-3 w-3" />
-              Vaults &amp; Budgets
-            </Badge>
             {activeWorkspace && (
               <Badge variant="neutral" className="text-xs font-semibold">
                 {activeWorkspace.name} ({activeWorkspace.currencyCode})

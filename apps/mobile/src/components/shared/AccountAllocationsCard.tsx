@@ -108,7 +108,6 @@ export const AccountAllocationsCard: React.FC<AccountAllocationsCardProps> = ({
         <View style={styles.headerRow}>
           <View>
             <View style={styles.tagRow}>
-              <Badge label="Vaults & Budgets" variant="outline" />
               <Text style={[styles.accountLabel, { color: colors.textMuted }]}>
                 {accountName}
               </Text>
