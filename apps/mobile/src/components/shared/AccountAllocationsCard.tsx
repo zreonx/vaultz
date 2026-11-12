@@ -108,7 +108,7 @@ export const AccountAllocationsCard: React.FC<AccountAllocationsCardProps> = ({
         <View style={styles.headerRow}>
           <View>
             <View style={styles.tagRow}>
-              <Badge label="2-Tier System" variant="outline" />
+              <Badge label="Vaults & Budgets" variant="outline" />
               <Text style={[styles.accountLabel, { color: colors.textMuted }]}>
                 {accountName}
               </Text>
@@ -124,7 +124,7 @@ export const AccountAllocationsCard: React.FC<AccountAllocationsCardProps> = ({
           <View style={[styles.metricBox, { backgroundColor: isDark ? 'rgba(16, 185, 129, 0.1)' : '#ecfdf5', borderColor: 'rgba(16, 185, 129, 0.2)' }]}>
             <View style={styles.metricHeader}>
               <Ionicons name="shield-checkmark-outline" size={13} color="#10b981" />
-              <Text style={[styles.metricLabel, { color: '#10b981' }]}>Tier 1: Vaults</Text>
+              <Text style={[styles.metricLabel, { color: '#10b981' }]}>Vaults</Text>
             </View>
             <Text style={[styles.metricValue, { color: colors.textPrimary }]}>
               {hideBalance ? '••••' : formatMoney(totalAllocatedInVaults, currencyCode)}
@@ -134,7 +134,7 @@ export const AccountAllocationsCard: React.FC<AccountAllocationsCardProps> = ({
           <View style={[styles.metricBox, { backgroundColor: isDark ? 'rgba(99, 102, 241, 0.1)' : '#eef2ff', borderColor: 'rgba(99, 102, 241, 0.2)' }]}>
             <View style={styles.metricHeader}>
               <Ionicons name="sparkles-outline" size={13} color="#6366f1" />
-              <Text style={[styles.metricLabel, { color: '#6366f1' }]}>Tier 2: Plan</Text>
+              <Text style={[styles.metricLabel, { color: '#6366f1' }]}>Budget Plan</Text>
             </View>
             <Text style={[styles.metricValue, { color: colors.textPrimary }]}>
               {hideBalance ? '••••' : formatMoney(activePlanRemaining, currencyCode)}
@@ -194,7 +194,7 @@ export const AccountAllocationsCard: React.FC<AccountAllocationsCardProps> = ({
           <View style={styles.sectionTitleGroup}>
             <Ionicons name="shield-outline" size={18} color="#10b981" />
             <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
-              Tier 1: Purpose Vaults
+              Purpose Vaults
             </Text>
           </View>
           <PressableScale
@@ -296,7 +296,7 @@ export const AccountAllocationsCard: React.FC<AccountAllocationsCardProps> = ({
           <View style={styles.sectionTitleGroup}>
             <Ionicons name="sparkles-outline" size={18} color="#6366f1" />
             <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
-              Tier 2: Monthly Finance Plan
+              Monthly Budget Plan
             </Text>
           </View>
 
@@ -615,7 +615,7 @@ function CreateVaultModal({
   };
 
   return (
-    <ModalSheet visible={visible} onClose={onClose} title="Create Purpose Vault (Tier 1)" subtitle="Carve out an isolated reserve">
+    <ModalSheet visible={visible} onClose={onClose} title="Create Purpose Vault" subtitle="Carve out an isolated reserve">
       <View style={styles.formContainer}>
         {error && <Text style={styles.errorText}>{error}</Text>}
         <Input label="Vault Name" placeholder="e.g. Emergency Fund" value={name} onChangeText={setName} />
@@ -942,7 +942,7 @@ function CreateMonthlyPlanModal({
     <ModalSheet
       visible={visible}
       onClose={onClose}
-      title="Setup Monthly Plan (Tier 2)"
+      title="Setup Monthly Budget Plan"
       subtitle="Edit amount or % — both stay synchronized in real time"
     >
       <View style={styles.formContainer}>
