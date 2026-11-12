@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { useTutorial } from "@/context/tutorial-context";
 import { Button } from "@/components/ui/button";
+import { SimpleTooltip } from "@/components/ui/tooltip";
 
 interface SpotlightRect {
   top: number;
@@ -268,14 +269,16 @@ export function SpotlightTour() {
             </span>
           </div>
 
-          <button
-            type="button"
-            onClick={skipTour}
-            className="text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors p-1"
-            title="Exit Tour (Esc)"
-          >
-            <X className="h-4 w-4" />
-          </button>
+          <SimpleTooltip content="Exit Tour (Esc)">
+            <button
+              type="button"
+              onClick={skipTour}
+              className="text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors p-1 cursor-pointer"
+              aria-label="Exit Tour"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </SimpleTooltip>
         </div>
 
         {/* Title & Body */}

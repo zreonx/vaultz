@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { SimpleTooltip } from "@/components/ui/tooltip";
 import {
   Card,
   CardContent,
@@ -332,19 +333,20 @@ export function StandardCalculator() {
                 {expression || "\u00A0"}
               </span>
               <div className="flex items-baseline justify-between w-full mt-1">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8 text-muted-foreground hover:text-foreground"
-                  onClick={handleCopy}
-                  title="Copy result"
-                >
-                  {isCopied ? (
-                    <Check className="w-4 h-4 text-emerald-500" />
-                  ) : (
-                    <Copy className="w-4 h-4" />
-                  )}
-                </Button>
+                <SimpleTooltip content="Copy result">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-muted-foreground hover:text-foreground"
+                    onClick={handleCopy}
+                  >
+                    {isCopied ? (
+                      <Check className="w-4 h-4 text-emerald-500" />
+                    ) : (
+                      <Copy className="w-4 h-4" />
+                    )}
+                  </Button>
+                </SimpleTooltip>
                 <span className="text-3xl sm:text-4xl font-semibold font-mono tracking-tight text-foreground truncate max-w-[280px]">
                   {display}
                 </span>
@@ -361,14 +363,15 @@ export function StandardCalculator() {
               >
                 AC
               </Button>
-              <Button
-                variant="outline"
-                className="h-13 text-base font-medium"
-                onClick={handleBackspace}
-                title="Backspace"
-              >
-                <Delete className="w-4 h-4" />
-              </Button>
+              <SimpleTooltip content="Backspace">
+                <Button
+                  variant="outline"
+                  className="h-13 text-base font-medium"
+                  onClick={handleBackspace}
+                >
+                  <Delete className="w-4 h-4" />
+                </Button>
+              </SimpleTooltip>
               <Button
                 variant="outline"
                 className="h-13 text-base font-medium"

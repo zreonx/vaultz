@@ -21,6 +21,7 @@ import {
 } from "@/hooks/use-exchange-rates";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { SimpleTooltip } from "@/components/ui/tooltip";
 import {
   Card,
   CardContent,
@@ -183,17 +184,18 @@ export function CurrencyConverter() {
 
             {/* Swap Button */}
             <div className="flex justify-center pb-0.5">
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                onClick={handleSwap}
-                aria-label="Swap currencies"
-                className="h-11 w-11 rounded-xl shrink-0 hover:bg-[var(--surface-muted)] hover:border-[var(--accent)] transition-all"
-                title="Swap currencies"
-              >
-                <ArrowRightLeft className="h-4 w-4 text-[var(--accent)] transition-transform hover:scale-110" />
-              </Button>
+              <SimpleTooltip content="Swap currencies">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={handleSwap}
+                  aria-label="Swap currencies"
+                  className="h-11 w-11 rounded-xl shrink-0 hover:bg-[var(--surface-muted)] hover:border-[var(--accent)] transition-all cursor-pointer"
+                >
+                  <ArrowRightLeft className="h-4 w-4 text-[var(--accent)] transition-transform hover:scale-110" />
+                </Button>
+              </SimpleTooltip>
             </div>
 
             {/* To Result & Currency */}

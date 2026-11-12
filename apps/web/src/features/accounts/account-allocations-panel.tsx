@@ -42,6 +42,7 @@ import {
 } from "@/hooks/use-account-allocations";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { SimpleTooltip } from "@/components/ui/tooltip";
 import {
   Card,
   CardContent,
@@ -217,27 +218,30 @@ export function AccountAllocationsPanel({
           {accountBalance > 0 && (
             <div className="space-y-1.5">
               <div className="h-2.5 w-full overflow-hidden rounded-full bg-[var(--muted)] flex">
-                <div
-                  className="h-full bg-emerald-500 transition-all duration-500"
-                  style={{
-                    width: `${Math.min(100, (totalAllocatedInVaults / accountBalance) * 100)}%`,
-                  }}
-                  title={`Vaults: ${formatMoney(totalAllocatedInVaults, currencyCode)}`}
-                />
-                <div
-                  className="h-full bg-indigo-500 transition-all duration-500"
-                  style={{
-                    width: `${Math.min(100, (activePlanRemaining / accountBalance) * 100)}%`,
-                  }}
-                  title={`Active Plan: ${formatMoney(activePlanRemaining, currencyCode)}`}
-                />
-                <div
-                  className="h-full bg-amber-400 transition-all duration-500"
-                  style={{
-                    width: `${Math.min(100, (unallocatedBalance / accountBalance) * 100)}%`,
-                  }}
-                  title={`Available: ${formatMoney(unallocatedBalance, currencyCode)}`}
-                />
+                <SimpleTooltip content={`Vaults: ${formatMoney(totalAllocatedInVaults, currencyCode)}`}>
+                  <div
+                    className="h-full bg-emerald-500 transition-all duration-500 cursor-pointer"
+                    style={{
+                      width: `${Math.min(100, (totalAllocatedInVaults / accountBalance) * 100)}%`,
+                    }}
+                  />
+                </SimpleTooltip>
+                <SimpleTooltip content={`Active Plan: ${formatMoney(activePlanRemaining, currencyCode)}`}>
+                  <div
+                    className="h-full bg-indigo-500 transition-all duration-500 cursor-pointer"
+                    style={{
+                      width: `${Math.min(100, (activePlanRemaining / accountBalance) * 100)}%`,
+                    }}
+                  />
+                </SimpleTooltip>
+                <SimpleTooltip content={`Available: ${formatMoney(unallocatedBalance, currencyCode)}`}>
+                  <div
+                    className="h-full bg-amber-400 transition-all duration-500 cursor-pointer"
+                    style={{
+                      width: `${Math.min(100, (unallocatedBalance / accountBalance) * 100)}%`,
+                    }}
+                  />
+                </SimpleTooltip>
               </div>
               <div className="flex justify-between text-[11px] text-[var(--muted-foreground)]">
                 <span className="flex items-center gap-1">
@@ -323,43 +327,46 @@ export function AccountAllocationsPanel({
                       </div>
 
                       <div className="flex items-center gap-1">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 px-2 text-xs text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
-                          onClick={() => setDepositAlloc(alloc)}
-                          title="Deposit into this vault"
-                        >
-                          <ArrowDownRight className="h-3.5 w-3.5 mr-1" />
-                          Deposit
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 px-2 text-xs text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/30"
-                          onClick={() => setWithdrawAlloc(alloc)}
-                          disabled={alloc.balance <= 0}
-                          title="Withdraw back to available cash"
-                        >
-                          <ArrowUpRight className="h-3.5 w-3.5 mr-1" />
-                          Withdraw
-                        </Button>
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 w-7 p-0 text-[var(--muted-foreground)] hover:text-red-500"
-                          onClick={() => {
-                            if (confirm(`Delete '${alloc.name}'? Any remaining funds (${formatMoney(alloc.balance, currencyCode)}) will return to your available balance.`)) {
-                              deleteAllocMutation.mutate({ accountId, id: alloc.id });
-                            }
-                          }}
-                          title="Delete vault"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
+                        <SimpleTooltip content="Deposit into this vault">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 px-2 text-xs text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
+                            onClick={() => setDepositAlloc(alloc)}
+                          >
+                            <ArrowDownRight className="h-3.5 w-3.5 mr-1" />
+                            Deposit
+                          </Button>
+                        </SimpleTooltip>
+                        <SimpleTooltip content="Withdraw back to available cash">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 px-2 text-xs text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:hover:bg-amber-950/30"
+                            onClick={() => setWithdrawAlloc(alloc)}
+                            disabled={alloc.balance <= 0}
+                          >
+                            <ArrowUpRight className="h-3.5 w-3.5 mr-1" />
+                            Withdraw
+                          </Button>
+                        </SimpleTooltip>
+                        <SimpleTooltip content="Delete vault">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 w-7 p-0 text-[var(--muted-foreground)] hover:text-red-500"
+                            onClick={() => {
+                              if (confirm(`Delete '${alloc.name}'? Any remaining funds (${formatMoney(alloc.balance, currencyCode)}) will return to your available balance.`)) {
+                                deleteAllocMutation.mutate({ accountId, id: alloc.id });
+                              }
+                            }}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </SimpleTooltip>
                       </div>
                     </div>
 
@@ -394,28 +401,30 @@ export function AccountAllocationsPanel({
 
             {activeBudgetPlan ? (
               <div className="flex items-center gap-1.5">
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  className="gap-1.5 text-xs h-8 border-indigo-500/30 text-indigo-600 dark:text-indigo-400"
-                  onClick={() => setIsCoverDeficitOpen(true)}
-                  title="Strict Rule: Transfer between slices to cover overdrafts"
-                >
-                  <ArrowRightLeft className="h-3.5 w-3.5" />
-                  Cover Deficit
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="default"
-                  className="gap-1.5 text-xs h-8 bg-indigo-600 hover:bg-indigo-700 text-white"
-                  onClick={() => setIsSweepOpen(true)}
-                  title="Sweep leftover allowance into vault or savings anytime"
-                >
-                  <RefreshCw className="h-3.5 w-3.5" />
-                  Sweep
-                </Button>
+                <SimpleTooltip content="Strict Rule: Transfer between slices to cover overdrafts">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="gap-1.5 text-xs h-8 border-indigo-500/30 text-indigo-600 dark:text-indigo-400"
+                    onClick={() => setIsCoverDeficitOpen(true)}
+                  >
+                    <ArrowRightLeft className="h-3.5 w-3.5" />
+                    Cover Deficit
+                  </Button>
+                </SimpleTooltip>
+                <SimpleTooltip content="Sweep leftover allowance into vault or savings anytime">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="default"
+                    className="gap-1.5 text-xs h-8 bg-indigo-600 hover:bg-indigo-700 text-white"
+                    onClick={() => setIsSweepOpen(true)}
+                  >
+                    <RefreshCw className="h-3.5 w-3.5" />
+                    Sweep
+                  </Button>
+                </SimpleTooltip>
               </div>
             ) : (
               <Button
@@ -1324,14 +1333,14 @@ function CreateMonthlyPlanDialog({
                   const pct = Math.max(0, parseFloat(slice.percentage) || 0);
                   const palette = SLICE_PALETTE[idx % SLICE_PALETTE.length] ?? SLICE_PALETTE[0]!;
                   return (
-                    <div
-                      key={slice.id}
-                      className={`h-full ${palette.bg} transition-all duration-300`}
-                      style={{
-                        width: `${Math.min(100, (pct / Math.max(100, totalPercentage)) * 100)}%`,
-                      }}
-                      title={`${slice.name}: ${pct}%`}
-                    />
+                    <SimpleTooltip key={slice.id} content={`${slice.name}: ${pct}%`}>
+                      <div
+                        className={`h-full ${palette.bg} transition-all duration-300 cursor-pointer`}
+                        style={{
+                          width: `${Math.min(100, (pct / Math.max(100, totalPercentage)) * 100)}%`,
+                        }}
+                      />
+                    </SimpleTooltip>
                   );
                 })}
               </div>
@@ -1360,16 +1369,17 @@ function CreateMonthlyPlanDialog({
                         required
                       />
                       {slices.length > 1 && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="h-7 w-7 p-0 text-[var(--muted-foreground)] hover:text-red-500 flex-shrink-0"
-                          onClick={() => removeSlice(slice.id)}
-                          title="Delete slice"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </Button>
+                        <SimpleTooltip content="Delete slice">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 w-7 p-0 text-[var(--muted-foreground)] hover:text-red-500 flex-shrink-0"
+                            onClick={() => removeSlice(slice.id)}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </SimpleTooltip>
                       )}
                     </div>
 

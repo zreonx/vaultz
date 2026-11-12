@@ -25,6 +25,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { SimpleTooltip } from "@/components/ui/tooltip";
 import type { NotificationItem, NotificationType } from "@/types/api";
 
 function formatRelativeTime(dateString: string): string {
@@ -120,16 +121,17 @@ export function NotificationBell() {
 
           <div className="flex items-center gap-1.5">
             {unreadCount > 0 && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => markAllAsRead()}
-                className="h-7 px-2 text-xs text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
-                title="Mark all as read"
-              >
-                <CheckCheck className="h-3.5 w-3.5 mr-1" />
-                Mark all read
-              </Button>
+              <SimpleTooltip content="Mark all as read">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => markAllAsRead()}
+                  className="h-7 px-2 text-xs text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+                >
+                  <CheckCheck className="h-3.5 w-3.5 mr-1" />
+                  Mark all read
+                </Button>
+              </SimpleTooltip>
             )}
           </div>
         </div>
@@ -183,31 +185,33 @@ export function NotificationBell() {
                 {/* Quick actions on hover */}
                 <div className="absolute right-2 top-2 flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
                   {!n.isRead && (
+                    <SimpleTooltip content="Mark as read" side="left">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          markAsRead(n.id);
+                        }}
+                        className="h-6 w-6 rounded-md hover:bg-[var(--surface)]"
+                      >
+                        <Check className="h-3 w-3 text-[var(--muted-foreground)]" />
+                      </Button>
+                    </SimpleTooltip>
+                  )}
+                  <SimpleTooltip content="Delete" side="left">
                     <Button
                       variant="ghost"
                       size="icon"
                       onClick={(e) => {
                         e.stopPropagation();
-                        markAsRead(n.id);
+                        deleteNotification(n.id);
                       }}
-                      className="h-6 w-6 rounded-md hover:bg-[var(--surface)]"
-                      title="Mark as read"
+                      className="h-6 w-6 rounded-md hover:bg-[var(--surface)] text-red-500/80 hover:text-red-500"
                     >
-                      <Check className="h-3 w-3 text-[var(--muted-foreground)]" />
+                      <Trash2 className="h-3 w-3" />
                     </Button>
-                  )}
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      deleteNotification(n.id);
-                    }}
-                    className="h-6 w-6 rounded-md hover:bg-[var(--surface)] text-red-500/80 hover:text-red-500"
-                    title="Delete"
-                  >
-                    <Trash2 className="h-3 w-3" />
-                  </Button>
+                  </SimpleTooltip>
                 </div>
               </div>
             ))

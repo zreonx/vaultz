@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { QueryProvider } from "@/lib/api/query-provider";
 import { ToastProvider } from "@/components/ui/toast";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/context/theme-context";
 import "./globals.css";
 
@@ -42,7 +43,9 @@ export default function RootLayout({
       <body className="min-h-screen bg-[var(--background)] font-sans text-[var(--foreground)] antialiased">
         <ThemeProvider>
           <QueryProvider>
-            <ToastProvider>{children}</ToastProvider>
+            <ToastProvider>
+              <TooltipProvider delayDuration={150}>{children}</TooltipProvider>
+            </ToastProvider>
           </QueryProvider>
         </ThemeProvider>
       </body>

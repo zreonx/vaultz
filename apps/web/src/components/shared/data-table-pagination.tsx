@@ -8,6 +8,7 @@ import {
   ChevronsRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { SimpleTooltip } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils/cn";
 
 export interface DataTablePaginationProps {
@@ -93,32 +94,34 @@ export function DataTablePagination({
 
       <div className="flex items-center gap-1 overflow-x-auto self-end sm:self-auto">
         {/* Beginning (First Page) */}
-        <Button
-          type="button"
-          variant="outline"
-          size="icon"
-          onClick={() => onPageChange(1)}
-          disabled={page <= 1 || isLoading}
-          className="h-8 w-8 rounded-lg border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)] hover:bg-[var(--surface-muted)] disabled:opacity-30 shrink-0"
-          aria-label="Beginning page"
-          title="Beginning"
-        >
-          <ChevronsLeft className="h-3.5 w-3.5" />
-        </Button>
+        <SimpleTooltip content="Beginning">
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            onClick={() => onPageChange(1)}
+            disabled={page <= 1 || isLoading}
+            className="h-8 w-8 rounded-lg border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)] hover:bg-[var(--surface-muted)] disabled:opacity-30 shrink-0"
+            aria-label="Beginning page"
+          >
+            <ChevronsLeft className="h-3.5 w-3.5" />
+          </Button>
+        </SimpleTooltip>
 
         {/* Backward (Previous Page) */}
-        <Button
-          type="button"
-          variant="outline"
-          size="icon"
-          onClick={() => onPageChange(page - 1)}
-          disabled={page <= 1 || isLoading}
-          className="h-8 w-8 rounded-lg border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)] hover:bg-[var(--surface-muted)] disabled:opacity-30 shrink-0"
-          aria-label="Backward"
-          title="Backward"
-        >
-          <ChevronLeft className="h-3.5 w-3.5" />
-        </Button>
+        <SimpleTooltip content="Backward">
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            onClick={() => onPageChange(page - 1)}
+            disabled={page <= 1 || isLoading}
+            className="h-8 w-8 rounded-lg border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)] hover:bg-[var(--surface-muted)] disabled:opacity-30 shrink-0"
+            aria-label="Backward"
+          >
+            <ChevronLeft className="h-3.5 w-3.5" />
+          </Button>
+        </SimpleTooltip>
 
         {/* Numbered Page Buttons: 1, 2, 3... */}
         {pageNumbers.map((p, idx) =>
@@ -152,32 +155,34 @@ export function DataTablePagination({
         )}
 
         {/* Forward (Next Page) */}
-        <Button
-          type="button"
-          variant="outline"
-          size="icon"
-          onClick={() => onPageChange(page + 1)}
-          disabled={page >= normalizedTotalPages || isLoading}
-          className="h-8 w-8 rounded-lg border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)] hover:bg-[var(--surface-muted)] disabled:opacity-30 shrink-0"
-          aria-label="Forward"
-          title="Forward"
-        >
-          <ChevronRight className="h-3.5 w-3.5" />
-        </Button>
+        <SimpleTooltip content="Forward">
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            onClick={() => onPageChange(page + 1)}
+            disabled={page >= normalizedTotalPages || isLoading}
+            className="h-8 w-8 rounded-lg border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)] hover:bg-[var(--surface-muted)] disabled:opacity-30 shrink-0"
+            aria-label="Forward"
+          >
+            <ChevronRight className="h-3.5 w-3.5" />
+          </Button>
+        </SimpleTooltip>
 
         {/* Last Page */}
-        <Button
-          type="button"
-          variant="outline"
-          size="icon"
-          onClick={() => onPageChange(normalizedTotalPages)}
-          disabled={page >= normalizedTotalPages || isLoading}
-          className="h-8 w-8 rounded-lg border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)] hover:bg-[var(--surface-muted)] disabled:opacity-30 shrink-0"
-          aria-label="Last page"
-          title="Last"
-        >
-          <ChevronsRight className="h-3.5 w-3.5" />
-        </Button>
+        <SimpleTooltip content="Last">
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            onClick={() => onPageChange(normalizedTotalPages)}
+            disabled={page >= normalizedTotalPages || isLoading}
+            className="h-8 w-8 rounded-lg border-[var(--border)] bg-[var(--surface)] text-[var(--foreground)] hover:bg-[var(--surface-muted)] disabled:opacity-30 shrink-0"
+            aria-label="Last page"
+          >
+            <ChevronsRight className="h-3.5 w-3.5" />
+          </Button>
+        </SimpleTooltip>
       </div>
     </div>
   );

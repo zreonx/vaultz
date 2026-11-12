@@ -25,6 +25,7 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { Button } from "@/components/ui/button";
+import { SimpleTooltip } from "@/components/ui/tooltip";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -121,32 +122,33 @@ export function AppHeader() {
             )}
 
             {activeWorkspace && (
-              <button
-                type="button"
-                data-tour="header-balance-pill"
-                onClick={toggleHideBalance}
-                title={isBalanceHidden ? "Show balance" : "Hide balance"}
-                aria-label={isBalanceHidden ? "Show balance" : "Hide balance"}
-                className="group hidden items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--surface-muted)] px-2.5 py-1 text-xs font-medium text-[var(--foreground)] transition-colors hover:bg-[var(--surface-subtle)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] lg:inline-flex cursor-pointer select-none"
-              >
-                <span className="font-semibold text-[var(--accent)]">
-                  {activeWorkspace.currencyCode}
-                </span>
-                <span className="text-[var(--muted-foreground)]">·</span>
-                <span className="tabular-nums font-medium">
-                  {isBalanceHidden
-                    ? "••••••"
-                    : formatMoney(
-                        activeWorkspace.balance,
-                        activeWorkspace.currencyCode
-                      )}
-                </span>
-                {isBalanceHidden ? (
-                  <EyeOff className="h-3 w-3 text-[var(--muted-foreground)] transition-colors group-hover:text-[var(--foreground)]" />
-                ) : (
-                  <Eye className="h-3 w-3 text-[var(--muted-foreground)] transition-colors group-hover:text-[var(--foreground)]" />
-                )}
-              </button>
+              <SimpleTooltip content={isBalanceHidden ? "Show balance" : "Hide balance"}>
+                <button
+                  type="button"
+                  data-tour="header-balance-pill"
+                  onClick={toggleHideBalance}
+                  aria-label={isBalanceHidden ? "Show balance" : "Hide balance"}
+                  className="group hidden items-center gap-1.5 rounded-full border border-[var(--border)] bg-[var(--surface-muted)] px-2.5 py-1 text-xs font-medium text-[var(--foreground)] transition-colors hover:bg-[var(--surface-subtle)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] lg:inline-flex cursor-pointer select-none"
+                >
+                  <span className="font-semibold text-[var(--accent)]">
+                    {activeWorkspace.currencyCode}
+                  </span>
+                  <span className="text-[var(--muted-foreground)]">·</span>
+                  <span className="tabular-nums font-medium">
+                    {isBalanceHidden
+                      ? "••••••"
+                      : formatMoney(
+                          activeWorkspace.balance,
+                          activeWorkspace.currencyCode
+                        )}
+                  </span>
+                  {isBalanceHidden ? (
+                    <EyeOff className="h-3 w-3 text-[var(--muted-foreground)] transition-colors group-hover:text-[var(--foreground)]" />
+                  ) : (
+                    <Eye className="h-3 w-3 text-[var(--muted-foreground)] transition-colors group-hover:text-[var(--foreground)]" />
+                  )}
+                </button>
+              </SimpleTooltip>
             )}
           </div>
         </div>

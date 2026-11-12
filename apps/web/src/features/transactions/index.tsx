@@ -28,6 +28,7 @@ import {
 } from "@/types/api";
 import { AuthRequiredBanner } from "@/components/shared/auth-required-banner";
 import { Badge } from "@/components/ui/badge";
+import { SimpleTooltip } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -270,11 +271,6 @@ export function TransactionsFeatureView() {
               )
             }
             className="gap-1.5"
-            title={
-              activeWorkspace
-                ? `Record a transaction in ${activeWorkspace.name}`
-                : "Add Transaction"
-            }
           >
             <Plus className="h-3.5 w-3.5" />
             Record in {activeWorkspace ? activeWorkspace.name : "Account"}
@@ -439,12 +435,11 @@ export function TransactionsFeatureView() {
                       {formatTableDate(tx.occurredOn)}
                     </div>
                     {tx.createdAtUtc && (
-                      <div
-                        className="text-[11px] text-[var(--muted-foreground)]"
-                        title={`Recorded at ${new Date(tx.createdAtUtc).toLocaleString()}`}
-                      >
-                        {formatRecordedTime(tx.createdAtUtc)}
-                      </div>
+                      <SimpleTooltip content={`Recorded at ${new Date(tx.createdAtUtc).toLocaleString()}`}>
+                        <div className="text-[11px] text-[var(--muted-foreground)] cursor-default">
+                          {formatRecordedTime(tx.createdAtUtc)}
+                        </div>
+                      </SimpleTooltip>
                     )}
                   </TableCell>
                   <TableCell>

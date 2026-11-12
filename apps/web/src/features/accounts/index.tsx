@@ -24,6 +24,7 @@ import {
 } from "@/components/shared/data-table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { SimpleTooltip } from "@/components/ui/tooltip";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
@@ -206,15 +207,16 @@ export function AccountsFeatureView() {
                 <TableRow key={account.id}>
                   <TableCell className="font-medium">
                     <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => openEditWorkspaceDialog(account.id)}
-                        className="group inline-flex items-center gap-1.5 font-semibold hover:text-[var(--accent)] transition-colors text-left"
-                        title="Click to edit account name"
-                      >
-                        <span>{account.name}</span>
-                        <Pencil className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity text-[var(--muted-foreground)]" />
-                      </button>
+                      <SimpleTooltip content="Click to edit account name">
+                        <button
+                          type="button"
+                          onClick={() => openEditWorkspaceDialog(account.id)}
+                          className="group inline-flex items-center gap-1.5 font-semibold hover:text-[var(--accent)] transition-colors text-left cursor-pointer"
+                        >
+                          <span>{account.name}</span>
+                          <Pencil className="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity text-[var(--muted-foreground)]" />
+                        </button>
+                      </SimpleTooltip>
                       {account.isDefault && (
                         <Badge
                           variant="warning"
@@ -248,54 +250,58 @@ export function AccountsFeatureView() {
                           Default
                         </span>
                       ) : (
+                        <SimpleTooltip content="Set as Default Account">
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setDefaultMutation.mutate(account.id)}
+                            disabled={setDefaultMutation.isPending}
+                            className="gap-1 text-xs"
+                          >
+                            <Star className="h-3.5 w-3.5 text-[var(--muted-foreground)]" />
+                            Set Default
+                          </Button>
+                        </SimpleTooltip>
+                      )}
+                      <SimpleTooltip content={`Edit ${account.name}`}>
                         <Button
                           type="button"
                           variant="ghost"
                           size="sm"
-                          onClick={() => setDefaultMutation.mutate(account.id)}
-                          disabled={setDefaultMutation.isPending}
-                          title="Set as Default Account"
+                          onClick={() => openEditWorkspaceDialog(account.id)}
                           className="gap-1 text-xs"
                         >
-                          <Star className="h-3.5 w-3.5 text-[var(--muted-foreground)]" />
-                          Set Default
+                          <Pencil className="h-3.5 w-3.5 text-[var(--muted-foreground)]" />
+                          Edit
                         </Button>
-                      )}
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => openEditWorkspaceDialog(account.id)}
-                        title={`Edit ${account.name}`}
-                        className="gap-1 text-xs"
-                      >
-                        <Pencil className="h-3.5 w-3.5 text-[var(--muted-foreground)]" />
-                        Edit
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() =>
-                          openCreateTransactionDialog(undefined, account.id, true)
-                        }
-                        title={`Record transaction in ${account.name}`}
-                        className="gap-1 text-xs"
-                      >
-                        <Plus className="h-3.5 w-3.5" />
-                        Add Tx
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => router.push(`/transactions?account=${account.id}`)}
-                        title={`View transactions for ${account.name}`}
-                        className="gap-1 text-xs"
-                      >
-                        <ArrowLeftRight className="h-3.5 w-3.5" />
-                        History
-                      </Button>
+                      </SimpleTooltip>
+                      <SimpleTooltip content={`Record transaction in ${account.name}`}>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() =>
+                            openCreateTransactionDialog(undefined, account.id, true)
+                          }
+                          className="gap-1 text-xs"
+                        >
+                          <Plus className="h-3.5 w-3.5" />
+                          Add Tx
+                        </Button>
+                      </SimpleTooltip>
+                      <SimpleTooltip content={`View transactions for ${account.name}`}>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => router.push(`/transactions?account=${account.id}`)}
+                          className="gap-1 text-xs"
+                        >
+                          <ArrowLeftRight className="h-3.5 w-3.5" />
+                          History
+                        </Button>
+                      </SimpleTooltip>
                       <Button
                         type="button"
                         variant="ghost"

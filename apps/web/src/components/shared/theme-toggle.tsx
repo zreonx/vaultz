@@ -4,6 +4,7 @@ import React from "react";
 import { Laptop, Moon, Sun } from "lucide-react";
 import { useTheme, type ThemeMode } from "@/context/theme-context";
 import { Button } from "@/components/ui/button";
+import { SimpleTooltip } from "@/components/ui/tooltip";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -47,22 +48,23 @@ export function ThemeToggle({ variant = "icon" }: { variant?: "icon" | "segmente
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          className="h-9 w-9 p-0 rounded-xl hover:bg-[var(--surface-muted)] cursor-pointer"
-          title={`Current theme: ${theme} (${resolvedTheme})`}
-          aria-label="Toggle theme"
-        >
-          {resolvedTheme === "dark" ? (
-            <Moon className="h-4 w-4 text-[var(--foreground)] transition-transform" />
-          ) : (
-            <Sun className="h-4 w-4 text-[var(--foreground)] transition-transform" />
-          )}
-        </Button>
-      </DropdownMenuTrigger>
+      <SimpleTooltip content={`Theme: ${theme} (${resolvedTheme})`}>
+        <DropdownMenuTrigger asChild>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="h-9 w-9 p-0 rounded-xl hover:bg-[var(--surface-muted)] cursor-pointer"
+            aria-label="Toggle theme"
+          >
+            {resolvedTheme === "dark" ? (
+              <Moon className="h-4 w-4 text-[var(--foreground)] transition-transform" />
+            ) : (
+              <Sun className="h-4 w-4 text-[var(--foreground)] transition-transform" />
+            )}
+          </Button>
+        </DropdownMenuTrigger>
+      </SimpleTooltip>
       <DropdownMenuContent align="end" className="w-36">
         <DropdownMenuItem onClick={() => setTheme("light")} className="gap-2 text-xs">
           <Sun className="h-3.5 w-3.5 text-[var(--accent)]" />

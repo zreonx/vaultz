@@ -32,6 +32,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { SimpleTooltip } from "@/components/ui/tooltip";
 import {
   Table,
   TableBody,
@@ -344,12 +345,11 @@ export function DashboardOverviewFeature() {
                               {formatTableDate(tx.occurredOn)}
                             </div>
                             {tx.createdAtUtc && (
-                              <div
-                                className="text-[11px] text-[var(--muted-foreground)]"
-                                title={`Recorded at ${new Date(tx.createdAtUtc).toLocaleString()}`}
-                              >
-                                {formatRecordedTime(tx.createdAtUtc)}
-                              </div>
+                              <SimpleTooltip content={`Recorded at ${new Date(tx.createdAtUtc).toLocaleString()}`}>
+                                <div className="text-[11px] text-[var(--muted-foreground)] cursor-default">
+                                  {formatRecordedTime(tx.createdAtUtc)}
+                                </div>
+                              </SimpleTooltip>
                             )}
                           </TableCell>
                           <TableCell>
