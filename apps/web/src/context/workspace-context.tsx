@@ -45,6 +45,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { SearchableCurrencySelect } from "@/components/shared/searchable-currency-select";
+import { CurrencyIcon } from "@/components/shared/currency-icon";
 import {
   Select,
   SelectContent,
@@ -486,15 +487,20 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
               <Label htmlFor="global-acc-balance">
                 Starting Balance ({newCurrency})
               </Label>
-              <Input
-                id="global-acc-balance"
-                type="number"
-                step="0.01"
-                placeholder="0.00"
-                className="tabular-nums [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                value={newInitialBalance}
-                onChange={(e) => setNewInitialBalance(e.target.value)}
-              />
+              <div className="relative">
+                <div className="absolute left-3 top-2.5 h-4 w-4 flex items-center justify-center text-[var(--muted-foreground)] pointer-events-none">
+                  <CurrencyIcon currency={newCurrency} className="h-4 w-4 text-[var(--muted-foreground)]" />
+                </div>
+                <Input
+                  id="global-acc-balance"
+                  type="number"
+                  step="0.01"
+                  placeholder="0.00"
+                  className="pl-9 tabular-nums font-medium [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                  value={newInitialBalance}
+                  onChange={(e) => setNewInitialBalance(e.target.value)}
+                />
+              </div>
               <p className="text-[11px] text-[var(--muted-foreground)]">
                 All transactions inside this account will be recorded in{" "}
                 <strong>{newCurrency}</strong>.
@@ -633,16 +639,24 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
                     Amount Sent{" "}
                     {fromWorkspace ? `(${fromWorkspace.currencyCode})` : ""}
                   </Label>
-                  <Input
-                    id="transfer-amount"
-                    type="number"
-                    step="0.01"
-                    placeholder="0.00"
-                    className="tabular-nums [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                    value={transferAmount}
-                    onChange={(e) => setTransferAmount(e.target.value)}
-                    required
-                  />
+                  <div className="relative">
+                    <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground">
+                      <CurrencyIcon
+                        currency={fromWorkspace?.currencyCode ?? "USD"}
+                        className="h-4 w-4"
+                      />
+                    </div>
+                    <Input
+                      id="transfer-amount"
+                      type="number"
+                      step="0.01"
+                      placeholder="0.00"
+                      className="pl-8 tabular-nums [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                      value={transferAmount}
+                      onChange={(e) => setTransferAmount(e.target.value)}
+                      required
+                    />
+                  </div>
                 </div>
 
                 <div className="space-y-1.5">

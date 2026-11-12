@@ -122,7 +122,7 @@ export const LogRepaymentModal: React.FC<LogRepaymentModalProps> = ({
             setAmount(val);
             if (error) setError(null);
           }}
-          leftIcon="cash-outline"
+          currencyCode={curr}
           autoFocus
         />
 

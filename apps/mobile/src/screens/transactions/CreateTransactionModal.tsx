@@ -195,7 +195,7 @@ export const CreateTransactionModal: React.FC<CreateTransactionModalProps> = ({
             setAmount(val);
             if (error) setError(null);
           }}
-          leftIcon="cash-outline"
+          currencyCode={activeWorkspace?.currency || activeWorkspace?.currencyCode || 'USD'}
           autoFocus
         />
 

@@ -17,6 +17,7 @@ import { useCurrentUser } from "@/hooks/use-auth";
 import { useCategories } from "@/features/categories";
 import { CategoryType, type BudgetProgressResponse } from "@/types/api";
 import { AuthRequiredBanner } from "@/components/shared/auth-required-banner";
+import { CurrencyIcon } from "@/components/shared/currency-icon";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -226,9 +227,9 @@ export function BudgetsFeatureView() {
                   </Badge>
                 </div>
                 <div className="relative">
-                  <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-[var(--muted-foreground)]">
-                    {CURRENCY_METADATA[activeCurrencyCode as SupportedCurrencyCode]?.symbol ?? activeCurrencyCode}
-                  </span>
+                  <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-muted-foreground">
+                    <CurrencyIcon currency={activeCurrencyCode} className="h-4 w-4" />
+                  </div>
                   <Input
                     id="limitAmount"
                     type="number"

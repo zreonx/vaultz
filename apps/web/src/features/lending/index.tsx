@@ -50,6 +50,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
+import { CurrencyIcon } from "@/components/shared/currency-icon";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
@@ -604,16 +605,22 @@ export function LendingFeatureView() {
             {/* Amount */}
             <div className="space-y-1.5">
               <Label htmlFor="iou-amount">Amount ({activeCurrencyCode})</Label>
-              <Input
-                id="iou-amount"
-                type="number"
-                step="0.01"
-                min="0.01"
-                placeholder="0.00"
-                value={createAmount}
-                onChange={(e) => setCreateAmount(e.target.value)}
-                required
-              />
+              <div className="relative">
+                <div className="absolute left-3 top-2.5 h-4 w-4 flex items-center justify-center text-[var(--muted-foreground)] pointer-events-none">
+                  <CurrencyIcon currency={activeCurrencyCode} className="h-4 w-4 text-[var(--muted-foreground)]" />
+                </div>
+                <Input
+                  id="iou-amount"
+                  type="number"
+                  step="0.01"
+                  min="0.01"
+                  placeholder="0.00"
+                  className="pl-9 font-medium"
+                  value={createAmount}
+                  onChange={(e) => setCreateAmount(e.target.value)}
+                  required
+                />
+              </div>
             </div>
 
             {/* Due Date */}
@@ -712,17 +719,23 @@ export function LendingFeatureView() {
                 <Label htmlFor="pay-amount">
                   Repayment Amount ({selectedRecordForPayment.currencyCode})
                 </Label>
-                <Input
-                  id="pay-amount"
-                  type="number"
-                  step="0.01"
-                  min="0.01"
-                  max={selectedRecordForPayment.remainingAmount}
-                  placeholder="0.00"
-                  value={paymentAmount}
-                  onChange={(e) => setPaymentAmount(e.target.value)}
-                  required
-                />
+                <div className="relative">
+                  <div className="absolute left-3 top-2.5 h-4 w-4 flex items-center justify-center text-[var(--muted-foreground)] pointer-events-none">
+                    <CurrencyIcon currency={selectedRecordForPayment.currencyCode} className="h-4 w-4 text-[var(--muted-foreground)]" />
+                  </div>
+                  <Input
+                    id="pay-amount"
+                    type="number"
+                    step="0.01"
+                    min="0.01"
+                    max={selectedRecordForPayment.remainingAmount}
+                    placeholder="0.00"
+                    className="pl-9 font-medium"
+                    value={paymentAmount}
+                    onChange={(e) => setPaymentAmount(e.target.value)}
+                    required
+                  />
+                </div>
               </div>
 
               <div className="space-y-1.5">

@@ -225,7 +225,7 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
           keyboardType="numeric"
           value={initialBalance}
           onChangeText={setInitialBalance}
-          leftIcon="cash-outline"
+          currencyCode={currency}
         />
 
         <View style={styles.buttonRow}>

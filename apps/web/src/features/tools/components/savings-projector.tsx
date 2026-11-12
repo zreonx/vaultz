@@ -5,7 +5,6 @@ import {
   ArrowUpRight,
   Check,
   Copy,
-  DollarSign,
   Percent,
   PiggyBank,
   TrendingUp,
@@ -23,6 +22,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SearchableCurrencySelect } from "@/components/shared/searchable-currency-select";
+import { CurrencyIcon } from "@/components/shared/currency-icon";
 import { toast } from "@/components/ui/toast";
 
 export function SavingsProjector() {
@@ -157,7 +157,9 @@ export function SavingsProjector() {
                 </span>
               </Label>
               <div className="relative">
-                <DollarSign className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                <div className="absolute left-3 top-2.5 h-4 w-4 flex items-center justify-center text-muted-foreground pointer-events-none">
+                  <CurrencyIcon currency={currency} className="h-4 w-4 text-muted-foreground" />
+                </div>
                 <Input
                   type="number"
                   min="0"
@@ -179,7 +181,9 @@ export function SavingsProjector() {
                 </span>
               </Label>
               <div className="relative">
-                <DollarSign className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+                <div className="absolute left-3 top-2.5 h-4 w-4 flex items-center justify-center text-muted-foreground pointer-events-none">
+                  <CurrencyIcon currency={currency} className="h-4 w-4 text-muted-foreground" />
+                </div>
                 <Input
                   type="number"
                   min="0"

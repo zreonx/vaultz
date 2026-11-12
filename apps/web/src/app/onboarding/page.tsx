@@ -21,6 +21,7 @@ import {
   TrendingUp,
   Wallet,
 } from "lucide-react";
+import { CurrencyIcon } from "@/components/shared/currency-icon";
 import { apiClient } from "@/lib/api/client";
 import {
   CURRENCY_METADATA,
@@ -626,8 +627,7 @@ export default function OnboardingPage() {
                   </Label>
                   <div className="relative">
                     <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-[var(--muted-foreground)]">
-                      {CURRENCY_METADATA[accountCurrency as SupportedCurrencyCode]
-                        ?.symbol ?? accountCurrency}
+                      <CurrencyIcon currency={accountCurrency} className="h-4 w-4" />
                     </span>
                     <Input
                       id="initialBalance"

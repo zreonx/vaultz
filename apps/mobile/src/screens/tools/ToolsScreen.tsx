@@ -241,6 +241,7 @@ export const ToolsScreen: React.FC = () => {
   };
 
   // --- Loan Calculator State ---
+  const [loanCurr, setLoanCurr] = useState<string>(activeWorkspace?.currency || 'USD');
   const [loanPrincipal, setLoanPrincipal] = useState<string>('5000');
   const [loanRate, setLoanRate] = useState<string>('5.0');
   const [loanMonths, setLoanMonths] = useState<string>('12');
@@ -269,6 +270,7 @@ export const ToolsScreen: React.FC = () => {
   }, [loanPrincipalNum, loanRateNum, loanMonthsNum]);
 
   // --- Savings Projector State ---
+  const [savingsCurr, setSavingsCurr] = useState<string>(activeWorkspace?.currency || 'USD');
   const [savingsInitial, setSavingsInitial] = useState<string>('1000');
   const [savingsMonthly, setSavingsMonthly] = useState<string>('200');
   const [savingsYears, setSavingsYears] = useState<string>('5');
@@ -382,7 +384,7 @@ export const ToolsScreen: React.FC = () => {
                 keyboardType="numeric"
                 value={amount}
                 onChangeText={setAmount}
-                leftIcon="cash-outline"
+                currencyCode={fromCurr}
                 placeholder="100.00"
               />
 
@@ -754,12 +756,60 @@ export const ToolsScreen: React.FC = () => {
                 Supports personal interest-free IOUs (0% APR) and bank loans
               </Text>
 
+              {/* Loan Currency Selector */}
+              <View style={styles.currSection}>
+                <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>
+                  LOAN CURRENCY
+                </Text>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.chipScroll}
+                >
+                  {SUPPORTED_CURRENCIES.map((c) => {
+                    const isSelected = loanCurr === c;
+                    return (
+                      <PressableScale
+                        key={c}
+                        style={[
+                          styles.currChip,
+                          {
+                            backgroundColor: isSelected
+                              ? colors.accentSoft
+                              : isDark
+                              ? colors.surfaceSubtle
+                              : colors.surfaceMuted,
+                            borderColor: isSelected ? colors.accent : colors.borderSubtle,
+                          },
+                        ]}
+                        onPress={() => {
+                          haptics.selection();
+                          setLoanCurr(c);
+                        }}
+                      >
+                        <Text
+                          style={[
+                            styles.currChipText,
+                            {
+                              color: isSelected ? colors.accent : colors.textSecondary,
+                              fontWeight: isSelected ? '700' : '500',
+                            },
+                          ]}
+                        >
+                          {c}
+                        </Text>
+                      </PressableScale>
+                    );
+                  })}
+                </ScrollView>
+              </View>
+
               <Input
-                label="Principal Amount"
+                label={`Principal Amount (${loanCurr})`}
                 keyboardType="numeric"
                 value={loanPrincipal}
                 onChangeText={setLoanPrincipal}
-                leftIcon="cash-outline"
+                currencyCode={loanCurr}
                 placeholder="5000"
               />
 
@@ -796,13 +846,13 @@ export const ToolsScreen: React.FC = () => {
                   ESTIMATED MONTHLY PAYMENT
                 </Text>
                 <Text style={[styles.resultValue, { color: colors.accent }]}>
-                  {formatMoney(loanCalculation.monthlyPayment, activeWorkspace?.currency)}
+                  {formatMoney(loanCalculation.monthlyPayment, loanCurr)}
                 </Text>
                 <Text style={[styles.rateInfo, { color: colors.textMuted }]}>
                   Total Interest:{' '}
-                  {formatMoney(loanCalculation.totalInterest, activeWorkspace?.currency)} •
+                  {formatMoney(loanCalculation.totalInterest, loanCurr)} •
                   Total Repaid:{' '}
-                  {formatMoney(loanCalculation.totalRepayment, activeWorkspace?.currency)}
+                  {formatMoney(loanCalculation.totalRepayment, loanCurr)}
                 </Text>
               </View>
             </Card>
@@ -820,21 +870,69 @@ export const ToolsScreen: React.FC = () => {
                 Forecast future net worth and compound interest returns
               </Text>
 
+              {/* Savings Currency Selector */}
+              <View style={styles.currSection}>
+                <Text style={[styles.inputLabel, { color: colors.textSecondary }]}>
+                  SAVINGS CURRENCY
+                </Text>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.chipScroll}
+                >
+                  {SUPPORTED_CURRENCIES.map((c) => {
+                    const isSelected = savingsCurr === c;
+                    return (
+                      <PressableScale
+                        key={c}
+                        style={[
+                          styles.currChip,
+                          {
+                            backgroundColor: isSelected
+                              ? colors.accentSoft
+                              : isDark
+                              ? colors.surfaceSubtle
+                              : colors.surfaceMuted,
+                            borderColor: isSelected ? colors.accent : colors.borderSubtle,
+                          },
+                        ]}
+                        onPress={() => {
+                          haptics.selection();
+                          setSavingsCurr(c);
+                        }}
+                      >
+                        <Text
+                          style={[
+                            styles.currChipText,
+                            {
+                              color: isSelected ? colors.accent : colors.textSecondary,
+                              fontWeight: isSelected ? '700' : '500',
+                            },
+                          ]}
+                        >
+                          {c}
+                        </Text>
+                      </PressableScale>
+                    );
+                  })}
+                </ScrollView>
+              </View>
+
               <Input
-                label="Starting Deposit"
+                label={`Starting Deposit (${savingsCurr})`}
                 keyboardType="numeric"
                 value={savingsInitial}
                 onChangeText={setSavingsInitial}
-                leftIcon="wallet-outline"
+                currencyCode={savingsCurr}
                 placeholder="1000"
               />
 
               <Input
-                label="Monthly Contribution"
+                label={`Monthly Contribution (${savingsCurr})`}
                 keyboardType="numeric"
                 value={savingsMonthly}
                 onChangeText={setSavingsMonthly}
-                leftIcon="cash-outline"
+                currencyCode={savingsCurr}
                 placeholder="200"
               />
 
@@ -871,18 +969,18 @@ export const ToolsScreen: React.FC = () => {
                   FUTURE VALUE IN {savingsYears} YEARS
                 </Text>
                 <Text style={[styles.resultValue, { color: colors.accent }]}>
-                  {formatMoney(savingsCalculation.futureValue, activeWorkspace?.currency)}
+                  {formatMoney(savingsCalculation.futureValue, savingsCurr)}
                 </Text>
                 <Text style={[styles.rateInfo, { color: colors.textMuted }]}>
                   Your Deposits:{' '}
                   {formatMoney(
                     savingsCalculation.totalContributed,
-                    activeWorkspace?.currency
+                    savingsCurr
                   )}{' '}
                   • Compound Profit:{' '}
                   {formatMoney(
                     savingsCalculation.totalInterest,
-                    activeWorkspace?.currency
+                    savingsCurr
                   )}
                 </Text>
               </View>

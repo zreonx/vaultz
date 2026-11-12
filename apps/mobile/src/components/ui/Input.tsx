@@ -11,12 +11,18 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/context/ThemeContext';
 import { typography, radius, spacing } from '@/theme/tokens';
 import { haptics } from '@/utils/haptics';
+import {
+  CURRENCY_METADATA,
+  type SupportedCurrencyCode,
+} from '@/utils/currency';
 
 interface InputProps extends TextInputProps {
   label?: string;
   error?: string;
   hint?: string;
   leftIcon?: keyof typeof Ionicons.glyphMap;
+  currencyCode?: string;
+  currencySymbol?: string;
   rightIcon?: keyof typeof Ionicons.glyphMap;
   onRightIconPress?: () => void;
   isPassword?: boolean;
@@ -27,6 +33,8 @@ export const Input: React.FC<InputProps> = ({
   error,
   hint,
   leftIcon,
+  currencyCode,
+  currencySymbol,
   rightIcon,
   onRightIconPress,
   isPassword = false,
@@ -40,6 +48,88 @@ export const Input: React.FC<InputProps> = ({
   const handlePasswordToggle = () => {
     haptics.light();
     setShowPassword((prev) => !prev);
+  };
+
+  const renderLeading = () => {
+    if (currencyCode) {
+      const upper = currencyCode.toUpperCase();
+      const iconColor = error
+        ? colors.danger
+        : isFocused
+        ? colors.accent
+        : colors.textSecondary;
+
+      if (upper === 'USD') {
+        return (
+          <Ionicons
+            name="logo-usd"
+            size={18}
+            color={iconColor}
+            style={[styles.leftIcon, props.multiline && styles.leftIconMultiline]}
+          />
+        );
+      }
+      if (upper === 'EUR') {
+        return (
+          <Ionicons
+            name="logo-euro"
+            size={18}
+            color={iconColor}
+            style={[styles.leftIcon, props.multiline && styles.leftIconMultiline]}
+          />
+        );
+      }
+      if (upper === 'JPY') {
+        return (
+          <Ionicons
+            name="logo-yen"
+            size={18}
+            color={iconColor}
+            style={[styles.leftIcon, props.multiline && styles.leftIconMultiline]}
+          />
+        );
+      }
+
+      const symbol =
+        currencySymbol ||
+        CURRENCY_METADATA[upper as SupportedCurrencyCode]?.symbol ||
+        upper;
+
+      return (
+        <View
+          style={[
+            styles.currencyBadge,
+            props.multiline && styles.currencyBadgeMultiline,
+          ]}
+        >
+          <Text
+            style={[
+              styles.currencyBadgeText,
+              { color: iconColor },
+              symbol.length > 2 && styles.currencyBadgeTextSmall,
+            ]}
+            numberOfLines={1}
+          >
+            {symbol}
+          </Text>
+        </View>
+      );
+    }
+
+    if (leftIcon) {
+      return (
+        <Ionicons
+          name={leftIcon}
+          size={18}
+          color={
+            error ? colors.danger : isFocused ? colors.accent : colors.textMuted
+          }
+          style={[styles.leftIcon, props.multiline && styles.leftIconMultiline]}
+        />
+      );
+    }
+
+    return null;
   };
 
   return (
@@ -65,16 +155,7 @@ export const Input: React.FC<InputProps> = ({
           },
         ]}
       >
-        {leftIcon && (
-          <Ionicons
-            name={leftIcon}
-            size={18}
-            color={
-              error ? colors.danger : isFocused ? colors.accent : colors.textMuted
-            }
-            style={[styles.leftIcon, props.multiline && styles.leftIconMultiline]}
-          />
-        )}
+        {renderLeading()}
 
         <TextInput
           style={[
@@ -159,6 +240,25 @@ const styles = StyleSheet.create({
   },
   leftIconMultiline: {
     marginTop: 2,
+  },
+  currencyBadge: {
+    minWidth: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: spacing.sm,
+  },
+  currencyBadgeMultiline: {
+    marginTop: 2,
+  },
+  currencyBadgeText: {
+    fontSize: 16,
+    fontWeight: '700',
+    textAlign: 'center',
+    includeFontPadding: false,
+  },
+  currencyBadgeTextSmall: {
+    fontSize: 12,
+    fontWeight: '700',
   },
   rightIconButton: {
     padding: spacing.xs,

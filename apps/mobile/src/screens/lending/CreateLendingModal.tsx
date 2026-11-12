@@ -193,7 +193,7 @@ export const CreateLendingModal: React.FC<CreateLendingModalProps> = ({
             setAmount(val);
             if (error) setError(null);
           }}
-          leftIcon="cash-outline"
+          currencyCode={activeWorkspace?.currency || activeWorkspace?.currencyCode || 'USD'}
         />
 
         <Input

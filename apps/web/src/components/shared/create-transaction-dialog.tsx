@@ -43,6 +43,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { CurrencyIcon } from "@/components/shared/currency-icon";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import {
@@ -519,14 +520,22 @@ export function CreateTransactionDialog({
               <Label htmlFor="tx-amount">
                 Amount ({sourceAccount?.currencyCode ?? "USD"})
               </Label>
-              <Input
-                id="tx-amount"
-                type="number"
-                step="0.01"
-                placeholder="0.00"
-                className="tabular-nums [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                {...register("amount")}
-              />
+              <div className="relative">
+                <div className="absolute left-3 top-2.5 h-4 w-4 flex items-center justify-center text-[var(--muted-foreground)] pointer-events-none">
+                  <CurrencyIcon
+                    currency={sourceAccount?.currencyCode ?? "USD"}
+                    className="h-4 w-4 text-[var(--muted-foreground)]"
+                  />
+                </div>
+                <Input
+                  id="tx-amount"
+                  type="number"
+                  step="0.01"
+                  placeholder="0.00"
+                  className="pl-9 font-medium tabular-nums [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                  {...register("amount")}
+                />
+              </div>
               {errors.amount && (
                 <p className="text-xs text-[var(--danger)]">
                   {errors.amount.message}
@@ -539,14 +548,22 @@ export function CreateTransactionDialog({
                 <Label htmlFor="tx-dest-amount">
                   Destination ({destAccount?.currencyCode})
                 </Label>
-                <Input
-                  id="tx-dest-amount"
-                  type="number"
-                  step="0.01"
-                  placeholder="0.00"
-                  className="tabular-nums [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
-                  {...register("destinationAmount")}
-                />
+                <div className="relative">
+                  <div className="absolute left-3 top-2.5 h-4 w-4 flex items-center justify-center text-[var(--muted-foreground)] pointer-events-none">
+                    <CurrencyIcon
+                      currency={destAccount?.currencyCode ?? "USD"}
+                      className="h-4 w-4 text-[var(--muted-foreground)]"
+                    />
+                  </div>
+                  <Input
+                    id="tx-dest-amount"
+                    type="number"
+                    step="0.01"
+                    placeholder="0.00"
+                    className="pl-9 font-medium tabular-nums [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+                    {...register("destinationAmount")}
+                  />
+                </div>
               </div>
             )}
           </div>

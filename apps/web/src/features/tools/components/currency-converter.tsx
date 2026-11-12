@@ -31,6 +31,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { SearchableCurrencySelect } from "@/components/shared/searchable-currency-select";
+import { CurrencyIcon } from "@/components/shared/currency-icon";
 import { toast } from "@/components/ui/toast";
 
 const POPULAR_CONVERSION_CURRENCIES: SupportedCurrencyCode[] = [
@@ -157,16 +158,21 @@ export function CurrencyConverter() {
                 </span>
               </div>
               <div className="grid grid-cols-[1fr,130px] sm:grid-cols-[1fr,160px] gap-2">
-                <Input
-                  id="conv-amount"
-                  type="number"
-                  step="any"
-                  min="0"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  placeholder="0.00"
-                  className="h-11 text-base font-semibold tabular-nums"
-                />
+                <div className="relative">
+                  <div className="absolute left-3.5 top-3 h-5 w-5 flex items-center justify-center text-[var(--muted-foreground)] pointer-events-none">
+                    <CurrencyIcon currency={fromCurrency} className="h-4 w-4 text-[var(--muted-foreground)]" />
+                  </div>
+                  <Input
+                    id="conv-amount"
+                    type="number"
+                    step="any"
+                    min="0"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    placeholder="0.00"
+                    className="h-11 pl-10 text-base font-semibold tabular-nums"
+                  />
+                </div>
                 <SearchableCurrencySelect
                   value={fromCurrency}
                   onValueChange={setFromCurrency}
@@ -201,8 +207,9 @@ export function CurrencyConverter() {
                 </span>
               </div>
               <div className="grid grid-cols-[1fr,130px] sm:grid-cols-[1fr,160px] gap-2">
-                <div className="flex h-11 items-center rounded-xl border border-[var(--border)] bg-[var(--surface-muted)]/70 px-3.5 text-base font-bold tabular-nums text-[var(--foreground)] overflow-hidden text-ellipsis">
-                  {formatMoney(convertedAmount, toCurrency)}
+                <div className="flex h-11 items-center gap-2 rounded-xl border border-[var(--border)] bg-[var(--surface-muted)]/70 px-3.5 text-base font-bold tabular-nums text-[var(--foreground)] overflow-hidden text-ellipsis">
+                  <CurrencyIcon currency={toCurrency} className="h-4 w-4 text-[var(--accent)] shrink-0" />
+                  <span className="truncate">{formatMoney(convertedAmount, toCurrency)}</span>
                 </div>
                 <SearchableCurrencySelect
                   value={toCurrency}
