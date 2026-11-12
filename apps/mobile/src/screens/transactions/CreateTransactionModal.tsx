@@ -108,7 +108,7 @@ export const CreateTransactionModal: React.FC<CreateTransactionModalProps> = ({
         type,
         amount: parsedAmount,
         category,
-        description: description.trim() || undefined,
+        description: description.trim() || category || type,
         transactionDate: new Date().toISOString(),
         destinationAccountId: type === 'Transfer' ? destinationAccountId : undefined,
         destinationAccountName: destAccount?.name,

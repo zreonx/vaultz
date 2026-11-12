@@ -66,7 +66,7 @@ public sealed record CreateTransactionCommand(
     TransactionType Type,
     decimal Amount,
     DateOnly OccurredOn,
-    string Description,
+    string? Description = null,
     string? Notes = null,
     decimal? DestinationAmount = null,
     Guid? BudgetSliceId = null,
@@ -79,7 +79,7 @@ public sealed class CreateTransactionValidator : AbstractValidator<CreateTransac
         RuleFor(x => x.AccountId).NotEmpty();
         RuleFor(x => x.Type).IsInEnum();
         RuleFor(x => x.Amount).GreaterThan(0m);
-        RuleFor(x => x.Description).NotEmpty().MaximumLength(200);
+        RuleFor(x => x.Description).MaximumLength(200);
         RuleFor(x => x.Notes).MaximumLength(500);
 
         When(x => x.Type == TransactionType.Transfer, () =>
@@ -105,7 +105,7 @@ public sealed record UpdateTransactionCommand(
     TransactionType Type,
     decimal Amount,
     DateOnly OccurredOn,
-    string Description,
+    string? Description = null,
     string? Notes = null,
     decimal? DestinationAmount = null);
 
@@ -117,7 +117,7 @@ public sealed class UpdateTransactionValidator : AbstractValidator<UpdateTransac
         RuleFor(x => x.AccountId).NotEmpty();
         RuleFor(x => x.Type).IsInEnum();
         RuleFor(x => x.Amount).GreaterThan(0m);
-        RuleFor(x => x.Description).NotEmpty().MaximumLength(200);
+        RuleFor(x => x.Description).MaximumLength(200);
         RuleFor(x => x.Notes).MaximumLength(500);
 
         When(x => x.Type == TransactionType.Transfer, () =>
@@ -388,6 +388,12 @@ public sealed class TransactionHandlers
                 }
             }
 
+            var effectiveDescription = !string.IsNullOrWhiteSpace(command.Description)
+                ? command.Description.Trim()
+                : (categoryMap.TryGetValue(command.CategoryId ?? Guid.Empty, out var cat)
+                    ? cat.Name
+                    : (command.Type == TransactionType.Transfer ? "Transfer" : command.Type.ToString()));
+
             created = FinancialTransaction.CreateAndApply(
                 userId,
                 sourceAccount,
@@ -396,7 +402,7 @@ public sealed class TransactionHandlers
                 command.Type,
                 command.Amount,
                 command.OccurredOn,
-                command.Description,
+                effectiveDescription,
                 command.Notes,
                 command.DestinationAmount,
                 command.BudgetSliceId,
@@ -536,6 +542,14 @@ public sealed class TransactionHandlers
                 categoryMap[category.Id] = category;
             }
 
+            var effectiveDescription = !string.IsNullOrWhiteSpace(command.Description)
+                ? command.Description.Trim()
+                : (categoryMap.TryGetValue(command.CategoryId ?? Guid.Empty, out var cat)
+                    ? cat.Name
+                    : (!string.IsNullOrWhiteSpace(transaction.Description)
+                        ? transaction.Description
+                        : (command.Type == TransactionType.Transfer ? "Transfer" : command.Type.ToString())));
+
             transaction.UpdateAndReconcile(
                 prevSource,
                 prevDest,
@@ -545,7 +559,7 @@ public sealed class TransactionHandlers
                 command.Type,
                 command.Amount,
                 command.OccurredOn,
-                command.Description,
+                effectiveDescription,
                 command.Notes,
                 command.DestinationAmount);
 

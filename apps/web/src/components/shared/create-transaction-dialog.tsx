@@ -68,7 +68,7 @@ const createTransactionSchema = z
     amount: z.coerce.number().positive("Amount must be greater than zero"),
     destinationAmount: z.coerce.number().optional(),
     occurredOn: z.string().min(1, "Date is required"),
-    description: z.string().trim().min(1, "Description is required").max(200),
+    description: z.string().trim().max(200).optional(),
   })
   .superRefine((data, ctx) => {
     if (Number(data.type) === TransactionType.Transfer) {
@@ -243,7 +243,14 @@ export function CreateTransactionDialog({
             ? values.destinationAmount
             : null,
         occurredOn: values.occurredOn,
-        description: values.description,
+        description:
+          values.description?.trim() ||
+          categories.find((c) => c.id === values.categoryId)?.name ||
+          (Number(values.type) === TransactionType.Transfer
+            ? "Transfer"
+            : Number(values.type) === TransactionType.Income
+              ? "Income"
+              : "Expense"),
       }),
     onSuccess: (created) => {
       void queryClient.invalidateQueries({ queryKey: TRANSACTIONS_QUERY_KEY });

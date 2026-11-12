@@ -70,8 +70,8 @@ public sealed class TransactionsController : ControllerBase
         TransactionType Type,
         decimal Amount,
         DateOnly OccurredOn,
-        string Description,
-        string? Notes);
+        string? Description = null,
+        string? Notes = null);
 
     [HttpPut("{id:guid}")]
     [ProducesResponseType(typeof(TransactionResponse), StatusCodes.Status200OK)]
