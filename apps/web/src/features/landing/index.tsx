@@ -713,7 +713,7 @@ export function LandingPageFeature() {
                   <Link href="/transactions">Transactions</Link>
                 </Button>
                 <Button asChild variant="ghost" size="sm">
-                  <Link href="/budgets">Monthly Finance</Link>
+                  <Link href="/monthly-finance">Monthly Finance</Link>
                 </Button>
                 <Button asChild variant="ghost" size="sm">
                   <Link href="/reports">Reports</Link>

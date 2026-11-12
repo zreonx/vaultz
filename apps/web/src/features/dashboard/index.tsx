@@ -407,7 +407,7 @@ export function DashboardOverviewFeature() {
                     </CardDescription>
                   </div>
                   <Button asChild variant="ghost" size="sm">
-                    <Link href="/budgets">
+                    <Link href="/monthly-finance">
                       Manage <ArrowRight className="h-3.5 w-3.5" />
                     </Link>
                   </Button>

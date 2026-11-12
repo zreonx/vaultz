@@ -447,7 +447,7 @@ public sealed class TransactionHandlers
                             "Budget Limit Exceeded! ⚠️",
                             $"Monthly spending for '{catName}' is {totalSpent:N2} {sourceAccount.CurrencyCode}, exceeding your budget of {budget.LimitAmount:N2} {sourceAccount.CurrencyCode}.",
                             NotificationType.BudgetWarning,
-                            actionUrl: "/budgets",
+                            actionUrl: "/monthly-finance",
                             cancellationToken: ct);
                     }
                     else if (totalSpent >= budget.LimitAmount * 0.85m)
@@ -457,7 +457,7 @@ public sealed class TransactionHandlers
                             "Budget Warning (85% Reached)",
                             $"You have spent {totalSpent:N2} of your {budget.LimitAmount:N2} {sourceAccount.CurrencyCode} limit for '{catName}'.",
                             NotificationType.BudgetWarning,
-                            actionUrl: "/budgets",
+                            actionUrl: "/monthly-finance",
                             cancellationToken: ct);
                     }
                 }

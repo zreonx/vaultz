@@ -1,5 +1,5 @@
-import { BudgetsFeatureView } from "@/features/budgets";
+import { redirect } from "next/navigation";
 
-export default function BudgetsPage() {
-  return <BudgetsFeatureView />;
+export default function BudgetsRedirectPage() {
+  redirect("/monthly-finance");
 }

@@ -26,7 +26,7 @@ export const ALL_ACCOUNTS_NAVIGATION: NavItem[] = [
   },
   {
     title: "Monthly Finance",
-    href: "/budgets",
+    href: "/monthly-finance",
     status: "active",
     description: "Funds partition, purpose vaults & monthly allowance slices",
     scope: "portfolio",
@@ -56,7 +56,7 @@ export const SHARED_NAVIGATION = ALL_ACCOUNTS_NAVIGATION;
 export const ACCOUNT_NAVIGATION: NavItem[] = [
   {
     title: "Monthly Finance",
-    href: "/budgets",
+    href: "/monthly-finance",
     status: "active",
     description: "Funds partition, purpose vaults & monthly allowance slices",
     scope: "account",
