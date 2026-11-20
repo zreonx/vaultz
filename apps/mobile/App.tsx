@@ -1,4 +1,5 @@
 import React from 'react';
+import { View } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -19,16 +20,18 @@ const queryClient = new QueryClient({
 });
 
 function InnerApp() {
-  const { isDark } = useTheme();
+  const { colors, isDark } = useTheme();
   const { refetchAll } = useWorkspace();
 
   return (
-    <OfflineSyncProvider onSyncSuccess={refetchAll}>
-      <TutorialProvider>
-        <StatusBar style={isDark ? "light" : "dark"} />
-        <RootNavigator />
-      </TutorialProvider>
-    </OfflineSyncProvider>
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
+      <OfflineSyncProvider onSyncSuccess={refetchAll}>
+        <TutorialProvider>
+          <StatusBar style={isDark ? "light" : "dark"} />
+          <RootNavigator />
+        </TutorialProvider>
+      </OfflineSyncProvider>
+    </View>
   );
 }
 

@@ -6,14 +6,18 @@
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
+    "backgroundColor": "#0B0F17",
+    "primaryColor": "#0B0F17",
     "jsEngine": "hermes",
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.vaultz.mobile",
+      "backgroundColor": "#0B0F17",
       "jsEngine": "hermes"
     },
     "android": {
       "package": "com.vaultz.mobile",
+      "backgroundColor": "#0B0F17",
       "jsEngine": "hermes",
       "adaptiveIcon": {
         "backgroundColor": "#0B0F17",

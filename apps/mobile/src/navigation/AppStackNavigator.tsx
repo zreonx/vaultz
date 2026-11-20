@@ -1,6 +1,7 @@
 import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { NavigatorScreenParams } from '@react-navigation/native';
+import { useTheme } from '@/context/ThemeContext';
 import { MainTabNavigator, MainTabParamList } from './MainTabNavigator';
 import { MonthlyFinanceScreen } from '@/screens/finance/MonthlyFinanceScreen';
 import { ReportsScreen } from '@/screens/reports/ReportsScreen';
@@ -32,11 +33,14 @@ export type AppStackParamList = {
 const Stack = createNativeStackNavigator<AppStackParamList>();
 
 export const AppStackNavigator: React.FC = () => {
+  const { colors } = useTheme();
+
   return (
     <Stack.Navigator
       screenOptions={{
         headerShown: false,
         animation: 'slide_from_right',
+        contentStyle: { backgroundColor: colors.background },
       }}
     >
       <Stack.Screen name="MainTabs" component={MainTabNavigator} />

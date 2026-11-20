@@ -12,6 +12,7 @@ import { transactionsApi, CreateTransactionRequest } from '@/api/transactions';
 import { ApiError, getApiBaseUrl } from '@/api/client';
 import { useAuth } from '@/context/AuthContext';
 import { haptics } from '@/utils/haptics';
+import { showSyncNotification } from '@/utils/notifications';
 
 export interface QueuedTransaction {
   id: string;
@@ -230,9 +231,18 @@ export const OfflineSyncProvider: React.FC<{
 
     if (syncedCount > 0) {
       haptics.success();
+      void showSyncNotification(
+        'Vaultz Cloud Sync Complete',
+        `Successfully synced ${syncedCount} offline transaction${syncedCount > 1 ? 's' : ''} to cloud.`
+      );
       if (onSyncSuccess) {
         await onSyncSuccess();
       }
+    } else if (failedCount > 0) {
+      void showSyncNotification(
+        'Vaultz Sync Alert',
+        `${failedCount} transaction${failedCount > 1 ? 's' : ''} could not sync with server.`
+      );
     }
 
     return { synced: syncedCount, failed: failedCount };

@@ -51,6 +51,7 @@ export const MainTabNavigator: React.FC = () => {
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
+        sceneStyle: { backgroundColor: colors.background },
         tabBarStyle: [
           styles.tabBar,
           {

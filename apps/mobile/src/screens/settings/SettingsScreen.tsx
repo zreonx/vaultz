@@ -23,11 +23,7 @@ import { useOfflineSync } from "@/context/OfflineSyncContext";
 import { useTutorial } from "@/context/TutorialContext";
 import { useTheme, type ThemeMode } from "@/context/ThemeContext";
 import { authApi } from "@/api/auth";
-import {
-  getApiBaseUrl,
-  resetApiBaseUrl,
-  setApiBaseUrl,
-} from "@/api/client";
+import { showSyncNotification } from "@/utils/notifications";
 import { SUPPORTED_CURRENCIES, SupportedCurrencyCode } from "@/utils/currency";
 import { radius, spacing, typography } from "@/theme/tokens";
 import { haptics } from "@/utils/haptics";
@@ -74,14 +70,8 @@ export const SettingsScreen: React.FC = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [isSavingPassword, setIsSavingPassword] = useState(false);
 
-  // API Endpoint modal
-  const [apiModalVisible, setApiModalVisible] = useState(false);
-  const [apiUrlInput, setApiUrlInput] = useState(getApiBaseUrl());
-  const [currentApiUrl, setCurrentApiUrl] = useState(getApiBaseUrl());
-
   useFocusEffect(
     useCallback(() => {
-      setCurrentApiUrl(getApiBaseUrl());
       void checkConnectivity();
     }, [checkConnectivity])
   );
@@ -181,43 +171,6 @@ export const SettingsScreen: React.FC = () => {
     }
   };
 
-  const openApiModal = () => {
-    haptics.light();
-    setApiUrlInput(getApiBaseUrl());
-    setApiModalVisible(true);
-  };
-
-  const handleSaveApiUrl = async () => {
-    const cleaned = apiUrlInput.trim().replace(/\/+$/, "");
-    if (!/^https?:\/\/.+/i.test(cleaned)) {
-      Alert.alert(
-        "Invalid URL",
-        "Enter a valid http:// or https:// server address."
-      );
-      return;
-    }
-    await setApiBaseUrl(cleaned);
-    const updated = getApiBaseUrl();
-    setCurrentApiUrl(updated);
-    setApiModalVisible(false);
-    const ok = await checkConnectivity();
-    Alert.alert(
-      "Endpoint Updated",
-      ok
-        ? `Connected to ${updated}`
-        : `Saved ${updated}. Health check did not respond yet.`
-    );
-  };
-
-  const handleResetApiUrl = async () => {
-    await resetApiBaseUrl();
-    const updated = getApiBaseUrl();
-    setCurrentApiUrl(updated);
-    setApiUrlInput(updated);
-    setApiModalVisible(false);
-    await checkConnectivity();
-  };
-
   const handleSignOut = () => {
     Alert.alert("Sign Out", "Are you sure you want to sign out from Vaultz?", [
       { text: "Cancel", style: "cancel" },
@@ -247,10 +200,22 @@ export const SettingsScreen: React.FC = () => {
         "Partial Sync",
         `${result.synced} synced, ${result.failed} could not sync yet.`
       );
+      void showSyncNotification(
+        "Vaultz Sync Alert",
+        `${result.failed} transaction(s) could not sync with cloud.`
+      );
     } else if (result.synced > 0) {
       Alert.alert("Sync Complete", `${result.synced} offline transaction(s) synced.`);
+      void showSyncNotification(
+        "Vaultz Cloud Sync Complete",
+        `Successfully synced ${result.synced} transaction(s) to cloud.`
+      );
     } else {
       Alert.alert("Up to Date", "Your accounts and transactions are in sync with the cloud.");
+      void showSyncNotification(
+        "Vaultz Cloud Sync",
+        "All accounts and transactions are in sync with cloud."
+      );
     }
   };
 
@@ -579,21 +544,6 @@ export const SettingsScreen: React.FC = () => {
               />
             )}
           </View>
-
-          <TouchableOpacity onPress={openApiModal} style={styles.navRow}>
-            <View style={styles.rowLeft}>
-              <Ionicons name="server-outline" size={20} color={colors.textSecondary} />
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.rowTitle, { color: colors.textPrimary }]}>
-                  API Server Endpoint
-                </Text>
-                <Text style={[styles.rowSub, { color: colors.textMuted }]} numberOfLines={1}>
-                  {currentApiUrl}
-                </Text>
-              </View>
-            </View>
-            <Ionicons name="create-outline" size={18} color={colors.textMuted} />
-          </TouchableOpacity>
         </Card>
 
         <Button
@@ -709,37 +659,6 @@ export const SettingsScreen: React.FC = () => {
             placeholder="Re-enter new password"
             value={confirmPassword}
             onChangeText={setConfirmPassword}
-            containerStyle={{ marginBottom: 0 }}
-          />
-        </View>
-      </ModalSheet>
-
-      {/* Edit API Endpoint Modal */}
-      <ModalSheet
-        visible={apiModalVisible}
-        onClose={() => setApiModalVisible(false)}
-        title="API Endpoint"
-        subtitle="Point the mobile client to your Vaultz API URL"
-        maxHeightRatio={0.8}
-        footer={
-          <View style={{ gap: spacing.sm }}>
-            <Button title="Save & Test Connection" onPress={handleSaveApiUrl} />
-            <Button
-              title="Reset to Default"
-              variant="secondary"
-              onPress={handleResetApiUrl}
-            />
-          </View>
-        }
-      >
-        <View style={styles.modalBody}>
-          <Input
-            label="Base URL"
-            placeholder="http://192.168.1.10:5180"
-            value={apiUrlInput}
-            onChangeText={setApiUrlInput}
-            autoCapitalize="none"
-            autoCorrect={false}
             containerStyle={{ marginBottom: 0 }}
           />
         </View>
