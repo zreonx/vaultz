@@ -2,7 +2,8 @@ import { Platform } from "react-native";
 import Constants from "expo-constants";
 import { secureStore } from "@/security/secureStore";
 
-const DEFAULT_LAN_API_URL = "http://192.168.1.40:5180";
+const DEFAULT_API_URL =
+  process.env.EXPO_PUBLIC_API_URL || "https://vaultz-api.zreon.space";
 
 function isTunnelHost(host: string): boolean {
   return (
@@ -16,31 +17,28 @@ function isTunnelHost(host: string): boolean {
 
 // Dynamic default API base URL:
 // - Web: uses current window hostname (e.g. localhost or local IP) with port 5180
-// - Native Android / iOS: dynamically detects Metro debugger host IP, or defaults to LAN IP / emulator loopback
+// - Native Android / iOS: defaults to live backend https://vaultz-api.zreon.space or local debug IP
 function getDefaultBaseUrl(): string {
   if (Platform.OS === "web" && typeof window !== "undefined" && window.location) {
     const host = window.location.hostname || "localhost";
-    return `http://${host}:5180`;
+    if (host === "localhost" || host === "127.0.0.1") {
+      return "http://localhost:5180";
+    }
+    return DEFAULT_API_URL;
   }
 
-  // If running via Expo Go / Metro, use the exact host IP the device used to load the bundle
-  // (unless loaded via an Expo/ngrok tunnel, which only forwards port 8081 — fall back to LAN IP for API port 5180)
   const hostUri = Constants.expoConfig?.hostUri || (Constants as any)?.manifest?.debuggerHost;
   if (hostUri) {
     const host = hostUri.split(":")[0];
     if (host && host !== "localhost") {
       if (isTunnelHost(host)) {
-        return DEFAULT_LAN_API_URL;
+        return DEFAULT_API_URL;
       }
       return `http://${host}:5180`;
     }
   }
 
-  if (Platform.OS === "android") {
-    return DEFAULT_LAN_API_URL;
-  }
-
-  return DEFAULT_LAN_API_URL;
+  return DEFAULT_API_URL;
 }
 
 let configuredApiBaseUrl = getDefaultBaseUrl();
