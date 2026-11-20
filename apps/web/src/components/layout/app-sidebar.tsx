@@ -104,7 +104,7 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon" aria-label="Primary Sidebar Navigation">
-      <SidebarHeader className={cn("border-b-0", isCollapsed ? "p-2 justify-center" : "p-3 pb-2.5")}>
+      <SidebarHeader className={cn("border-b border-[var(--border-subtle)]", isCollapsed ? "p-2 justify-center" : "p-3 pb-2.5")}>
         <SidebarMenu>
           <SidebarMenuItem>
             <DropdownMenu>
@@ -158,7 +158,7 @@ export function AppSidebar() {
                 side={isCollapsed ? "right" : "bottom"}
                 align="start"
                 sideOffset={isCollapsed ? 12 : 6}
-                className="w-72 border-0 shadow-lg"
+                className="w-72"
               >
                 <DropdownMenuLabel className="flex items-center justify-between">
                   <div>
