@@ -18,3 +18,19 @@ This document tracks the development milestones for Vaultz. Milestones are marke
 | **8** | **Savings Goals** | **Completed** | Target savings amounts, target dates, progress tracking, and instant contributions/withdrawals (`/api/v1/savings-goals`). |
 | **9** | **Recurring Transactions** | **Completed** | Scheduled recurring templates (`Daily`, `Weekly`, `Monthly`, `Yearly`) with one-click atomic posting that creates the transaction, updates balances, and advances `NextOccurrenceDate`. |
 | **10** | **Financial Reports & Exports** | **Completed** | Custom date-range cash-flow reports, category percentage breakdowns, savings rate calculation, and CSV export (`/api/v1/reports/cash-flow` and `/api/v1/reports/transactions.csv`). |
+| **11** | **Mobile App & Parity** | **Completed** | React Native Expo mobile application (`apps/mobile`) with full feature parity, gesture sheets, 5-tab navigation, dark/light themes, offline persistence, and live FX integration. |
+| **12** | **Productivity & Production Deployment** | **Completed** | Purpose buckets / account allocations, IOUs / lending tracker, Wishlist with 1-tap purchase logging, Quick Notes, Quick Log presets, and live production deployment on RackNerd VPS (`vaultz-api.zreon.space`) + Vercel (`vaultz.zreon.space`). |
+
+---
+
+## Long-Term Roadmap: Business & Freelance Financial Hub
+
+Designed for solopreneurs, digital agencies, and small businesses who need financial clarity without the bloat and expense of legacy enterprise accounting software.
+
+| # | Milestone | Status | Key Deliverables |
+| :- | :--- | :--- | :--- |
+| **13** | **Business Workspace & Entity Mode** | **Planned** | Dedicated Personal vs. Business workspace toggle with strict data segregation, business registration profile, and separate tax identifiers. |
+| **14** | **Invoicing & Accounts Receivable (A/R)** | **Planned** | Clean, minimalist PDF invoice generation, payment status tracking (`Draft`, `Sent`, `Paid`, `Overdue`), and automated income logging on settlement. |
+| **15** | **Cash Flow Runway & Burn Rate Analytics** | **Planned** | Real-time business runway calculation (`Cash Reserves ÷ Average Monthly OpEx`), burn rate trend graphs, and safety buffer alerts. |
+| **16** | **Profit-First Rules & Tax Withholding** | **Planned** | Automated percentage splits on incoming client deposits into dedicated Tax, Profit, and OpEx purpose buckets; tax-deductible expense tagging. |
+| **17** | **Client & Vendor Ledger Insights** | **Planned** | Client lifetime value (LTV), top revenue sources, recurring software/vendor expense tracking, and accountant-ready P&L export. |
