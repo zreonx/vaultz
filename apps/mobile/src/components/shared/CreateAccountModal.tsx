@@ -81,6 +81,25 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
       onClose={onClose}
       title="Create Account"
       subtitle="Add an isolated financial container"
+      maxHeightRatio={0.9}
+      footer={
+        <View style={styles.buttonRow}>
+          <Button
+            title="Cancel"
+            variant="ghost"
+            onPress={onClose}
+            style={styles.cancelBtn}
+            disabled={isLoading}
+          />
+          <Button
+            title="Create Account"
+            variant="primary"
+            onPress={handleSubmit}
+            isLoading={isLoading}
+            style={styles.submitBtn}
+          />
+        </View>
+      }
     >
       <View style={styles.container}>
         {(isTourActive || accounts.length === 0) && (
@@ -226,24 +245,8 @@ export const CreateAccountModal: React.FC<CreateAccountModalProps> = ({
           value={initialBalance}
           onChangeText={setInitialBalance}
           currencyCode={currency}
+          containerStyle={{ marginBottom: 0 }}
         />
-
-        <View style={styles.buttonRow}>
-          <Button
-            title="Cancel"
-            variant="ghost"
-            onPress={onClose}
-            style={styles.cancelBtn}
-            disabled={isLoading}
-          />
-          <Button
-            title="Create Account"
-            variant="primary"
-            onPress={handleSubmit}
-            isLoading={isLoading}
-            style={styles.submitBtn}
-          />
-        </View>
       </View>
     </ModalSheet>
   );

@@ -3,10 +3,12 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
 using Npgsql;
 using Vaultz.Application.Common.Interfaces;
 using Vaultz.Infrastructure.Authentication;
+using Vaultz.Infrastructure.Configuration;
 using Vaultz.Infrastructure.Notifications;
 using Vaultz.Infrastructure.Persistence;
 
@@ -16,22 +18,32 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddInfrastructure(
         this IServiceCollection services,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        IHostEnvironment environment)
     {
-        var connectionString = configuration.GetConnectionString("DefaultConnection")
-            ?? "Host=localhost;Port=5432;Database=vaultz_dev;Username=vaultz;Password=vaultz_local_dev_password_change_me";
+        ProductionConfigValidator.ValidateOrThrow(configuration, environment);
 
-        var canReachPostgres = CanOpenPostgresConnection(connectionString);
+        services.Configure<AppOptions>(configuration.GetSection(AppOptions.SectionName));
+
+        var isDevOrTesting = environment.IsDevelopment() || environment.IsEnvironment("Testing");
+
+        var configuredConnectionString = configuration.GetConnectionString("DefaultConnection");
+        var connectionString = string.IsNullOrWhiteSpace(configuredConnectionString) && isDevOrTesting
+            ? "Host=localhost;Port=5432;Database=vaultz_dev;Username=vaultz;Password=vaultz_local_dev_password_change_me"
+            : configuredConnectionString!;
+
+        var usePostgres = !isDevOrTesting || CanOpenPostgresConnection(connectionString);
 
         services.AddDbContext<VaultzDbContext>(options =>
         {
-            if (canReachPostgres)
+            if (usePostgres)
             {
                 options.UseNpgsql(
                     connectionString,
                     npgsqlOptions =>
                     {
                         npgsqlOptions.MigrationsAssembly(typeof(VaultzDbContext).Assembly.FullName);
+                        npgsqlOptions.EnableRetryOnFailure(3);
                     });
             }
             else
@@ -57,7 +69,7 @@ public static class DependencyInjection
             })
             .AddJwtBearer(options =>
             {
-                options.RequireHttpsMetadata = false;
+                options.RequireHttpsMetadata = !isDevOrTesting;
                 options.SaveToken = false;
                 options.TokenValidationParameters = new TokenValidationParameters
                 {

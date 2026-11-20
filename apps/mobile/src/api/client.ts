@@ -2,6 +2,18 @@ import { Platform } from "react-native";
 import Constants from "expo-constants";
 import { secureStore } from "@/security/secureStore";
 
+const DEFAULT_LAN_API_URL = "http://192.168.1.40:5180";
+
+function isTunnelHost(host: string): boolean {
+  return (
+    host.endsWith(".exp.direct") ||
+    host.endsWith(".boltexpo.dev") ||
+    host.endsWith(".ngrok.io") ||
+    host.endsWith(".ngrok-free.app") ||
+    host.endsWith(".tunnel")
+  );
+}
+
 // Dynamic default API base URL:
 // - Web: uses current window hostname (e.g. localhost or local IP) with port 5180
 // - Native Android / iOS: dynamically detects Metro debugger host IP, or defaults to LAN IP / emulator loopback
@@ -12,21 +24,23 @@ function getDefaultBaseUrl(): string {
   }
 
   // If running via Expo Go / Metro, use the exact host IP the device used to load the bundle
+  // (unless loaded via an Expo/ngrok tunnel, which only forwards port 8081 — fall back to LAN IP for API port 5180)
   const hostUri = Constants.expoConfig?.hostUri || (Constants as any)?.manifest?.debuggerHost;
   if (hostUri) {
     const host = hostUri.split(":")[0];
     if (host && host !== "localhost") {
+      if (isTunnelHost(host)) {
+        return DEFAULT_LAN_API_URL;
+      }
       return `http://${host}:5180`;
     }
   }
 
   if (Platform.OS === "android") {
-    // Android emulator loopback alias to development host
-    return "http://10.0.2.2:5180";
+    return DEFAULT_LAN_API_URL;
   }
 
-  // Physical devices on the same Wi-Fi
-  return "http://192.168.254.194:5180";
+  return DEFAULT_LAN_API_URL;
 }
 
 let configuredApiBaseUrl = getDefaultBaseUrl();
@@ -36,7 +50,13 @@ let configuredApiBaseUrl = getDefaultBaseUrl();
   try {
     const saved = await secureStore.getItemAsync?.("vaultz.custom_api_url");
     if (saved) {
-      configuredApiBaseUrl = saved;
+      // Automatically clear outdated subnet IP if router changed from 192.168.254.x to 192.168.1.x
+      if (saved.includes("192.168.254.194")) {
+        await secureStore.deleteItemAsync?.("vaultz.custom_api_url");
+        configuredApiBaseUrl = getDefaultBaseUrl();
+      } else {
+        configuredApiBaseUrl = saved;
+      }
     }
   } catch {
     // Ignore storage errors on startup
@@ -47,11 +67,21 @@ export function setApiBaseUrl(url: string) {
   if (url) {
     configuredApiBaseUrl = url.replace(/\/+$/, "");
     try {
-      secureStore.setItemAsync?.("vaultz.custom_api_url", configuredApiBaseUrl);
+      void secureStore.setItemAsync?.("vaultz.custom_api_url", configuredApiBaseUrl);
     } catch {
       // Ignore
     }
   }
+}
+
+export function resetApiBaseUrl() {
+  configuredApiBaseUrl = getDefaultBaseUrl();
+  try {
+    void secureStore.deleteItemAsync?.("vaultz.custom_api_url");
+  } catch {
+    // Ignore
+  }
+  return configuredApiBaseUrl;
 }
 
 export function getApiBaseUrl(): string {
@@ -115,7 +145,7 @@ export async function apiClient<T>(
   }
 
   if (response.status === 204) {
-    return {} as T;
+    return undefined as T;
   }
 
   let data: unknown;

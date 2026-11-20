@@ -30,6 +30,9 @@ public sealed class GetSystemStatusHandlerTests
         public DbSet<AccountAllocation> AccountAllocations => throw new NotImplementedException();
         public DbSet<MonthlyBudgetPlan> MonthlyBudgetPlans => throw new NotImplementedException();
         public DbSet<MonthlyBudgetSlice> MonthlyBudgetSlices => throw new NotImplementedException();
+        public DbSet<QuickLogPreset> QuickLogPresets => throw new NotImplementedException();
+        public DbSet<WishlistItem> WishlistItems => throw new NotImplementedException();
+        public DbSet<QuickNote> QuickNotes => throw new NotImplementedException();
 
         public Task<int> SaveChangesAsync(CancellationToken cancellationToken = default) =>
             Task.FromResult(0);
@@ -44,6 +47,12 @@ public sealed class GetSystemStatusHandlerTests
             Func<CancellationToken, Task> operation,
             CancellationToken cancellationToken = default) =>
             operation(cancellationToken);
+
+        public Task DeleteAccountDependentRecordsAsync(
+            string userId,
+            Guid accountId,
+            CancellationToken cancellationToken = default) =>
+            Task.CompletedTask;
     }
 
     [Fact]

@@ -1,11 +1,21 @@
-import React, { createContext, useContext, useEffect, useState, useMemo, useCallback } from "react";
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useMemo,
+  useCallback,
+} from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { accountsApi } from "@/api/accounts";
+import { currenciesApi } from "@/api/currencies";
+import { notificationsApi } from "@/api/notifications";
 import { secureStore } from "@/security/secureStore";
 import { useAuth } from "./AuthContext";
 import { AccountResponse } from "@/types/api";
 
 const CACHED_ACCOUNTS_KEY = "vaultz_cached_accounts";
+const ACTIVE_ACCOUNT_KEY = "vaultz_active_account_id";
 
 interface WorkspaceContextValue {
   accounts: AccountResponse[];
@@ -14,6 +24,7 @@ interface WorkspaceContextValue {
   activeCurrencyCode: string;
   isLoading: boolean;
   hideBalance: boolean;
+  unreadNotificationsCount: number;
   setActiveAccountId: (id: string) => void;
   setActiveWorkspace: (acc: AccountResponse) => void;
   toggleHideBalance: () => void;
@@ -36,22 +47,46 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
   const [offlineAccounts, setOfflineAccounts] = useState<AccountResponse[]>([]);
 
-  // Load cached accounts from storage on cold start
+  const isAuthActive = Boolean(token && user);
+
+  // Clear stale state & query cache immediately on logout / user switch
   useEffect(() => {
+    if (!isAuthActive) {
+      setSelectedAccountId(null);
+      setOfflineAccounts([]);
+      queryClient.clear();
+      return;
+    }
+
+    let mounted = true;
     (async () => {
       try {
-        const stored = await secureStore.getItemAsync(CACHED_ACCOUNTS_KEY);
-        if (stored) {
-          const parsed = JSON.parse(stored) as AccountResponse[];
+        const [storedAccounts, savedActiveId] = await Promise.all([
+          secureStore.getItemAsync(CACHED_ACCOUNTS_KEY),
+          secureStore.getItemAsync(ACTIVE_ACCOUNT_KEY),
+        ]);
+        if (!mounted) return;
+        if (storedAccounts) {
+          const parsed = JSON.parse(storedAccounts) as AccountResponse[];
           if (Array.isArray(parsed) && parsed.length > 0) {
             setOfflineAccounts(parsed);
           }
         }
+        if (savedActiveId) {
+          setSelectedAccountId(savedActiveId);
+        }
       } catch {
-        // Ignore parsing errors
+        // Ignore storage errors
       }
     })();
-  }, []);
+
+    // Populate live FX rates silently for converter & cross-currency transfers
+    void currenciesApi.getRates().catch(() => null);
+
+    return () => {
+      mounted = false;
+    };
+  }, [isAuthActive, queryClient]);
 
   const {
     data: rawAccounts = [],
@@ -62,25 +97,32 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
     queryFn: async () => {
       const fetched = await accountsApi.getAccounts();
       if (Array.isArray(fetched) && fetched.length > 0) {
-        // Cache to storage for offline readiness
         void secureStore.setItemAsync(CACHED_ACCOUNTS_KEY, JSON.stringify(fetched));
         setOfflineAccounts(fetched);
       }
       return fetched;
     },
-    enabled: Boolean(token && user),
+    enabled: isAuthActive,
+  });
+
+  const { data: unreadData } = useQuery({
+    queryKey: ["notifications-unread"],
+    queryFn: () => notificationsApi.getNotifications(1),
+    enabled: isAuthActive,
+    refetchInterval: 45_000,
   });
 
   const accounts: AccountResponse[] = useMemo(() => {
+    if (!isAuthActive) return [];
     const source = rawAccounts.length > 0 ? rawAccounts : offlineAccounts;
     return source.map((a) => ({
       ...a,
       currency: a.currencyCode,
       currentBalance: a.balance,
     }));
-  }, [rawAccounts, offlineAccounts]);
+  }, [isAuthActive, rawAccounts, offlineAccounts]);
 
-  // Ensure an account is always selected (user's default account, or the first one)
+  // Ensure an account is always selected (saved account, default account, or first one)
   useEffect(() => {
     if (accounts.length > 0) {
       const exists = accounts.some((a) => a.id === selectedAccountId);
@@ -88,6 +130,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
         const preferred = accounts.find((a) => a.isDefault) ?? accounts[0];
         if (preferred) {
           setSelectedAccountId(preferred.id);
+          void secureStore.setItemAsync(ACTIVE_ACCOUNT_KEY, preferred.id);
         }
       }
     } else {
@@ -106,18 +149,19 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
 
   const setActiveAccountId = useCallback((id: string) => {
     setSelectedAccountId(id);
+    void secureStore.setItemAsync(ACTIVE_ACCOUNT_KEY, id);
   }, []);
 
   const setActiveWorkspace = useCallback((acc: AccountResponse) => {
     setSelectedAccountId(acc.id);
+    void secureStore.setItemAsync(ACTIVE_ACCOUNT_KEY, acc.id);
   }, []);
 
   const refetchAll = useCallback(async () => {
-    await Promise.all([
-      refetch(),
-      queryClient.invalidateQueries(),
-    ]);
+    await Promise.all([refetch(), queryClient.invalidateQueries()]);
   }, [queryClient, refetch]);
+
+  const unreadNotificationsCount = isAuthActive ? (unreadData?.unreadCount ?? 0) : 0;
 
   const value = useMemo<WorkspaceContextValue>(
     () => ({
@@ -127,6 +171,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       activeCurrencyCode,
       isLoading,
       hideBalance: isHideBalance,
+      unreadNotificationsCount,
       setActiveAccountId,
       setActiveWorkspace,
       toggleHideBalance,
@@ -140,6 +185,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       activeCurrencyCode,
       isLoading,
       isHideBalance,
+      unreadNotificationsCount,
       setActiveAccountId,
       setActiveWorkspace,
       toggleHideBalance,

@@ -23,17 +23,127 @@ export enum LendingStatus {
   WrittenOff = 3,
 }
 
+export enum CategoryType {
+  Income = 1,
+  Expense = 2,
+}
+
+export enum RecurrenceFrequency {
+  Daily = 1,
+  Weekly = 2,
+  Monthly = 3,
+  Yearly = 4,
+}
+
 export interface UserResponse {
   id: string;
   email: string;
   fullName: string;
   defaultCurrencyCode: string;
   createdAtUtc: string;
+  isEmailVerified?: boolean;
+  twoFactorEnabled?: boolean;
+  twoFactorType?: string;
 }
 
 export interface AuthResponse {
   token: string;
   user: UserResponse;
+  requiresTwoFactor?: boolean;
+  twoFactorType?: string | null;
+  twoFactorToken?: string | null;
+}
+
+export interface CategoryResponse {
+  id: string;
+  name: string;
+  type: CategoryType;
+  typeName: string;
+  colorHex: string;
+  isArchived: boolean;
+  accountId?: string | null;
+  accountName?: string | null;
+}
+
+export interface SavingsGoalResponse {
+  id: string;
+  name: string;
+  targetAmount: number;
+  currentAmount: number;
+  remainingAmount: number;
+  progressPercent: number;
+  currencyCode: string;
+  targetDate?: string | null;
+  createdAtUtc: string;
+  accountId?: string | null;
+  accountName?: string | null;
+}
+
+export interface RecurringTransactionResponse {
+  id: string;
+  accountId: string;
+  accountName: string;
+  destinationAccountId?: string | null;
+  destinationAccountName?: string | null;
+  categoryId?: string | null;
+  categoryName?: string | null;
+  type: TransactionType;
+  typeName: string;
+  amount: number;
+  currencyCode: string;
+  description: string;
+  frequency: RecurrenceFrequency;
+  frequencyName: string;
+  nextOccurrenceDate: string;
+  lastProcessedDate?: string | null;
+  isActive: boolean;
+}
+
+export interface CategoryBreakdownItem {
+  categoryId?: string | null;
+  categoryName: string;
+  colorHex: string;
+  currencyCode: string;
+  totalAmount: number;
+  sharePercent: number;
+  transactionCount: number;
+}
+
+export interface CashFlowReportResponse {
+  fromDate: string;
+  toDate: string;
+  currencyCode: string;
+  totalIncome: number;
+  totalExpense: number;
+  netCashFlow: number;
+  totalTransfersExcluded: number;
+  savingsRatePercent: number;
+  expenseByCategory: CategoryBreakdownItem[];
+  incomeByCategory: CategoryBreakdownItem[];
+}
+
+export interface NotificationResponse {
+  id: string;
+  title: string;
+  message: string;
+  type: string;
+  isRead: boolean;
+  actionUrl?: string | null;
+  createdAtUtc: string;
+  readAtUtc?: string | null;
+}
+
+export interface NotificationsListResponse {
+  items: NotificationResponse[];
+  unreadCount: number;
+}
+
+export interface ExchangeRatesResponse {
+  baseCurrency: string;
+  isLiveFeedActive: boolean;
+  rateSource: string;
+  lastUpdatedUtc: string;
+  unitsPerUsd: Record<string, number>;
 }
 
 export interface AccountResponse {
@@ -102,10 +212,28 @@ export interface ScopedAccountSummary {
   monthlyTransfersVolume: number;
 }
 
+export interface BudgetProgressResponse {
+  id: string;
+  categoryId: string;
+  categoryName: string;
+  categoryColorHex: string;
+  year: number;
+  month: number;
+  limitAmount: number;
+  spentAmount: number;
+  remainingAmount: number;
+  utilizationPercent: number;
+  currencyCode: string;
+  isOverBudget: boolean;
+  accountId?: string | null;
+  accountName?: string | null;
+}
+
 export interface DashboardSummaryResponse {
   year: number;
   month: number;
   activeAccountsCount: number;
+  budgets?: BudgetProgressResponse[];
   recentTransactions: TransactionResponse[];
   scopedAccount?: ScopedAccountSummary | null;
   consolidated?: any;
@@ -230,4 +358,79 @@ export interface AccountAllocationsOverviewResponse {
   unallocatedBalance: number;
   allocations: AccountAllocationDto[];
   activeBudgetPlan?: MonthlyBudgetPlanDto | null;
+}
+
+export interface QuickLogPresetDto {
+  id: string;
+  accountId: string;
+  label: string;
+  amount: number;
+  currencyCode: string;
+  type: TransactionType;
+  typeName: string;
+  categoryId?: string | null;
+  categoryName?: string | null;
+  budgetSliceId?: string | null;
+  budgetSliceName?: string | null;
+  icon: string;
+  colorHex: string;
+  sortOrder: number;
+}
+
+export interface QuickLogPresetItemInput {
+  label: string;
+  amount: number;
+  type: TransactionType;
+  categoryId?: string | null;
+  budgetSliceId?: string | null;
+  icon: string;
+  colorHex: string;
+  sortOrder: number;
+}
+
+export enum WishlistPriority {
+  Low = 1,
+  Medium = 2,
+  High = 3,
+}
+
+export enum WishlistStatus {
+  Wanted = 1,
+  Purchased = 2,
+  Archived = 3,
+}
+
+export interface WishlistItemResponse {
+  id: string;
+  name: string;
+  estimatedPrice: number;
+  currencyCode: string;
+  priority: WishlistPriority;
+  priorityName: string;
+  status: WishlistStatus;
+  statusName: string;
+  accountId?: string | null;
+  accountName?: string | null;
+  categoryId?: string | null;
+  categoryName?: string | null;
+  targetDate?: string | null;
+  url?: string | null;
+  notes?: string | null;
+  purchasedAtUtc?: string | null;
+  purchasedTransactionId?: string | null;
+  createdAtUtc: string;
+  updatedAtUtc?: string | null;
+}
+
+export interface QuickNoteResponse {
+  id: string;
+  title: string;
+  content: string;
+  colorHex: string;
+  isPinned: boolean;
+  isArchived: boolean;
+  accountId?: string | null;
+  accountName?: string | null;
+  createdAtUtc: string;
+  updatedAtUtc?: string | null;
 }

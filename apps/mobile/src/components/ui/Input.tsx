@@ -6,6 +6,7 @@ import {
   StyleSheet,
   TextInputProps,
   TouchableOpacity,
+  ViewStyle,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/context/ThemeContext';
@@ -26,6 +27,7 @@ interface InputProps extends TextInputProps {
   rightIcon?: keyof typeof Ionicons.glyphMap;
   onRightIconPress?: () => void;
   isPassword?: boolean;
+  containerStyle?: ViewStyle;
 }
 
 export const Input: React.FC<InputProps> = ({
@@ -38,6 +40,7 @@ export const Input: React.FC<InputProps> = ({
   rightIcon,
   onRightIconPress,
   isPassword = false,
+  containerStyle,
   style,
   ...props
 }) => {
@@ -133,7 +136,7 @@ export const Input: React.FC<InputProps> = ({
   };
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, containerStyle]}>
       {label && (
         <Text style={[styles.label, { color: colors.textSecondary }]}>
           {label}
@@ -266,6 +269,7 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
+    minWidth: 0,
     ...typography.body,
     paddingVertical: spacing.sm,
   },

@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from "react";
 import {
+  Alert,
   View,
   Text,
   StyleSheet,
@@ -7,38 +8,55 @@ import {
   TouchableOpacity,
   RefreshControl,
   TextInput,
-} from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { useWorkspace } from '@/context/WorkspaceContext';
-import { useOfflineSync } from '@/context/OfflineSyncContext';
-import { useTheme } from '@/context/ThemeContext';
-import { ScreenWrapper } from '@/components/ui/ScreenWrapper';
-import { Header } from '@/components/shared/Header';
-import { Card } from '@/components/ui/Card';
-import { Badge } from '@/components/ui/Badge';
-import { Skeleton } from '@/components/ui/Skeleton';
-import { PressableScale } from '@/components/ui/PressableScale';
-import { FadeInView } from '@/components/ui/FadeInView';
-import { CreateTransactionModal } from './CreateTransactionModal';
-import { transactionsApi } from '@/api/transactions';
-import { TransactionDto, TransactionType } from '@/types/api';
-import { typography, radius, spacing } from '@/theme/tokens';
-import { formatMoney } from '@/utils/currency';
-import { formatDate } from '@/utils/date';
-import { haptics } from '@/utils/haptics';
+} from "react-native";
+import { Ionicons } from "@expo/vector-icons";
+import { useFocusEffect } from "@react-navigation/native";
+import { useWorkspace } from "@/context/WorkspaceContext";
+import { useOfflineSync } from "@/context/OfflineSyncContext";
+import { useTheme } from "@/context/ThemeContext";
+import { ScreenWrapper } from "@/components/ui/ScreenWrapper";
+import { Header } from "@/components/shared/Header";
+import { Card } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
+import { Skeleton } from "@/components/ui/Skeleton";
+import { PressableScale } from "@/components/ui/PressableScale";
+import { CreateTransactionModal } from "./CreateTransactionModal";
+import { transactionsApi } from "@/api/transactions";
+import { TransactionDto, TransactionType } from "@/types/api";
+import { typography, radius, spacing } from "@/theme/tokens";
+import { formatMoney } from "@/utils/currency";
+import { formatDate } from "@/utils/date";
+import { haptics } from "@/utils/haptics";
 
-const FILTER_TABS = ['All', 'Expense', 'Income', 'Transfer'] as const;
+const FILTER_TABS = ["All", "Expense", "Income", "Transfer"] as const;
 
 export const TransactionsScreen: React.FC = () => {
   const { activeWorkspace, hideBalance, refetchAll } = useWorkspace();
-  const { pendingQueue, pendingCount, isSyncing, syncQueue } = useOfflineSync();
+  const {
+    pendingQueue,
+    pendingCount,
+    isSyncing,
+    syncQueue,
+    removeQueuedTransaction,
+  } = useOfflineSync();
   const { colors, isDark } = useTheme();
   const [transactions, setTransactions] = useState<TransactionDto[]>([]);
-  const [selectedTab, setSelectedTab] = useState<typeof FILTER_TABS[number]>('All');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedTab, setSelectedTab] =
+    useState<(typeof FILTER_TABS)[number]>("All");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [createModalVisible, setCreateModalVisible] = useState(false);
+  const [editingTx, setEditingTx] = useState<TransactionDto | null>(null);
+
+  // Debounce search input cleanly
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setDebouncedSearch(searchQuery.trim());
+    }, 250);
+    return () => clearTimeout(t);
+  }, [searchQuery]);
 
   // Map pending offline items for the active workspace
   const offlineTxList: TransactionDto[] = React.useMemo(() => {
@@ -49,9 +67,9 @@ export const TransactionsScreen: React.FC = () => {
         accountId: q.accountId,
         accountName: q.accountName,
         type:
-          q.type === 'Income'
+          q.type === "Income"
             ? TransactionType.Income
-            : q.type === 'Transfer'
+            : q.type === "Transfer"
             ? TransactionType.Transfer
             : TransactionType.Expense,
         typeName: q.type,
@@ -61,7 +79,7 @@ export const TransactionsScreen: React.FC = () => {
         category: q.category,
         categoryName: q.category,
         description: q.description || q.category,
-        occurredOn: q.transactionDate.split('T')[0],
+        occurredOn: q.transactionDate.split("T")[0],
         transactionDate: q.transactionDate,
         createdAtUtc: q.createdAt,
         isPendingSync: true,
@@ -72,9 +90,9 @@ export const TransactionsScreen: React.FC = () => {
   // Combine offline items at top with server transactions
   const allDisplayedTransactions = React.useMemo(() => {
     const filteredOffline = offlineTxList.filter((tx) => {
-      if (selectedTab !== 'All' && tx.typeName !== selectedTab) return false;
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase();
+      if (selectedTab !== "All" && tx.typeName !== selectedTab) return false;
+      if (debouncedSearch) {
+        const q = debouncedSearch.toLowerCase();
         return (
           tx.description?.toLowerCase().includes(q) ||
           tx.category?.toLowerCase().includes(q)
@@ -84,28 +102,30 @@ export const TransactionsScreen: React.FC = () => {
     });
 
     return [...filteredOffline, ...transactions];
-  }, [offlineTxList, transactions, selectedTab, searchQuery]);
+  }, [offlineTxList, transactions, selectedTab, debouncedSearch]);
 
   const loadTransactions = useCallback(async () => {
     try {
       const res = await transactionsApi.list({
         accountId: activeWorkspace?.id,
-        type: selectedTab === 'All' ? undefined : selectedTab,
-        searchTerm: searchQuery.trim() || undefined,
+        type: selectedTab === "All" ? undefined : selectedTab,
+        searchTerm: debouncedSearch || undefined,
         page: 1,
         pageSize: 50,
       });
       setTransactions(res.items || []);
-    } catch (err) {
-      // Offline fallback: keep existing transactions or offline list
+    } catch {
+      // Offline fallback: keep existing list
     } finally {
       setIsLoading(false);
     }
-  }, [activeWorkspace?.id, selectedTab, searchQuery]);
+  }, [activeWorkspace?.id, selectedTab, debouncedSearch]);
 
-  useEffect(() => {
-    loadTransactions();
-  }, [loadTransactions]);
+  useFocusEffect(
+    useCallback(() => {
+      void loadTransactions();
+    }, [loadTransactions])
+  );
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -114,16 +134,62 @@ export const TransactionsScreen: React.FC = () => {
     setRefreshing(false);
   };
 
-  const handleTabChange = (tab: typeof FILTER_TABS[number]) => {
+  const handleTabChange = (tab: (typeof FILTER_TABS)[number]) => {
     haptics.selection();
     setSelectedTab(tab);
   };
 
+  const handlePressTransaction = (item: TransactionDto) => {
+    haptics.light();
+    if (item.isPendingSync) {
+      if (item.syncStatus === "failed") {
+        const queued = pendingQueue.find((q) => q.id === item.id);
+        Alert.alert(
+          "Offline Sync Failed",
+          queued?.errorMessage ||
+            "This offline entry could not sync with the server.",
+          [
+            { text: "Cancel", style: "cancel" },
+            {
+              text: "Discard Entry",
+              style: "destructive",
+              onPress: () => void removeQueuedTransaction(item.id),
+            },
+            {
+              text: "Retry Sync",
+              onPress: () => void syncQueue(),
+            },
+          ]
+        );
+      } else {
+        Alert.alert(
+          "Pending Sync",
+          "This entry is queued offline and will sync automatically when connected.",
+          [
+            { text: "OK" },
+            {
+              text: "Retry Now",
+              onPress: () => void syncQueue(),
+            },
+          ]
+        );
+      }
+      return;
+    }
+
+    setEditingTx(item);
+    setCreateModalVisible(true);
+  };
+
   const renderTransactionItem = ({ item }: { item: TransactionDto }) => {
-    const isExpense = item.type === TransactionType.Expense || item.typeName === 'Expense';
-    const isIncome = item.type === TransactionType.Income || item.typeName === 'Income';
+    const isExpense =
+      item.type === TransactionType.Expense || item.typeName === "Expense";
+    const isIncome =
+      item.type === TransactionType.Income || item.typeName === "Income";
     const curr = item.currency || item.currencyCode;
-    const categoryName = item.category || item.categoryName || 'General';
+    const primaryTitle =
+      item.description || item.categoryName || item.category || "Transaction";
+    const subCategory = item.categoryName || item.category || item.typeName;
     const txDate = item.transactionDate || item.occurredOn || item.createdAtUtc;
 
     const iconBg = isExpense
@@ -131,19 +197,20 @@ export const TransactionsScreen: React.FC = () => {
       : isIncome
       ? colors.accentSoft
       : isDark
-      ? 'rgba(59, 130, 246, 0.14)'
-      : 'rgba(37, 99, 235, 0.08)';
+      ? "rgba(59, 130, 246, 0.14)"
+      : "rgba(37, 99, 235, 0.08)";
 
     const iconColor = isExpense
       ? colors.danger
       : isIncome
       ? colors.accent
       : isDark
-      ? '#60A5FA'
-      : '#2563EB';
+      ? "#60A5FA"
+      : "#2563EB";
 
     return (
-      <View
+      <PressableScale
+        onPress={() => handlePressTransaction(item)}
         style={[
           styles.txRow,
           {
@@ -156,10 +223,10 @@ export const TransactionsScreen: React.FC = () => {
           <Ionicons
             name={
               isExpense
-                ? 'arrow-up-outline'
+                ? "arrow-up-outline"
                 : isIncome
-                ? 'arrow-down-outline'
-                : 'swap-horizontal-outline'
+                ? "arrow-down-outline"
+                : "swap-horizontal-outline"
             }
             size={18}
             color={iconColor}
@@ -171,14 +238,16 @@ export const TransactionsScreen: React.FC = () => {
             style={[styles.txCategory, { color: colors.textPrimary }]}
             numberOfLines={1}
           >
-            {categoryName}
+            {primaryTitle}
           </Text>
           <Text
             style={[styles.txMeta, { color: colors.textMuted }]}
             numberOfLines={1}
           >
             {formatDate(txDate)}
-            {item.description ? ` • ${item.description}` : ''}
+            {subCategory && subCategory !== primaryTitle
+              ? ` • ${subCategory}`
+              : ""}
           </Text>
         </View>
 
@@ -196,28 +265,39 @@ export const TransactionsScreen: React.FC = () => {
             ]}
           >
             {hideBalance
-              ? '••••'
-              : `${isExpense ? '-' : isIncome ? '+' : ''}${formatMoney(item.amount, curr)}`}
+              ? "••••"
+              : `${isExpense ? "-" : isIncome ? "+" : ""}${formatMoney(item.amount, curr)}`}
           </Text>
           {item.isPendingSync && (
             <View style={styles.pendingBadgeRow}>
               <Ionicons
-                name={item.syncStatus === 'failed' ? 'alert-circle' : 'cloud-upload-outline'}
+                name={
+                  item.syncStatus === "failed"
+                    ? "alert-circle"
+                    : "cloud-upload-outline"
+                }
                 size={11}
-                color={item.syncStatus === 'failed' ? colors.danger : colors.warning}
+                color={
+                  item.syncStatus === "failed" ? colors.danger : colors.warning
+                }
               />
               <Text
                 style={[
                   styles.pendingBadgeText,
-                  { color: item.syncStatus === 'failed' ? colors.danger : colors.warning },
+                  {
+                    color:
+                      item.syncStatus === "failed"
+                        ? colors.danger
+                        : colors.warning,
+                  },
                 ]}
               >
-                {item.syncStatus === 'failed' ? 'Sync Failed' : 'Pending Sync'}
+                {item.syncStatus === "failed" ? "Sync Failed" : "Pending Sync"}
               </Text>
             </View>
           )}
         </View>
-      </View>
+      </PressableScale>
     );
   };
 
@@ -238,12 +318,28 @@ export const TransactionsScreen: React.FC = () => {
             ]}
           >
             <View style={styles.syncBannerLeft}>
-              <Ionicons name="cloud-upload-outline" size={18} color={colors.warning} />
+              <Ionicons
+                name="cloud-upload-outline"
+                size={18}
+                color={colors.warning}
+              />
               <View style={styles.syncBannerTexts}>
-                <Text style={[styles.syncBannerTitle, { color: colors.textPrimary }]}>
-                  {pendingCount} {pendingCount === 1 ? 'transaction' : 'transactions'} queued offline
+                <Text
+                  style={[
+                    styles.syncBannerTitle,
+                    { color: colors.textPrimary },
+                  ]}
+                >
+                  {pendingCount}{" "}
+                  {pendingCount === 1 ? "transaction" : "transactions"} queued
+                  offline
                 </Text>
-                <Text style={[styles.syncBannerSubtitle, { color: colors.textMuted }]}>
+                <Text
+                  style={[
+                    styles.syncBannerSubtitle,
+                    { color: colors.textMuted },
+                  ]}
+                >
                   Will sync automatically once connected
                 </Text>
               </View>
@@ -251,13 +347,18 @@ export const TransactionsScreen: React.FC = () => {
             <TouchableOpacity
               style={[
                 styles.syncBannerBtn,
-                { backgroundColor: colors.surface, borderColor: colors.borderSubtle },
+                {
+                  backgroundColor: colors.surface,
+                  borderColor: colors.borderSubtle,
+                },
               ]}
-              onPress={() => syncQueue()}
+              onPress={() => void syncQueue()}
               disabled={isSyncing}
             >
-              <Text style={[styles.syncBannerBtnText, { color: colors.accent }]}>
-                {isSyncing ? 'Syncing...' : 'Sync Now'}
+              <Text
+                style={[styles.syncBannerBtnText, { color: colors.accent }]}
+              >
+                {isSyncing ? "Syncing..." : "Sync Now"}
               </Text>
             </TouchableOpacity>
           </View>
@@ -290,7 +391,7 @@ export const TransactionsScreen: React.FC = () => {
           />
           {searchQuery.length > 0 && (
             <TouchableOpacity
-              onPress={() => setSearchQuery('')}
+              onPress={() => setSearchQuery("")}
               hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             >
               <Ionicons name="close-circle" size={16} color={colors.textMuted} />
@@ -313,7 +414,7 @@ export const TransactionsScreen: React.FC = () => {
                       : isDark
                       ? colors.surfaceSubtle
                       : colors.surfaceMuted,
-                    borderColor: isActive ? colors.accent : colors.border,
+                    borderColor: isActive ? colors.accent : colors.borderSubtle,
                   },
                 ]}
                 onPress={() => handleTabChange(tab)}
@@ -323,7 +424,7 @@ export const TransactionsScreen: React.FC = () => {
                     styles.tabText,
                     {
                       color: isActive ? colors.accent : colors.textSecondary,
-                      fontWeight: isActive ? '700' : '500',
+                      fontWeight: isActive ? "700" : "500",
                     },
                   ]}
                 >
@@ -337,9 +438,18 @@ export const TransactionsScreen: React.FC = () => {
         {/* Transactions List */}
         {isLoading ? (
           <View style={styles.loadingContainer}>
-            <Skeleton height={58} style={{ marginBottom: 8, borderRadius: radius.md }} />
-            <Skeleton height={58} style={{ marginBottom: 8, borderRadius: radius.md }} />
-            <Skeleton height={58} style={{ marginBottom: 8, borderRadius: radius.md }} />
+            <Skeleton
+              height={58}
+              style={{ marginBottom: 8, borderRadius: radius.md }}
+            />
+            <Skeleton
+              height={58}
+              style={{ marginBottom: 8, borderRadius: radius.md }}
+            />
+            <Skeleton
+              height={58}
+              style={{ marginBottom: 8, borderRadius: radius.md }}
+            />
             <Skeleton height={58} style={{ borderRadius: radius.md }} />
           </View>
         ) : (
@@ -359,15 +469,34 @@ export const TransactionsScreen: React.FC = () => {
             ItemSeparatorComponent={() => <View style={styles.separator} />}
             ListEmptyComponent={
               <Card style={styles.emptyCard}>
-                <Ionicons name="receipt-outline" size={36} color={colors.textMuted} />
+                <Ionicons
+                  name="receipt-outline"
+                  size={36}
+                  color={colors.textMuted}
+                />
                 <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>
                   No transactions found
                 </Text>
-                <Text style={[styles.emptySubtitle, { color: colors.textMuted }]}>
+                <Text
+                  style={[styles.emptySubtitle, { color: colors.textMuted }]}
+                >
                   {searchQuery
-                    ? 'Try adjusting your search query or filter.'
-                    : 'Record your first transaction in this account.'}
+                    ? "Try adjusting your search query or filter."
+                    : "Record your first transaction in this account."}
                 </Text>
+                {!searchQuery && (
+                  <Button
+                    title="Log Transaction"
+                    variant="secondary"
+                    size="sm"
+                    leftIcon="add-outline"
+                    onPress={() => {
+                      setEditingTx(null);
+                      setCreateModalVisible(true);
+                    }}
+                    style={{ marginTop: spacing.md }}
+                  />
+                )}
               </Card>
             }
           />
@@ -384,8 +513,10 @@ export const TransactionsScreen: React.FC = () => {
           ]}
           onPress={() => {
             haptics.light();
+            setEditingTx(null);
             setCreateModalVisible(true);
           }}
+          accessibilityLabel="Add transaction"
         >
           <Ionicons name="add" size={26} color={colors.accentForeground} />
         </PressableScale>
@@ -393,7 +524,11 @@ export const TransactionsScreen: React.FC = () => {
 
       <CreateTransactionModal
         visible={createModalVisible}
-        onClose={() => setCreateModalVisible(false)}
+        onClose={() => {
+          setCreateModalVisible(false);
+          setEditingTx(null);
+        }}
+        editingTransaction={editingTx}
         onSuccess={loadTransactions}
       />
     </ScreenWrapper>
@@ -407,8 +542,8 @@ const styles = StyleSheet.create({
     paddingTop: spacing.sm,
   },
   searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     borderWidth: StyleSheet.hairlineWidth,
     borderRadius: radius.md,
     paddingHorizontal: spacing.md,
@@ -425,12 +560,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   filterTabs: {
-    flexDirection: 'row',
+    flexDirection: "row",
     gap: spacing.xs,
     marginBottom: spacing.md,
   },
   tabBtn: {
-    paddingVertical: 6,
+    paddingVertical: 7,
     paddingHorizontal: spacing.md,
     borderRadius: radius.full,
     borderWidth: StyleSheet.hairlineWidth,
@@ -446,8 +581,8 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xxl * 3,
   },
   txRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingVertical: spacing.md,
     borderRadius: radius.lg,
     paddingHorizontal: spacing.base,
@@ -460,8 +595,8 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: radius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     marginRight: spacing.md,
   },
   txDetails: {
@@ -470,7 +605,7 @@ const styles = StyleSheet.create({
   },
   txCategory: {
     ...typography.body,
-    fontWeight: '600',
+    fontWeight: "600",
     fontSize: 14,
   },
   txMeta: {
@@ -479,23 +614,23 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   amountContainer: {
-    alignItems: 'flex-end',
+    alignItems: "flex-end",
   },
   pendingBadgeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: 3,
     marginTop: 3,
   },
   pendingBadgeText: {
     ...typography.caption,
     fontSize: 10,
-    fontWeight: '600',
+    fontWeight: "600",
   },
   syncBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     borderRadius: radius.lg,
@@ -503,8 +638,8 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   syncBannerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     gap: spacing.sm,
     flex: 1,
   },
@@ -513,7 +648,7 @@ const styles = StyleSheet.create({
   },
   syncBannerTitle: {
     ...typography.caption,
-    fontWeight: '700',
+    fontWeight: "700",
     fontSize: 12,
   },
   syncBannerSubtitle: {
@@ -524,47 +659,48 @@ const styles = StyleSheet.create({
   syncBannerBtn: {
     borderWidth: StyleSheet.hairlineWidth,
     paddingHorizontal: 10,
-    paddingVertical: 5,
+    paddingVertical: 6,
     borderRadius: radius.md,
     marginLeft: spacing.sm,
   },
   syncBannerBtnText: {
     ...typography.caption,
-    fontWeight: '700',
+    fontWeight: "700",
     fontSize: 11,
   },
   txAmount: {
     ...typography.bodyLarge,
-    fontWeight: '700',
+    fontWeight: "700",
     fontSize: 15,
+    fontVariant: ["tabular-nums"],
   },
   emptyCard: {
-    alignItems: 'center',
+    alignItems: "center",
     padding: spacing.xxl,
     marginTop: spacing.lg,
   },
   emptyTitle: {
     ...typography.bodyLarge,
-    fontWeight: '600',
+    fontWeight: "600",
     marginTop: spacing.md,
   },
   emptySubtitle: {
     ...typography.caption,
-    textAlign: 'center',
+    textAlign: "center",
     marginTop: 4,
     lineHeight: 18,
   },
   fab: {
-    position: 'absolute',
+    position: "absolute",
     right: spacing.base,
     bottom: spacing.xxl + spacing.md,
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    alignItems: 'center',
-    justifyContent: 'center',
+    width: 54,
+    height: 54,
+    borderRadius: 27,
+    alignItems: "center",
+    justifyContent: "center",
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.35,
+    shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 6,
   },

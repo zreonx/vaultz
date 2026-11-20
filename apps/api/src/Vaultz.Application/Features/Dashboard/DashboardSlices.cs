@@ -53,20 +53,17 @@ public sealed class DashboardHandlers
 {
     private readonly IVaultzDbContext _dbContext;
     private readonly ICurrentUserService _currentUser;
-    private readonly BudgetHandlers _budgetHandlers;
     private readonly SavingsGoalHandlers _savingsGoalHandlers;
     private readonly TransactionHandlers _transactionHandlers;
 
     public DashboardHandlers(
         IVaultzDbContext dbContext,
         ICurrentUserService currentUser,
-        BudgetHandlers budgetHandlers,
         SavingsGoalHandlers savingsGoalHandlers,
         TransactionHandlers transactionHandlers)
     {
         _dbContext = dbContext;
         _currentUser = currentUser;
-        _budgetHandlers = budgetHandlers;
         _savingsGoalHandlers = savingsGoalHandlers;
         _transactionHandlers = transactionHandlers;
     }
@@ -247,12 +244,10 @@ public sealed class DashboardHandlers
 
         var activePlans = await activePlansQuery.ToListAsync(cancellationToken);
 
-        IReadOnlyList<BudgetProgressResponse> budgets;
-
+        var sliceBudgets = new List<BudgetProgressResponse>();
         if (activePlans.Count > 0)
         {
             var accountDict = accounts.ToDictionary(a => a.Id);
-            var sliceBudgets = new List<BudgetProgressResponse>();
             foreach (var plan in activePlans)
             {
                 accountDict.TryGetValue(plan.AccountId, out var planAccount);
@@ -278,12 +273,9 @@ public sealed class DashboardHandlers
                         accName));
                 }
             }
-            budgets = sliceBudgets;
         }
-        else
-        {
-            budgets = await _budgetHandlers.GetMonthlyBudgetsAsync(targetYear, targetMonth, accountId, cancellationToken);
-        }
+
+        IReadOnlyList<BudgetProgressResponse> budgets = sliceBudgets;
 
         var savingsGoals = await _savingsGoalHandlers.GetSavingsGoalsAsync(accountId, cancellationToken);
         var recentTransactions = await _transactionHandlers.GetTransactionsAsync(

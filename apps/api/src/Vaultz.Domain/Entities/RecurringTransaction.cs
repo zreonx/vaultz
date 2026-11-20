@@ -86,4 +86,52 @@ public sealed class RecurringTransaction : UserOwnedEntity
         };
         MarkUpdated(DateTimeOffset.UtcNow);
     }
+
+    public void Update(
+        Guid accountId,
+        Guid? destinationAccountId,
+        Guid? categoryId,
+        TransactionType type,
+        decimal amount,
+        string currencyCode,
+        string description,
+        RecurrenceFrequency frequency,
+        DateOnly nextOccurrenceDate,
+        bool isActive)
+    {
+        if (accountId == Guid.Empty)
+        {
+            throw new DomainException("Source account is required.", "invalid_account");
+        }
+
+        if (amount <= 0m)
+        {
+            throw new DomainException("Recurring transaction amount must be greater than zero.", "invalid_amount");
+        }
+
+        if (string.IsNullOrWhiteSpace(description) || description.Trim().Length > 200)
+        {
+            throw new DomainException("Description is required and must be at most 200 characters.", "invalid_description");
+        }
+
+        if (type == TransactionType.Transfer)
+        {
+            if (!destinationAccountId.HasValue || destinationAccountId.Value == accountId)
+            {
+                throw new DomainException("Recurring transfers require a distinct destination account.", "invalid_transfer_destination");
+            }
+        }
+
+        AccountId = accountId;
+        DestinationAccountId = type == TransactionType.Transfer ? destinationAccountId : null;
+        CategoryId = type == TransactionType.Transfer ? null : categoryId;
+        Type = type;
+        CurrencyCode = ValueObjects.CurrencyCode.From(currencyCode).Value;
+        Amount = Money.Create(amount, CurrencyCode).Amount;
+        Description = description.Trim();
+        Frequency = frequency;
+        NextOccurrenceDate = nextOccurrenceDate;
+        IsActive = isActive;
+        MarkUpdated(DateTimeOffset.UtcNow);
+    }
 }

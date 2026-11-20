@@ -50,3 +50,17 @@ public enum AllocationCategory
     Bills = 3,
     Custom = 4
 }
+
+public enum WishlistPriority
+{
+    Low = 1,
+    Medium = 2,
+    High = 3
+}
+
+public enum WishlistStatus
+{
+    Wanted = 1,
+    Purchased = 2,
+    Archived = 3
+}

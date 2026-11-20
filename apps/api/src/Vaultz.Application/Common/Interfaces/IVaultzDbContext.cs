@@ -21,8 +21,12 @@ public interface IVaultzDbContext
     DbSet<AccountAllocation> AccountAllocations { get; }
     DbSet<MonthlyBudgetPlan> MonthlyBudgetPlans { get; }
     DbSet<MonthlyBudgetSlice> MonthlyBudgetSlices { get; }
+    DbSet<QuickLogPreset> QuickLogPresets { get; }
+    DbSet<WishlistItem> WishlistItems { get; }
+    DbSet<QuickNote> QuickNotes { get; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
     Task<bool> CanConnectAsync(CancellationToken cancellationToken = default);
     Task ExecuteInTransactionAsync(Func<CancellationToken, Task> operation, CancellationToken cancellationToken = default);
+    Task DeleteAccountDependentRecordsAsync(string userId, Guid accountId, CancellationToken cancellationToken = default);
 }

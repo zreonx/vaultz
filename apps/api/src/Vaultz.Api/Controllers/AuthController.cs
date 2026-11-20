@@ -14,13 +14,16 @@ public sealed class AuthController : ControllerBase
 {
     private readonly AuthHandlers _handlers;
     private readonly JwtOptions _jwtOptions;
+    private readonly IWebHostEnvironment _environment;
 
     public AuthController(
         AuthHandlers handlers,
-        IOptions<JwtOptions> jwtOptions)
+        IOptions<JwtOptions> jwtOptions,
+        IWebHostEnvironment environment)
     {
         _handlers = handlers;
         _jwtOptions = jwtOptions.Value;
+        _environment = environment;
     }
 
     [HttpPost("register")]
@@ -260,11 +263,12 @@ public sealed class AuthController : ControllerBase
 
     private void AppendJwtCookie(string token, DateTimeOffset expiresAtUtc)
     {
+        var isDevOrTesting = _environment.IsDevelopment() || _environment.IsEnvironment("Testing");
         Response.Cookies.Append(_jwtOptions.CookieName, token, new CookieOptions
         {
             HttpOnly = true,
-            SameSite = SameSiteMode.Lax,
-            Secure = Request.IsHttps,
+            SameSite = isDevOrTesting ? SameSiteMode.Lax : SameSiteMode.None,
+            Secure = !isDevOrTesting || Request.IsHttps,
             Expires = expiresAtUtc,
             Path = "/"
         });
@@ -272,11 +276,12 @@ public sealed class AuthController : ControllerBase
 
     private void DeleteJwtCookie()
     {
+        var isDevOrTesting = _environment.IsDevelopment() || _environment.IsEnvironment("Testing");
         Response.Cookies.Delete(_jwtOptions.CookieName, new CookieOptions
         {
             HttpOnly = true,
-            SameSite = SameSiteMode.Lax,
-            Secure = Request.IsHttps,
+            SameSite = isDevOrTesting ? SameSiteMode.Lax : SameSiteMode.None,
+            Secure = !isDevOrTesting || Request.IsHttps,
             Path = "/"
         });
     }

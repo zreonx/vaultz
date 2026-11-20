@@ -22,6 +22,17 @@ export interface CreateTransactionRequest {
   notes?: string | null;
 }
 
+export interface UpdateTransactionRequest {
+  accountId: string;
+  destinationAccountId?: string | null;
+  categoryId?: string | null;
+  type: TransactionType | 'Expense' | 'Income' | 'Transfer' | string;
+  amount: number;
+  occurredOn: string;
+  description?: string | null;
+  notes?: string | null;
+}
+
 export interface ListTransactionsFilter {
   accountId?: string;
   type?: TransactionType | 'Expense' | 'Income' | 'Transfer' | string;
@@ -57,7 +68,8 @@ export const transactionsApi = {
     return (items || []).map((tx) => ({
       ...tx,
       currency: tx.currencyCode,
-      category: tx.categoryName || tx.description || 'Uncategorized',
+      categoryName: tx.categoryName ?? null,
+      category: tx.categoryName || tx.description || 'General',
       transactionDate: tx.occurredOn || tx.createdAtUtc,
     }));
   },
@@ -120,6 +132,27 @@ export const transactionsApi = {
 
   async create(data: CreateTransactionRequest): Promise<TransactionResponse> {
     return transactionsApi.createTransaction(data);
+  },
+
+  async updateTransaction(
+    id: string,
+    data: UpdateTransactionRequest
+  ): Promise<TransactionResponse> {
+    const payload = {
+      accountId: data.accountId,
+      destinationAccountId: data.destinationAccountId || null,
+      categoryId: data.categoryId || null,
+      type: resolveTransactionType(data.type) ?? TransactionType.Expense,
+      amount: data.amount,
+      occurredOn: data.occurredOn.split('T')[0],
+      description: data.description?.trim() || null,
+      notes: data.notes?.trim() || null,
+    };
+
+    return apiClient<TransactionResponse>(`/api/v1/transactions/${id}`, {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    });
   },
 
   async deleteTransaction(id: string): Promise<void> {

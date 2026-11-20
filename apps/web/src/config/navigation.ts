@@ -76,6 +76,20 @@ export const ACCOUNT_NAVIGATION: NavItem[] = [
     scope: "account",
   },
   {
+    title: "Wishlist",
+    href: "/wishlist",
+    status: "active",
+    description: "Planned purchases, priorities & expense conversion",
+    scope: "account",
+  },
+  {
+    title: "Quick Notes",
+    href: "/notes",
+    status: "active",
+    description: "Pinned reminders, checklists & financial scratchpad",
+    scope: "account",
+  },
+  {
     title: "Categories",
     href: "/categories",
     status: "active",

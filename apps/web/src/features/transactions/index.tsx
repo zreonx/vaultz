@@ -192,7 +192,6 @@ export function TransactionsFeatureView() {
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: TRANSACTIONS_QUERY_KEY });
       void queryClient.invalidateQueries({ queryKey: ["accounts"] });
-      void queryClient.invalidateQueries({ queryKey: ["budgets"] });
       void queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       toast.success("Transaction removed and account balance restored.");
     },

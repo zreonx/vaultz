@@ -36,9 +36,32 @@ public sealed record CreateRecurringTransactionCommand(
     RecurrenceFrequency Frequency,
     DateOnly NextOccurrenceDate);
 
+public sealed record UpdateRecurringTransactionCommand(
+    Guid AccountId,
+    Guid? DestinationAccountId,
+    Guid? CategoryId,
+    TransactionType Type,
+    decimal Amount,
+    string Description,
+    RecurrenceFrequency Frequency,
+    DateOnly NextOccurrenceDate,
+    bool IsActive = true);
+
 public sealed class CreateRecurringTransactionValidator : AbstractValidator<CreateRecurringTransactionCommand>
 {
     public CreateRecurringTransactionValidator()
+    {
+        RuleFor(x => x.AccountId).NotEmpty();
+        RuleFor(x => x.Type).IsInEnum();
+        RuleFor(x => x.Amount).GreaterThan(0m);
+        RuleFor(x => x.Description).NotEmpty().MaximumLength(200);
+        RuleFor(x => x.Frequency).IsInEnum();
+    }
+}
+
+public sealed class UpdateRecurringTransactionValidator : AbstractValidator<UpdateRecurringTransactionCommand>
+{
+    public UpdateRecurringTransactionValidator()
     {
         RuleFor(x => x.AccountId).NotEmpty();
         RuleFor(x => x.Type).IsInEnum();
@@ -53,15 +76,18 @@ public sealed class RecurringTransactionHandlers
     private readonly IVaultzDbContext _dbContext;
     private readonly ICurrentUserService _currentUser;
     private readonly IValidator<CreateRecurringTransactionCommand> _createValidator;
+    private readonly IValidator<UpdateRecurringTransactionCommand> _updateValidator;
 
     public RecurringTransactionHandlers(
         IVaultzDbContext dbContext,
         ICurrentUserService currentUser,
-        IValidator<CreateRecurringTransactionCommand> createValidator)
+        IValidator<CreateRecurringTransactionCommand> createValidator,
+        IValidator<UpdateRecurringTransactionCommand> updateValidator)
     {
         _dbContext = dbContext;
         _currentUser = currentUser;
         _createValidator = createValidator;
+        _updateValidator = updateValidator;
     }
 
     public async Task<IReadOnlyList<RecurringTransactionResponse>> GetRecurringTransactionsAsync(
@@ -135,6 +161,74 @@ public sealed class RecurringTransactionHandlers
             command.NextOccurrenceDate);
 
         _dbContext.RecurringTransactions.Add(recurring);
+        await _dbContext.SaveChangesAsync(cancellationToken);
+
+        var all = await GetRecurringTransactionsAsync(null, cancellationToken);
+        return all.First(r => r.Id == recurring.Id);
+    }
+
+    public async Task<RecurringTransactionResponse> UpdateRecurringTransactionAsync(
+        Guid id,
+        UpdateRecurringTransactionCommand command,
+        CancellationToken cancellationToken = default)
+    {
+        var validation = await _updateValidator.ValidateAsync(command, cancellationToken);
+        if (!validation.IsValid)
+        {
+            throw new AppValidationException(validation.Errors);
+        }
+
+        var userId = _currentUser.GetRequiredUserId();
+        var recurring = await _dbContext.RecurringTransactions
+            .FirstOrDefaultAsync(r => r.Id == id && r.UserId == userId, cancellationToken)
+            ?? throw new NotFoundException(nameof(RecurringTransaction), id);
+
+        var sourceAccount = await _dbContext.Accounts
+            .AsNoTracking()
+            .FirstOrDefaultAsync(a => a.Id == command.AccountId && a.UserId == userId, cancellationToken)
+            ?? throw new NotFoundException(nameof(FinancialAccount), command.AccountId);
+
+        if (command.Type == TransactionType.Transfer)
+        {
+            if (!command.DestinationAccountId.HasValue)
+            {
+                throw new Vaultz.Domain.Common.DomainException(
+                    "Recurring transfers require a distinct destination account.",
+                    "invalid_transfer_destination");
+            }
+
+            var destAccount = await _dbContext.Accounts
+                .AsNoTracking()
+                .FirstOrDefaultAsync(a => a.Id == command.DestinationAccountId.Value && a.UserId == userId, cancellationToken)
+                ?? throw new NotFoundException(nameof(FinancialAccount), command.DestinationAccountId.Value);
+
+            sourceAccount.EnsureSameCurrency(destAccount.CurrencyCode);
+        }
+
+        if (command.CategoryId.HasValue && command.Type != TransactionType.Transfer)
+        {
+            var categoryExists = await _dbContext.Categories
+                .AsNoTracking()
+                .AnyAsync(c => c.Id == command.CategoryId.Value && c.UserId == userId, cancellationToken);
+
+            if (!categoryExists)
+            {
+                throw new NotFoundException(nameof(Category), command.CategoryId.Value);
+            }
+        }
+
+        recurring.Update(
+            sourceAccount.Id,
+            command.DestinationAccountId,
+            command.CategoryId,
+            command.Type,
+            command.Amount,
+            sourceAccount.CurrencyCode,
+            command.Description,
+            command.Frequency,
+            command.NextOccurrenceDate,
+            command.IsActive);
+
         await _dbContext.SaveChangesAsync(cancellationToken);
 
         var all = await GetRecurringTransactionsAsync(null, cancellationToken);

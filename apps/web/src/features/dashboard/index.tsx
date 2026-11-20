@@ -16,6 +16,7 @@ import { formatMoney } from "@/lib/utils/currency";
 import { useWorkspace } from "@/context/workspace-context";
 import { useCurrentUser } from "@/hooks/use-auth";
 import { DataTableShell } from "@/components/shared/data-table";
+import { QuickLogBar } from "@/features/dashboard/quick-log-bar";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   TransactionType,
@@ -188,6 +189,9 @@ export function DashboardOverviewFeature() {
           )}
         </div>
       </section>
+
+      {/* 1-Tap Quick Log Shortcuts */}
+      {activeWorkspace && <QuickLogBar account={activeWorkspace} />}
 
       {/* KPI Metric Cards: Strictly Scoped to Active Account */}
       {isLoadingSummary ? (

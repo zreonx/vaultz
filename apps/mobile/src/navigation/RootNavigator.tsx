@@ -4,7 +4,7 @@ import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import { AuthNavigator } from './AuthNavigator';
-import { MainTabNavigator } from './MainTabNavigator';
+import { AppStackNavigator } from './AppStackNavigator';
 import { BiometricLockScreen } from '@/screens/lock/BiometricLockScreen';
 
 export const RootNavigator: React.FC = () => {
@@ -41,7 +41,7 @@ export const RootNavigator: React.FC = () => {
       ) : isBiometricLocked ? (
         <BiometricLockScreen />
       ) : (
-        <MainTabNavigator />
+        <AppStackNavigator />
       )}
     </NavigationContainer>
   );

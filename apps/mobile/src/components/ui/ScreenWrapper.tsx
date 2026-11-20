@@ -10,7 +10,6 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { useTheme } from "@/context/ThemeContext";
-import { colors } from "@/theme/colors";
 
 interface ScreenWrapperProps {
   children: React.ReactNode;
@@ -34,7 +33,7 @@ export function ScreenWrapper({
   const topInset = includeTopInset
     ? Math.max(
         insets.top,
-        Platform.OS === "android" ? (RNStatusBar.currentHeight || 24) : 0
+        Platform.OS === "android" ? RNStatusBar.currentHeight || 24 : 0
       )
     : 0;
 
@@ -68,7 +67,7 @@ export function ScreenWrapper({
 
   return (
     <KeyboardAvoidingView
-      style={styles.keyboardAvoid}
+      style={[styles.keyboardAvoid, { backgroundColor: colors.background }]}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
       {content}
@@ -79,10 +78,8 @@ export function ScreenWrapper({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
   },
   keyboardAvoid: {
     flex: 1,
-    backgroundColor: colors.background,
   },
 });

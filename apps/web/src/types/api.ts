@@ -419,3 +419,78 @@ export interface NotificationsListResponse {
   unreadCount: number;
 }
 
+export interface QuickLogPresetResponse {
+  id: string;
+  accountId: string;
+  label: string;
+  amount: number;
+  currencyCode: string;
+  type: TransactionType;
+  typeName: string;
+  categoryId?: string | null;
+  categoryName?: string | null;
+  budgetSliceId?: string | null;
+  budgetSliceName?: string | null;
+  icon: string;
+  colorHex: string;
+  sortOrder: number;
+}
+
+export interface QuickLogPresetItemInput {
+  label: string;
+  amount: number;
+  type: TransactionType;
+  categoryId?: string | null;
+  budgetSliceId?: string | null;
+  icon: string;
+  colorHex: string;
+  sortOrder: number;
+}
+
+export enum WishlistPriority {
+  Low = 1,
+  Medium = 2,
+  High = 3,
+}
+
+export enum WishlistStatus {
+  Wanted = 1,
+  Purchased = 2,
+  Archived = 3,
+}
+
+export interface WishlistItemResponse {
+  id: string;
+  name: string;
+  estimatedPrice: number;
+  currencyCode: string;
+  priority: WishlistPriority;
+  priorityName: string;
+  status: WishlistStatus;
+  statusName: string;
+  accountId?: string | null;
+  accountName?: string | null;
+  categoryId?: string | null;
+  categoryName?: string | null;
+  targetDate?: string | null;
+  url?: string | null;
+  notes?: string | null;
+  purchasedAtUtc?: string | null;
+  purchasedTransactionId?: string | null;
+  createdAtUtc: string;
+  updatedAtUtc?: string | null;
+}
+
+export interface QuickNoteResponse {
+  id: string;
+  title: string;
+  content: string;
+  colorHex: string;
+  isPinned: boolean;
+  isArchived: boolean;
+  accountId?: string | null;
+  accountName?: string | null;
+  createdAtUtc: string;
+  updatedAtUtc?: string | null;
+}
+

@@ -12,6 +12,7 @@ using Vaultz.Application.Common.Interfaces;
 using Vaultz.Application.Features.Auth;
 using Vaultz.Domain.Entities;
 using Vaultz.Domain.Enums;
+using Vaultz.Infrastructure.Configuration;
 
 namespace Vaultz.Infrastructure.Authentication;
 
@@ -24,6 +25,7 @@ public sealed class JwtAuthService : IAuthService
     private readonly IVaultzDbContext _dbContext;
     private readonly IEmailService _emailService;
     private readonly JwtOptions _jwtOptions;
+    private readonly AppOptions _appOptions;
     private readonly ILogger<JwtAuthService> _logger;
     private readonly INotificationService? _notificationService;
 
@@ -31,12 +33,14 @@ public sealed class JwtAuthService : IAuthService
         IVaultzDbContext dbContext,
         IEmailService emailService,
         IOptions<JwtOptions> jwtOptions,
+        IOptions<AppOptions> appOptions,
         ILogger<JwtAuthService> logger,
         INotificationService? notificationService = null)
     {
         _dbContext = dbContext;
         _emailService = emailService;
         _jwtOptions = jwtOptions.Value;
+        _appOptions = appOptions.Value;
         _logger = logger;
         _notificationService = notificationService;
     }
@@ -87,11 +91,12 @@ public sealed class JwtAuthService : IAuthService
         await _dbContext.SaveChangesAsync(cancellationToken);
 
         // Dispatch verification email in background
+        var frontendBaseUrl = _appOptions.FrontendBaseUrl.TrimEnd('/');
         _ = _emailService.SendEmailVerificationAsync(
             user.Email,
             user.FullName,
             verificationOtp,
-            $"http://localhost:3000/verify-email?email={Uri.EscapeDataString(user.Email)}&code={verificationOtp}",
+            $"{frontendBaseUrl}/verify-email?email={Uri.EscapeDataString(user.Email)}&code={verificationOtp}",
             CancellationToken.None);
 
         return CreateAuthResult(user, isEmailVerified: false);
@@ -154,11 +159,12 @@ public sealed class JwtAuthService : IAuthService
         user.SetEmailVerificationToken(verificationOtp, DateTimeOffset.UtcNow.AddMinutes(15));
         await _dbContext.SaveChangesAsync(cancellationToken);
 
+        var frontendBaseUrl = _appOptions.FrontendBaseUrl.TrimEnd('/');
         _ = _emailService.SendEmailVerificationAsync(
             user.Email,
             user.FullName,
             verificationOtp,
-            $"http://localhost:3000/verify-email?email={Uri.EscapeDataString(user.Email)}&code={verificationOtp}",
+            $"{frontendBaseUrl}/verify-email?email={Uri.EscapeDataString(user.Email)}&code={verificationOtp}",
             CancellationToken.None);
     }
 
@@ -210,11 +216,12 @@ public sealed class JwtAuthService : IAuthService
             user.SetEmailVerificationToken(verificationOtp, now.AddMinutes(15));
             await _dbContext.SaveChangesAsync(cancellationToken);
 
+            var frontendBaseUrl = _appOptions.FrontendBaseUrl.TrimEnd('/');
             _ = _emailService.SendEmailVerificationAsync(
                 user.Email,
                 user.FullName,
                 verificationOtp,
-                $"http://localhost:3000/verify-email?email={Uri.EscapeDataString(user.Email)}&code={verificationOtp}",
+                $"{frontendBaseUrl}/verify-email?email={Uri.EscapeDataString(user.Email)}&code={verificationOtp}",
                 CancellationToken.None);
 
             return CreateAuthResult(user, isEmailVerified: false);
@@ -494,7 +501,8 @@ public sealed class JwtAuthService : IAuthService
         user.SetPasswordResetToken(resetOtp, DateTimeOffset.UtcNow.AddMinutes(15));
         await _dbContext.SaveChangesAsync(cancellationToken);
 
-        var resetLink = $"http://localhost:3000/reset-password?email={Uri.EscapeDataString(user.Email)}&token={resetOtp}";
+        var frontendBaseUrl = _appOptions.FrontendBaseUrl.TrimEnd('/');
+        var resetLink = $"{frontendBaseUrl}/reset-password?email={Uri.EscapeDataString(user.Email)}&token={resetOtp}";
         _ = _emailService.SendPasswordResetAsync(user.Email, user.FullName, resetOtp, resetLink, CancellationToken.None);
     }
 

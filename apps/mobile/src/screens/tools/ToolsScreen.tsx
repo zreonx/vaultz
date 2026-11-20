@@ -1,18 +1,19 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Dimensions,
+  ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { ScreenWrapper } from '@/components/ui/ScreenWrapper';
-import { Header } from '@/components/shared/Header';
+import { StackHeader } from '@/components/shared/StackHeader';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { PressableScale } from '@/components/ui/PressableScale';
+import { currenciesApi } from '@/api/currencies';
 import { useTheme } from '@/context/ThemeContext';
 import { useWorkspace } from '@/context/WorkspaceContext';
 import { typography, radius, spacing } from '@/theme/tokens';
@@ -112,6 +113,28 @@ export const ToolsScreen: React.FC = () => {
   const { colors, isDark } = useTheme();
   const { activeWorkspace } = useWorkspace();
   const [activeTab, setActiveTab] = useState<ToolTab>('converter');
+  const [isLiveFx, setIsLiveFx] = useState(false);
+  const [refreshingRates, setRefreshingRates] = useState(false);
+  const [ratesVersion, setRatesVersion] = useState(0);
+
+  const loadRates = useCallback(async (forceRefresh = false) => {
+    try {
+      if (forceRefresh) setRefreshingRates(true);
+      const res = await currenciesApi.getRates(forceRefresh);
+      if (res) {
+        setIsLiveFx(Boolean(res.isLiveFeedActive));
+        setRatesVersion((v) => v + 1);
+      }
+    } catch {
+      // Fallback to built-in benchmark rates
+    } finally {
+      setRefreshingRates(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadRates(false);
+  }, [loadRates]);
 
   // --- Currency Converter State ---
   const [amount, setAmount] = useState<string>('100');
@@ -121,15 +144,18 @@ export const ToolsScreen: React.FC = () => {
   const numericAmount = Math.max(0, parseFloat(amount) || 0);
   const convertedAmount = useMemo(
     () => convertReferenceAmount(numericAmount, fromCurr, toCurr),
-    [numericAmount, fromCurr, toCurr]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [numericAmount, fromCurr, toCurr, ratesVersion]
   );
   const currentRate = useMemo(
     () => getReferenceExchangeRate(fromCurr, toCurr),
-    [fromCurr, toCurr]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [fromCurr, toCurr, ratesVersion]
   );
   const invertedRate = useMemo(
     () => getReferenceExchangeRate(toCurr, fromCurr),
-    [fromCurr, toCurr]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [fromCurr, toCurr, ratesVersion]
   );
 
   const handleSwapCurrencies = () => {
@@ -303,7 +329,49 @@ export const ToolsScreen: React.FC = () => {
 
   return (
     <ScreenWrapper>
-      <Header showAccountPicker={false} title="Calculators & Tools" />
+      <StackHeader
+        title="Calculators & Tools"
+        subtitle={isLiveFx ? 'Live FX feed active' : 'Reference benchmark rates'}
+        showPrivacyToggle={false}
+        rightAction={
+          <TouchableOpacity
+            onPress={() => {
+              haptics.light();
+              void loadRates(true);
+            }}
+            disabled={refreshingRates}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            style={[
+              styles.liveFxPill,
+              {
+                backgroundColor: isLiveFx ? colors.accentSoft : colors.surfaceMuted,
+                borderColor: colors.borderSubtle,
+              },
+            ]}
+            accessibilityLabel="Refresh exchange rates"
+          >
+            {refreshingRates ? (
+              <ActivityIndicator size="small" color={colors.accent} />
+            ) : (
+              <>
+                <Ionicons
+                  name="refresh-outline"
+                  size={13}
+                  color={isLiveFx ? colors.accent : colors.textSecondary}
+                />
+                <Text
+                  style={[
+                    styles.liveFxText,
+                    { color: isLiveFx ? colors.accent : colors.textSecondary },
+                  ]}
+                >
+                  {isLiveFx ? 'Live FX' : 'Rates'}
+                </Text>
+              </>
+            )}
+          </TouchableOpacity>
+        }
+      />
 
       {/* Segmented Tool Switcher */}
       <View
@@ -1101,6 +1169,21 @@ const styles = StyleSheet.create({
     ...typography.heading,
     fontSize: 26,
     fontWeight: '800',
+    fontVariant: ['tabular-nums'],
+  },
+  liveFxPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: radius.full,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  liveFxText: {
+    ...typography.caption,
+    fontSize: 11,
+    fontWeight: '700',
   },
   rateInfo: {
     ...typography.caption,

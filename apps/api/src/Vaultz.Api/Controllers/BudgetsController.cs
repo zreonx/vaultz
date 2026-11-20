@@ -25,6 +25,7 @@ public sealed class BudgetsController : ControllerBase
         [FromQuery] Guid? accountId = null,
         CancellationToken cancellationToken = default)
     {
+        AddDeprecationHeaders();
         var now = DateTime.UtcNow;
         var items = await _handlers.GetMonthlyBudgetsAsync(
             year ?? now.Year,
@@ -40,6 +41,7 @@ public sealed class BudgetsController : ControllerBase
         [FromBody] UpsertBudgetCommand command,
         CancellationToken cancellationToken = default)
     {
+        AddDeprecationHeaders();
         var result = await _handlers.UpsertBudgetAsync(command, cancellationToken);
         return Ok(result);
     }
@@ -50,7 +52,14 @@ public sealed class BudgetsController : ControllerBase
         Guid id,
         CancellationToken cancellationToken = default)
     {
+        AddDeprecationHeaders();
         await _handlers.DeleteBudgetAsync(id, cancellationToken);
         return NoContent();
+    }
+
+    private void AddDeprecationHeaders()
+    {
+        Response.Headers["Deprecation"] = "true";
+        Response.Headers["Link"] = "</api/v1/accounts>; rel=\"successor-version\"";
     }
 }

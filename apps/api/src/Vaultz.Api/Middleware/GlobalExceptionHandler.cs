@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Vaultz.Application.Common.Exceptions;
 using Vaultz.Domain.Common;
 
@@ -65,6 +66,13 @@ public sealed class GlobalExceptionHandler : IExceptionHandler
                 Detail = domainException.Message,
                 Type = "https://tools.ietf.org/html/rfc9110#section-15.5.21",
                 Extensions = { ["code"] = domainException.Code }
+            },
+            DbUpdateConcurrencyException => new ProblemDetails
+            {
+                Status = StatusCodes.Status409Conflict,
+                Title = "Concurrency conflict",
+                Detail = "The record was modified or deleted by another request. Please refresh and try again.",
+                Type = "https://tools.ietf.org/html/rfc9110#section-15.5.10"
             },
             _ => new ProblemDetails
             {

@@ -203,7 +203,7 @@ export function TwoFactorSecurityCard({ user }: TwoFactorSecurityCardProps) {
 
       {/* SETUP DIALOG */}
       <Dialog open={setupOpen} onOpenChange={setSetupOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <KeyRound className="h-4 w-4 text-[var(--accent)]" />
@@ -296,7 +296,7 @@ export function TwoFactorSecurityCard({ user }: TwoFactorSecurityCardProps) {
                 />
               </div>
 
-              <DialogFooter className="gap-2 sm:gap-0 pt-2">
+              <DialogFooter className="pt-2">
                 <Button
                   type="button"
                   variant="outline"
@@ -319,7 +319,7 @@ export function TwoFactorSecurityCard({ user }: TwoFactorSecurityCardProps) {
 
       {/* DISABLE DIALOG */}
       <Dialog open={disableOpen} onOpenChange={setDisableOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-[var(--danger)]">
               <ShieldAlert className="h-4 w-4" />
@@ -362,7 +362,7 @@ export function TwoFactorSecurityCard({ user }: TwoFactorSecurityCardProps) {
               </div>
             </div>
 
-            <DialogFooter className="gap-2 sm:gap-0 pt-2">
+            <DialogFooter className="pt-2">
               <Button
                 type="button"
                 variant="outline"

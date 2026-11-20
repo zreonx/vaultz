@@ -37,6 +37,14 @@ Default local values in `apps/web/.env.example`:
 - `NEXT_PUBLIC_API_BASE_URL=http://localhost:5180`
 - `NEXT_PUBLIC_APP_ENV=development`
 
+### 2.3 Production API Environment (`apps/api/.env.example`)
+In non-development environments (`ASPNETCORE_ENVIRONMENT=Production`), startup fails fast if any required secret or production setting is missing or still uses development defaults. Inject the following environment variables (see [`apps/api/.env.example`](../../apps/api/.env.example)):
+- `ConnectionStrings__DefaultConnection` — PostgreSQL connection string (must not use dev password)
+- `Jwt__SigningKey` — At least 32 UTF-8 bytes for HMAC-SHA256 signing
+- `Resend__ApiKey` (or `RESEND_API_KEY`) — Live Resend key when `Resend__Enabled=true`
+- `App__FrontendBaseUrl` — Non-localhost `https://` URL for email verification & reset links
+- `Cors__AllowedOrigins__0` — Explicit production web/app origins
+
 ---
 
 ## 3. Starting, Stopping, and Resetting PostgreSQL

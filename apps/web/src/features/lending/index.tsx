@@ -554,15 +554,16 @@ export function LendingFeatureView() {
 
       {/* Modal 1: Create IOU */}
       <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
+        <DialogContent className="sm:max-w-lg max-h-[90dvh] flex flex-col p-0 overflow-hidden gap-0">
+          <DialogHeader className="px-6 pt-5 pb-3.5 border-b border-[var(--border-subtle)] shrink-0">
             <DialogTitle>Add Personal IOU</DialogTitle>
             <DialogDescription>
               Record money lent to a friend or borrowed from someone in {activeWorkspace?.name}.
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleCreateSubmit} className="space-y-4">
+          <form onSubmit={handleCreateSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+            <div className="flex-1 min-h-0 overflow-y-auto px-6 py-4 space-y-4">
             {/* Direction Toggle */}
             <div className="space-y-1.5">
               <Label>Type</Label>
@@ -662,8 +663,9 @@ export function LendingFeatureView() {
                   : `Deposits funds into ${activeWorkspace?.name} and logs an inflow transaction.`}
               </p>
             </div>
+            </div>
 
-            <DialogFooter>
+            <DialogFooter className="px-6 py-3.5 border-t border-[var(--border-subtle)] bg-[var(--surface-muted)]/40">
               <Button type="button" variant="outline" onClick={() => setIsCreateOpen(false)}>
                 Cancel
               </Button>
@@ -682,8 +684,8 @@ export function LendingFeatureView() {
           if (!open) setSelectedRecordForPayment(null);
         }}
       >
-        <DialogContent className="max-w-md">
-          <DialogHeader>
+        <DialogContent className="sm:max-w-lg max-h-[90dvh] flex flex-col p-0 overflow-hidden gap-0">
+          <DialogHeader className="px-6 pt-5 pb-3.5 border-b border-[var(--border-subtle)] shrink-0">
             <DialogTitle>Log Repayment</DialogTitle>
             <DialogDescription>
               {selectedRecordForPayment?.type === LendingType.Lent
@@ -693,7 +695,8 @@ export function LendingFeatureView() {
           </DialogHeader>
 
           {selectedRecordForPayment && (
-            <form onSubmit={handlePaymentSubmit} className="space-y-4">
+            <form onSubmit={handlePaymentSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+              <div className="flex-1 min-h-0 overflow-y-auto px-6 py-4 space-y-4">
               <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-muted)] p-3 flex justify-between text-xs">
                 <div>
                   <span className="text-[var(--muted-foreground)]">Remaining Balance:</span>
@@ -774,8 +777,9 @@ export function LendingFeatureView() {
                     : `Debits ${activeWorkspace?.name} balance with the repayment amount.`}
                 </p>
               </div>
+              </div>
 
-              <DialogFooter>
+              <DialogFooter className="px-6 py-3.5 border-t border-[var(--border-subtle)] bg-[var(--surface-muted)]/40">
                 <Button
                   type="button"
                   variant="outline"

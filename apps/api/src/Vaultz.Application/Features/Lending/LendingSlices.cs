@@ -201,24 +201,26 @@ public sealed class LendingHandlers
         await _createValidator.ValidateAndThrowAsync(command, cancellationToken);
 
         var userId = _currentUser.GetRequiredUserId();
-
-        var account = await _dbContext.Accounts
-            .FirstOrDefaultAsync(a => a.Id == command.AccountId && a.UserId == userId, cancellationToken)
-            ?? throw new NotFoundException("Account", command.AccountId);
-
-        var record = new LendingRecord(
-            userId,
-            account.Id,
-            command.Type,
-            command.Counterparty,
-            command.Amount,
-            account.CurrencyCode,
-            command.DueDate,
-            command.Notes
-        );
+        FinancialAccount? account = null;
+        LendingRecord? record = null;
 
         await _dbContext.ExecuteInTransactionAsync(async ct =>
         {
+            account = await _dbContext.Accounts
+                .FirstOrDefaultAsync(a => a.Id == command.AccountId && a.UserId == userId, ct)
+                ?? throw new NotFoundException("Account", command.AccountId);
+
+            record = new LendingRecord(
+                userId,
+                account.Id,
+                command.Type,
+                command.Counterparty,
+                command.Amount,
+                account.CurrencyCode,
+                command.DueDate,
+                command.Notes
+            );
+
             await _dbContext.LendingRecords.AddAsync(record, ct);
 
             if (command.SyncAccountBalance)
@@ -259,9 +261,9 @@ public sealed class LendingHandlers
         }, cancellationToken);
 
         return new LendingRecordResponse(
-            record.Id,
+            record!.Id,
             record.AccountId,
-            account.Name,
+            account!.Name,
             record.Type,
             record.Type.ToString(),
             record.Counterparty,
@@ -286,20 +288,19 @@ public sealed class LendingHandlers
         await _paymentValidator.ValidateAndThrowAsync(command, cancellationToken);
 
         var userId = _currentUser.GetRequiredUserId();
-
-        var record = await _dbContext.LendingRecords
-            .Include(r => r.Payments)
-            .FirstOrDefaultAsync(r => r.Id == command.LendingRecordId && r.UserId == userId, cancellationToken)
-            ?? throw new NotFoundException("LendingRecord", command.LendingRecordId);
-
-        var account = await _dbContext.Accounts
-            .FirstOrDefaultAsync(a => a.Id == record.AccountId && a.UserId == userId, cancellationToken)
-            ?? throw new NotFoundException("Account", record.AccountId);
-
         LendingPayment? payment = null;
 
         await _dbContext.ExecuteInTransactionAsync(async ct =>
         {
+            var record = await _dbContext.LendingRecords
+                .Include(r => r.Payments)
+                .FirstOrDefaultAsync(r => r.Id == command.LendingRecordId && r.UserId == userId, ct)
+                ?? throw new NotFoundException("LendingRecord", command.LendingRecordId);
+
+            var account = await _dbContext.Accounts
+                .FirstOrDefaultAsync(a => a.Id == record.AccountId && a.UserId == userId, ct)
+                ?? throw new NotFoundException("Account", record.AccountId);
+
             payment = record.RecordPayment(command.Amount, command.OccurredOn, command.Notes);
 
             if (command.SyncAccountBalance)

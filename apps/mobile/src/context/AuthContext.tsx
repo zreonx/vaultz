@@ -1,10 +1,20 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
 import { AppState, AppStateStatus } from "react-native";
 import { authApi } from "@/api/auth";
-import { setOnUnauthorizedCallback } from "@/api/client";
+import { ApiError, setOnUnauthorizedCallback } from "@/api/client";
 import { biometrics } from "@/security/biometrics";
 import { secureStore } from "@/security/secureStore";
-import { UserResponse } from "@/types/api";
+import { AuthResponse, UserResponse } from "@/types/api";
+
+const CACHED_ACCOUNTS_KEY = "vaultz_cached_accounts";
+const ACTIVE_ACCOUNT_KEY = "vaultz_active_account_id";
+const OFFLINE_QUEUE_KEY = "vaultz_offline_pending_transactions_v1";
+
+export interface LoginOutcome {
+  requiresTwoFactor: boolean;
+  twoFactorType?: string | null;
+  twoFactorToken?: string | null;
+}
 
 interface AuthContextValue {
   user: UserResponse | null;
@@ -15,13 +25,25 @@ interface AuthContextValue {
   isBiometricSupported: boolean;
   isBiometricEnabled: boolean;
   isHideBalance: boolean;
-  login: (email: string, pass: string) => Promise<void>;
-  register: (emailOrName: string, passOrEmail: string, nameOrPass?: string, curr?: string) => Promise<void>;
+  login: (email: string, pass: string) => Promise<LoginOutcome>;
+  verifyTwoFactor: (
+    email: string,
+    code: string,
+    twoFactorToken: string,
+    isRecoveryCode?: boolean
+  ) => Promise<void>;
+  register: (
+    emailOrName: string,
+    passOrEmail: string,
+    nameOrPass?: string,
+    curr?: string
+  ) => Promise<void>;
   logout: () => Promise<void>;
   unlockWithBiometrics: () => Promise<boolean>;
   toggleBiometrics: (enabled: boolean) => Promise<void>;
   setBiometricEnabled: (enabled: boolean) => Promise<boolean>;
   toggleHideBalance: () => Promise<void>;
+  applyAuthResult: (res: AuthResponse) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -40,6 +62,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isBiometricSupported, setIsBiometricSupported] = useState(false);
   const [isBiometricEnabled, setIsBiometricEnabled] = useState(false);
   const [isHideBalance, setIsHideBalance] = useState(false);
+
+  const applyAuthResult = useCallback(async (res: AuthResponse) => {
+    if (res.token) {
+      await secureStore.saveToken(res.token);
+      setToken(res.token);
+    }
+    await secureStore.saveUserProfile(JSON.stringify(res.user));
+    setUser(res.user);
+    setIsBiometricLocked(false);
+  }, []);
 
   // Load session on startup
   const bootstrapAsync = useCallback(async () => {
@@ -73,13 +105,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
         }
 
-        // Fetch fresh user profile
+        // Verify token and refresh profile against server
         try {
           const freshUser = await authApi.getCurrentUser();
-          setUser(freshUser);
-          await secureStore.saveUserProfile(JSON.stringify(freshUser));
-        } catch {
-          // If offline, user profile from secureStore is already loaded
+          if (!freshUser) {
+            // Expired/invalid session (204 from /api/v1/auth/me)
+            await secureStore.removeToken();
+            setToken(null);
+            setUser(null);
+            setIsBiometricLocked(false);
+          } else {
+            setUser(freshUser);
+            await secureStore.saveUserProfile(JSON.stringify(freshUser));
+          }
+        } catch (err) {
+          // Only keep offline cached session on genuine network errors
+          const isOfflineNetwork = err instanceof ApiError && err.status === 0;
+          if (!isOfflineNetwork) {
+            await secureStore.removeToken();
+            setToken(null);
+            setUser(null);
+            setIsBiometricLocked(false);
+          }
         }
       }
     } catch {
@@ -98,6 +145,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setOnUnauthorizedCallback(() => {
       setToken(null);
       setUser(null);
+      setIsBiometricLocked(false);
     });
   }, []);
 
@@ -120,13 +168,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return false;
   };
 
-  const login = async (email: string, pass: string): Promise<void> => {
+  const login = async (email: string, pass: string): Promise<LoginOutcome> => {
     const res = await authApi.login(email, pass);
-    await secureStore.saveToken(res.token);
-    await secureStore.saveUserProfile(JSON.stringify(res.user));
-    setToken(res.token);
-    setUser(res.user);
-    setIsBiometricLocked(false);
+    if (res.requiresTwoFactor && res.twoFactorToken) {
+      return {
+        requiresTwoFactor: true,
+        twoFactorType: res.twoFactorType,
+        twoFactorToken: res.twoFactorToken,
+      };
+    }
+
+    await applyAuthResult(res);
+    return { requiresTwoFactor: false };
+  };
+
+  const verifyTwoFactor = async (
+    email: string,
+    code: string,
+    twoFactorToken: string,
+    isRecoveryCode = false
+  ): Promise<void> => {
+    const res = await authApi.verifyTwoFactor(email, code, twoFactorToken, isRecoveryCode);
+    await applyAuthResult(res);
   };
 
   const register = async (
@@ -135,7 +198,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     nameOrPass?: string,
     curr = "USD"
   ): Promise<void> => {
-    // If 3rd arg is provided and looks like name/pass, discern order
     let email = emailOrName;
     let pass = passOrEmail;
     let name = nameOrPass || emailOrName.split("@")[0];
@@ -151,11 +213,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     const res = await authApi.register(name, email, pass, curr);
-    await secureStore.saveToken(res.token);
-    await secureStore.saveUserProfile(JSON.stringify(res.user));
-    setToken(res.token);
-    setUser(res.user);
-    setIsBiometricLocked(false);
+    await applyAuthResult(res);
   };
 
   const setBiometricEnabled = async (enabled: boolean): Promise<boolean> => {
@@ -180,6 +238,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = async (): Promise<void> => {
     await authApi.logout();
     await secureStore.clearAll();
+    await Promise.all([
+      secureStore.deleteItemAsync(CACHED_ACCOUNTS_KEY),
+      secureStore.deleteItemAsync(ACTIVE_ACCOUNT_KEY),
+      secureStore.deleteItemAsync(OFFLINE_QUEUE_KEY),
+    ]);
     setToken(null);
     setUser(null);
     setIsBiometricLocked(false);
@@ -217,12 +280,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isBiometricEnabled,
         isHideBalance,
         login,
+        verifyTwoFactor,
         register,
         logout,
         unlockWithBiometrics,
         toggleBiometrics,
         setBiometricEnabled,
         toggleHideBalance,
+        applyAuthResult,
       }}
     >
       {children}

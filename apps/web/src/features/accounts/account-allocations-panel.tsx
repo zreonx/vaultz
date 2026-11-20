@@ -707,7 +707,7 @@ function CreateAllocationDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Create Purpose Vault</DialogTitle>
           <DialogDescription>
@@ -838,7 +838,7 @@ function DepositWithdrawDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>
             {isDeposit ? `Deposit to ${allocation.name}` : `Withdraw from ${allocation.name}`}
@@ -1183,8 +1183,8 @@ function CreateMonthlyPlanDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-xl max-h-[90vh] flex flex-col p-6">
-        <DialogHeader className="pb-2">
+      <DialogContent className="sm:max-w-2xl max-h-[90dvh] flex flex-col p-0 overflow-hidden gap-0">
+        <DialogHeader className="px-6 pt-5 pb-3.5 border-b border-[var(--border-subtle)] shrink-0">
           <div className="flex items-center gap-2 text-indigo-600 dark:text-indigo-400">
             <Sparkles className="h-5 w-5" />
             <DialogTitle className="text-lg font-bold">
@@ -1196,7 +1196,8 @@ function CreateMonthlyPlanDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4 overflow-y-auto pr-1 flex-1 py-1">
+        <form onSubmit={handleSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+          <div className="space-y-4 overflow-y-auto px-6 py-4 flex-1 min-h-0">
           {/* Total Budget Input with Helper Chips */}
           <div className="rounded-xl border border-[var(--border)] bg-[var(--muted)]/20 p-3.5 space-y-2.5">
             <div className="flex justify-between items-center">
@@ -1484,8 +1485,9 @@ function CreateMonthlyPlanDialog({
               </div>
             )}
           </div>
+          </div>
 
-          <DialogFooter className="pt-2">
+          <DialogFooter className="px-6 py-3.5 border-t border-[var(--border-subtle)] bg-[var(--surface-muted)]/40">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
@@ -1553,7 +1555,7 @@ function CoverSliceDeficitDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Cover Slice Deficit</DialogTitle>
           <DialogDescription>
@@ -1672,7 +1674,7 @@ function SweepPlanDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Sweep Unspent Allowance</DialogTitle>
           <DialogDescription>

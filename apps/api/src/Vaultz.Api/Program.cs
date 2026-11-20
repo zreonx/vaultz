@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.HttpOverrides;
 using Vaultz.Api.Middleware;
 using Vaultz.Api.Services;
 using Vaultz.Application;
@@ -11,12 +11,17 @@ var builder = WebApplication.CreateBuilder(args);
 // Load uncommitted local settings/secrets if present
 builder.Configuration.AddJsonFile("appsettings.Local.json", optional: true, reloadOnChange: true);
 
-// Add Clean Architecture layer registrations
+// Add Clean Architecture layer registrations (validates production config early)
 builder.Services.AddApplication();
-builder.Services.AddInfrastructure(builder.Configuration);
+builder.Services.AddInfrastructure(builder.Configuration, builder.Environment);
 
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ICurrentUserService, CurrentUserService>();
+
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+});
 
 // Live FX exchange rate synchronization with automatic fallback
 builder.Services.AddHttpClient();
@@ -64,205 +69,38 @@ builder.Services.AddCors(options =>
         }
         else
         {
-            policy.WithOrigins(allowedOrigins)
-                  .AllowAnyHeader()
-                  .AllowAnyMethod()
-                  .AllowCredentials();
+            policy.SetIsOriginAllowed(origin =>
+            {
+                if (string.IsNullOrEmpty(origin)) return false;
+                if (allowedOrigins.Contains(origin)) return true;
+                if (Uri.TryCreate(origin, UriKind.Absolute, out var uri))
+                {
+                    return uri.Host.EndsWith(".vercel.app", StringComparison.OrdinalIgnoreCase);
+                }
+                return false;
+            })
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials();
         }
     });
 });
 
 var app = builder.Build();
 
-// Ensure database schema is created in Development when PostgreSQL is reachable
+// Unconditionally initialize/migrate the database across all environments
+await DatabaseInitializer.InitializeAsync(app.Services, app.Environment, app.Logger);
+
+// Seed local demo user & sample data strictly in Development
 if (app.Environment.IsDevelopment())
 {
-    using var scope = app.Services.CreateScope();
-    var dbContext = scope.ServiceProvider.GetRequiredService<VaultzDbContext>();
     try
     {
-        if (await dbContext.CanConnectAsync())
-        {
-            await dbContext.Database.EnsureCreatedAsync();
-
-            if (dbContext.Database.IsRelational())
-            {
-                try
-                {
-                var sqlStatements = new[]
-                {
-                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS is_email_verified BOOLEAN NOT NULL DEFAULT FALSE;",
-                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verification_token VARCHAR(256) NULL;",
-                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS email_verification_token_expires_at_utc TIMESTAMPTZ NULL;",
-                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS password_reset_token VARCHAR(256) NULL;",
-                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS password_reset_token_expires_at_utc TIMESTAMPTZ NULL;",
-                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS two_factor_enabled BOOLEAN NOT NULL DEFAULT FALSE;",
-                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS two_factor_type INT NOT NULL DEFAULT 0;",
-                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS two_factor_secret VARCHAR(256) NULL;",
-                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS two_factor_otp_code VARCHAR(16) NULL;",
-                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS two_factor_otp_expires_at_utc TIMESTAMPTZ NULL;",
-                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS two_factor_recovery_codes TEXT NULL;",
-                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS failed_login_attempts INT NOT NULL DEFAULT 0;",
-                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS lockout_end_utc TIMESTAMPTZ NULL;",
-                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login_at_utc TIMESTAMPTZ NULL;",
-                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login_ip VARCHAR(64) NULL;",
-                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS last_login_user_agent VARCHAR(512) NULL;",
-                    "ALTER TABLE users ADD COLUMN IF NOT EXISTS security_stamp VARCHAR(64) NOT NULL DEFAULT '';",
-                    "ALTER TABLE accounts ADD COLUMN IF NOT EXISTS is_default BOOLEAN NOT NULL DEFAULT FALSE;",
-                    "CREATE INDEX IF NOT EXISTS ix_accounts_user_id_is_default ON accounts (user_id, is_default);",
-                    """
-                    DO $$ 
-                    BEGIN 
-                        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'categories' AND column_name = 'account_id') THEN
-                            ALTER TABLE categories ADD COLUMN account_id UUID NULL REFERENCES accounts("Id") ON DELETE CASCADE;
-                        END IF;
-                        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'budgets' AND column_name = 'account_id') THEN
-                            ALTER TABLE budgets ADD COLUMN account_id UUID NULL REFERENCES accounts("Id") ON DELETE CASCADE;
-                        END IF;
-                        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'savings_goals' AND column_name = 'account_id') THEN
-                            ALTER TABLE savings_goals ADD COLUMN account_id UUID NULL REFERENCES accounts("Id") ON DELETE CASCADE;
-                        END IF;
-                    END $$;
-                    """,
-                    "CREATE INDEX IF NOT EXISTS ix_categories_user_id_account_id ON categories (user_id, account_id);",
-                    "CREATE INDEX IF NOT EXISTS ix_savings_goals_user_id_account_id ON savings_goals (user_id, account_id);",
-                    """
-                    CREATE TABLE IF NOT EXISTS lending_records (
-                        "Id" UUID PRIMARY KEY,
-                        user_id VARCHAR(128) NOT NULL,
-                        account_id UUID NOT NULL REFERENCES accounts("Id") ON DELETE CASCADE,
-                        type INT NOT NULL,
-                        counterparty VARCHAR(100) NOT NULL,
-                        original_amount NUMERIC(19, 4) NOT NULL,
-                        remaining_amount NUMERIC(19, 4) NOT NULL,
-                        currency_code VARCHAR(3) NOT NULL,
-                        due_date DATE NULL,
-                        notes VARCHAR(500) NULL,
-                        status INT NOT NULL,
-                        created_at_utc TIMESTAMPTZ NOT NULL,
-                        updated_at_utc TIMESTAMPTZ NULL
-                    );
-                    """,
-                    "CREATE INDEX IF NOT EXISTS ix_lending_records_user_id_account_id ON lending_records (user_id, account_id);",
-                    "CREATE INDEX IF NOT EXISTS ix_lending_records_user_id_status ON lending_records (user_id, status);",
-                    """
-                    CREATE TABLE IF NOT EXISTS lending_payments (
-                        "Id" UUID PRIMARY KEY,
-                        lending_record_id UUID NOT NULL REFERENCES lending_records("Id") ON DELETE CASCADE,
-                        amount NUMERIC(19, 4) NOT NULL,
-                        currency_code VARCHAR(3) NOT NULL,
-                        occurred_on DATE NOT NULL,
-                        notes VARCHAR(500) NULL,
-                        created_at_utc TIMESTAMPTZ NOT NULL,
-                        updated_at_utc TIMESTAMPTZ NULL
-                    );
-                    """,
-                    "CREATE INDEX IF NOT EXISTS ix_lending_payments_lending_record_id ON lending_payments (lending_record_id);",
-                    """
-                    CREATE TABLE IF NOT EXISTS notifications (
-                        "Id" UUID PRIMARY KEY,
-                        user_id VARCHAR(128) NOT NULL,
-                        title VARCHAR(150) NOT NULL,
-                        message VARCHAR(1000) NOT NULL,
-                        type INT NOT NULL,
-                        is_read BOOLEAN NOT NULL DEFAULT FALSE,
-                        read_at_utc TIMESTAMPTZ NULL,
-                        action_url VARCHAR(500) NULL,
-                        created_at_utc TIMESTAMPTZ NOT NULL,
-                        updated_at_utc TIMESTAMPTZ NULL
-                    );
-                    """,
-                    "ALTER TABLE notifications ADD COLUMN IF NOT EXISTS updated_at_utc TIMESTAMPTZ NULL;",
-                    "CREATE INDEX IF NOT EXISTS ix_notifications_user_id_created_at_utc ON notifications (user_id, created_at_utc DESC);",
-                    "CREATE INDEX IF NOT EXISTS ix_notifications_user_id_is_read ON notifications (user_id, is_read);",
-                    "ALTER TABLE transactions ADD COLUMN IF NOT EXISTS budget_slice_id UUID NULL;",
-                    "ALTER TABLE transactions ADD COLUMN IF NOT EXISTS account_allocation_id UUID NULL;",
-                    "CREATE INDEX IF NOT EXISTS ix_transactions_budget_slice_id ON transactions (budget_slice_id);",
-                    "CREATE INDEX IF NOT EXISTS ix_transactions_account_allocation_id ON transactions (account_allocation_id);",
-                    """
-                    CREATE TABLE IF NOT EXISTS account_allocations (
-                        "Id" UUID PRIMARY KEY,
-                        user_id VARCHAR(128) NOT NULL,
-                        account_id UUID NOT NULL REFERENCES accounts("Id") ON DELETE CASCADE,
-                        name VARCHAR(100) NOT NULL,
-                        category INT NOT NULL,
-                        balance NUMERIC(19, 4) NOT NULL,
-                        target_amount NUMERIC(19, 4) NULL,
-                        color VARCHAR(50) NULL,
-                        icon VARCHAR(50) NULL,
-                        is_archived BOOLEAN NOT NULL DEFAULT FALSE,
-                        created_at_utc TIMESTAMPTZ NOT NULL,
-                        updated_at_utc TIMESTAMPTZ NULL
-                    );
-                    """,
-                    "CREATE INDEX IF NOT EXISTS ix_account_allocations_user_id_account_id ON account_allocations (user_id, account_id);",
-                    """
-                    CREATE TABLE IF NOT EXISTS monthly_budget_plans (
-                        "Id" UUID PRIMARY KEY,
-                        user_id VARCHAR(128) NOT NULL,
-                        account_id UUID NOT NULL REFERENCES accounts("Id") ON DELETE CASCADE,
-                        year INT NOT NULL,
-                        month INT NOT NULL,
-                        total_budget_amount NUMERIC(19, 4) NOT NULL,
-                        is_active BOOLEAN NOT NULL DEFAULT TRUE,
-                        is_swept BOOLEAN NOT NULL DEFAULT FALSE,
-                        swept_at_utc TIMESTAMPTZ NULL,
-                        swept_to_allocation_id UUID NULL,
-                        created_at_utc TIMESTAMPTZ NOT NULL,
-                        updated_at_utc TIMESTAMPTZ NULL
-                    );
-                    """,
-                    "CREATE INDEX IF NOT EXISTS ix_monthly_budget_plans_user_account_period ON monthly_budget_plans (user_id, account_id, year, month);",
-                    """
-                    CREATE TABLE IF NOT EXISTS monthly_budget_slices (
-                        "Id" UUID PRIMARY KEY,
-                        user_id VARCHAR(128) NOT NULL,
-                        monthly_budget_plan_id UUID NOT NULL REFERENCES monthly_budget_plans("Id") ON DELETE CASCADE,
-                        category_id UUID NULL REFERENCES categories("Id") ON DELETE SET NULL,
-                        name VARCHAR(100) NOT NULL,
-                        allocation_percentage NUMERIC(5, 2) NOT NULL,
-                        allocated_amount NUMERIC(19, 4) NOT NULL,
-                        spent_amount NUMERIC(19, 4) NOT NULL DEFAULT 0,
-                        color VARCHAR(50) NULL,
-                        created_at_utc TIMESTAMPTZ NOT NULL,
-                        updated_at_utc TIMESTAMPTZ NULL
-                    );
-                    """,
-                    "CREATE INDEX IF NOT EXISTS ix_monthly_budget_slices_plan_id ON monthly_budget_slices (monthly_budget_plan_id);",
-                    "UPDATE users SET is_email_verified = TRUE;"
-                };
-
-                foreach (var sql in sqlStatements)
-                {
-                    try
-                    {
-                        await dbContext.Database.ExecuteSqlRawAsync(sql);
-                    }
-                    catch (Exception sqlEx)
-                    {
-                        app.Logger.LogWarning(sqlEx, "Schema migration statement skipped or failed: {Sql}", sql);
-                    }
-                }
-                }
-                catch (Exception sqlEx)
-                {
-                    app.Logger.LogWarning(sqlEx, "Schema alter execution skipped or failed.");
-                }
-            }
-
-            try
-            {
-                await DemoDataSeeder.SeedAsync(app.Services);
-            }
-            catch (Exception seedEx)
-            {
-                app.Logger.LogWarning(seedEx, "Demo data seeding encountered an issue.");
-            }
-        }
+        await DemoDataSeeder.SeedAsync(app.Services);
     }
-    catch (Exception ex)
+    catch (Exception seedEx)
     {
-        app.Logger.LogWarning(ex, "Database initialization skipped.");
+        app.Logger.LogWarning(seedEx, "Demo data seeding encountered an issue.");
     }
 }
 
@@ -274,6 +112,7 @@ if (app.Environment.IsDevelopment())
 }
 else
 {
+    app.UseForwardedHeaders();
     app.UseHttpsRedirection();
 }
 

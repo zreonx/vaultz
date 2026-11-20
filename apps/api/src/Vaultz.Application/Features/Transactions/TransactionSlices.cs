@@ -356,20 +356,21 @@ public sealed class TransactionHandlers
                 categoryMap[category.Id] = category;
             }
 
+            MonthlyBudgetSlice? appliedSlice = null;
             if (command.BudgetSliceId.HasValue && command.Type == TransactionType.Expense)
             {
-                var slice = await _dbContext.MonthlyBudgetSlices
+                appliedSlice = await _dbContext.MonthlyBudgetSlices
                     .FirstOrDefaultAsync(s => s.Id == command.BudgetSliceId.Value && s.UserId == userId, ct)
                     ?? throw new NotFoundException(nameof(MonthlyBudgetSlice), command.BudgetSliceId.Value);
 
-                if (command.Amount > slice.RemainingAmount)
+                if (command.Amount > appliedSlice.RemainingAmount)
                 {
                     throw new DomainException(
-                        $"Budget slice '{slice.Name}' only has {slice.RemainingAmount:N2} remaining. You need to transfer funds from another slice to cover the deficit.",
+                        $"Budget slice '{appliedSlice.Name}' only has {appliedSlice.RemainingAmount:N2} remaining. You need to transfer funds from another slice to cover the deficit.",
                         "insufficient_slice_budget");
                 }
 
-                slice.RecordExpense(command.Amount);
+                appliedSlice.RecordExpense(command.Amount);
             }
 
             if (command.AccountAllocationId.HasValue)
@@ -421,51 +422,30 @@ public sealed class TransactionHandlers
                     actionUrl: "/transactions",
                     cancellationToken: ct);
             }
-            else if (_notificationService != null && created.Type == TransactionType.Expense && command.CategoryId.HasValue)
+            else if (_notificationService != null &&
+                     created.Type == TransactionType.Expense &&
+                     appliedSlice != null &&
+                     appliedSlice.AllocatedAmount > 0m)
             {
-                var startOfMonth = new DateOnly(created.OccurredOn.Year, created.OccurredOn.Month, 1);
-                var endOfMonth = startOfMonth.AddMonths(1).AddDays(-1);
-
-                var budget = await _dbContext.Budgets
-                    .AsNoTracking()
-                    .FirstOrDefaultAsync(b =>
-                        b.UserId == userId &&
-                        b.CategoryId == command.CategoryId.Value &&
-                        (b.AccountId == null || b.AccountId == sourceAccount.Id), ct);
-
-                if (budget != null)
+                if (appliedSlice.RemainingAmount <= 0m)
                 {
-                    var totalSpent = await _dbContext.Transactions
-                        .Where(t =>
-                            t.UserId == userId &&
-                            t.CategoryId == command.CategoryId.Value &&
-                            t.Type == TransactionType.Expense &&
-                            t.OccurredOn >= startOfMonth &&
-                            t.OccurredOn <= endOfMonth)
-                        .SumAsync(t => (decimal?)t.Amount, ct) ?? 0m;
-
-                    var catName = categoryMap.TryGetValue(command.CategoryId.Value, out var c) ? c.Name : "Category";
-
-                    if (totalSpent >= budget.LimitAmount)
-                    {
-                        await _notificationService.SendAsync(
-                            userId,
-                            "Budget Limit Exceeded! ⚠️",
-                            $"Monthly spending for '{catName}' is {totalSpent:N2} {sourceAccount.CurrencyCode}, exceeding your budget of {budget.LimitAmount:N2} {sourceAccount.CurrencyCode}.",
-                            NotificationType.BudgetWarning,
-                            actionUrl: "/monthly-finance",
-                            cancellationToken: ct);
-                    }
-                    else if (totalSpent >= budget.LimitAmount * 0.85m)
-                    {
-                        await _notificationService.SendAsync(
-                            userId,
-                            "Budget Warning (85% Reached)",
-                            $"You have spent {totalSpent:N2} of your {budget.LimitAmount:N2} {sourceAccount.CurrencyCode} limit for '{catName}'.",
-                            NotificationType.BudgetWarning,
-                            actionUrl: "/monthly-finance",
-                            cancellationToken: ct);
-                    }
+                    await _notificationService.SendAsync(
+                        userId,
+                        "Monthly Budget Depleted",
+                        $"Monthly budget '{appliedSlice.Name}' has reached 100% ({appliedSlice.SpentAmount:N2} of {appliedSlice.AllocatedAmount:N2} {sourceAccount.CurrencyCode}). Transfer funds in Monthly Finance if you need extra room.",
+                        NotificationType.BudgetWarning,
+                        actionUrl: "/monthly-finance",
+                        cancellationToken: ct);
+                }
+                else if (appliedSlice.SpentAmount >= appliedSlice.AllocatedAmount * 0.85m)
+                {
+                    await _notificationService.SendAsync(
+                        userId,
+                        "Monthly Budget Warning (85% Reached)",
+                        $"You have spent {appliedSlice.SpentAmount:N2} of your {appliedSlice.AllocatedAmount:N2} {sourceAccount.CurrencyCode} allocation for '{appliedSlice.Name}'.",
+                        NotificationType.BudgetWarning,
+                        actionUrl: "/monthly-finance",
+                        cancellationToken: ct);
                 }
             }
         }, cancellationToken);

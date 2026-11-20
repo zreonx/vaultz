@@ -255,7 +255,6 @@ export function CreateTransactionDialog({
     onSuccess: (created) => {
       void queryClient.invalidateQueries({ queryKey: TRANSACTIONS_QUERY_KEY });
       void queryClient.invalidateQueries({ queryKey: ACCOUNTS_QUERY_KEY });
-      void queryClient.invalidateQueries({ queryKey: ["budgets"] });
       void queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       void queryClient.invalidateQueries({
         queryKey: ["account-allocations", created.accountId],
@@ -302,7 +301,7 @@ export function CreateTransactionDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg max-h-[90vh] flex flex-col p-0 overflow-hidden gap-0">
+      <DialogContent className="sm:max-w-lg max-h-[90dvh] flex flex-col p-0 overflow-hidden gap-0">
         <DialogHeader className="px-6 pt-5 pb-3 border-b border-[var(--border-subtle)] shrink-0">
           <DialogTitle className="flex items-center gap-2 text-lg font-bold">
             <Plus className="h-4 w-4 text-[var(--accent)]" />
@@ -323,10 +322,10 @@ export function CreateTransactionDialog({
 
         <form
           onSubmit={handleSubmit((v) => createMutation.mutate(v))}
-          className="flex flex-col flex-1 overflow-hidden"
+          className="flex flex-col flex-1 min-h-0 overflow-hidden"
           noValidate
         >
-          <div className="overflow-y-auto px-6 py-4 space-y-4 flex-1">
+          <div className="overflow-y-auto px-6 py-4 space-y-4 flex-1 min-h-0">
             {createMutation.isError && (
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />

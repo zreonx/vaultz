@@ -9,7 +9,8 @@ import React, {
 import { AppState, AppStateStatus } from 'react-native';
 import { secureStore } from '@/security/secureStore';
 import { transactionsApi, CreateTransactionRequest } from '@/api/transactions';
-import { ApiError } from '@/api/client';
+import { ApiError, getApiBaseUrl } from '@/api/client';
+import { useAuth } from '@/context/AuthContext';
 import { haptics } from '@/utils/haptics';
 
 export interface QueuedTransaction {
@@ -20,6 +21,7 @@ export interface QueuedTransaction {
   type: 'Expense' | 'Income' | 'Transfer';
   amount: number;
   category: string;
+  categoryId?: string | null;
   description?: string;
   transactionDate: string;
   destinationAccountId?: string;
@@ -64,11 +66,19 @@ export const OfflineSyncProvider: React.FC<{
   children: React.ReactNode;
   onSyncSuccess?: () => Promise<void> | void;
 }> = ({ children, onSyncSuccess }) => {
+  const { token } = useAuth();
   const [queue, setQueue] = useState<QueuedTransaction[]>([]);
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
   const [isOnline, setIsOnline] = useState<boolean | null>(null);
   const [lastSyncAt, setLastSyncAt] = useState<Date | null>(null);
   const isSyncingRef = useRef(false);
+
+  // Clear in-memory queue when user logs out
+  useEffect(() => {
+    if (!token) {
+      setQueue([]);
+    }
+  }, [token]);
 
   // Load pending queue from secure storage on startup
   useEffect(() => {
@@ -106,10 +116,9 @@ export const OfflineSyncProvider: React.FC<{
   // Connectivity check helper
   const checkConnectivity = useCallback(async (): Promise<boolean> => {
     try {
-      // Fast ping check via rates or root API
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 3000);
-      const res = await fetch('http://192.168.254.194:5180/api/v1/currencies/rates', {
+      const res = await fetch(`${getApiBaseUrl()}/api/v1/health`, {
         method: 'GET',
         signal: controller.signal,
       }).catch(() => null);
@@ -162,6 +171,7 @@ export const OfflineSyncProvider: React.FC<{
           amount: item.amount,
           currency: item.currency,
           category: item.category,
+          categoryId: item.categoryId || null,
           description: item.description,
           transactionDate: item.transactionDate,
           occurredOn: item.transactionDate.split('T')[0],

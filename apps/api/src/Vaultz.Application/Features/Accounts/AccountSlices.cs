@@ -228,48 +228,8 @@ public sealed class AccountHandlers
                 nextDefault?.SetAsDefault();
             }
 
-            // Clean up dependent account-scoped allocations and budget plans
-            var allocations = await _dbContext.AccountAllocations
-                .Where(a => a.AccountId == accountId && a.UserId == userId)
-                .ToListAsync(ct);
-            _dbContext.AccountAllocations.RemoveRange(allocations);
-
-            var budgetPlans = await _dbContext.MonthlyBudgetPlans
-                .Include(p => p.Slices)
-                .Where(p => p.AccountId == accountId && p.UserId == userId)
-                .ToListAsync(ct);
-            _dbContext.MonthlyBudgetPlans.RemoveRange(budgetPlans);
-
-            var budgets = await _dbContext.Budgets
-                .Where(b => b.AccountId == accountId && b.UserId == userId)
-                .ToListAsync(ct);
-            _dbContext.Budgets.RemoveRange(budgets);
-
-            var scopedCategories = await _dbContext.Categories
-                .Where(c => c.AccountId == accountId && c.UserId == userId)
-                .ToListAsync(ct);
-            _dbContext.Categories.RemoveRange(scopedCategories);
-
-            var scopedGoals = await _dbContext.SavingsGoals
-                .Where(s => s.AccountId == accountId && s.UserId == userId)
-                .ToListAsync(ct);
-            _dbContext.SavingsGoals.RemoveRange(scopedGoals);
-
-            var recurrings = await _dbContext.RecurringTransactions
-                .Where(r => (r.AccountId == accountId || r.DestinationAccountId == accountId) && r.UserId == userId)
-                .ToListAsync(ct);
-            _dbContext.RecurringTransactions.RemoveRange(recurrings);
-
-            var lendings = await _dbContext.LendingRecords
-                .Include(l => l.Payments)
-                .Where(l => l.AccountId == accountId && l.UserId == userId)
-                .ToListAsync(ct);
-            _dbContext.LendingRecords.RemoveRange(lendings);
-
-            var transactions = await _dbContext.Transactions
-                .Where(t => (t.AccountId == accountId || t.DestinationAccountId == accountId) && t.UserId == userId)
-                .ToListAsync(ct);
-            _dbContext.Transactions.RemoveRange(transactions);
+            // Clean up all dependent account-scoped records before removing the account row
+            await _dbContext.DeleteAccountDependentRecordsAsync(userId, accountId, ct);
 
             _dbContext.Accounts.Remove(account);
 

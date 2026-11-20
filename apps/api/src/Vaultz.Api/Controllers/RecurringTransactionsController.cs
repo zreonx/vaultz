@@ -37,6 +37,17 @@ public sealed class RecurringTransactionsController : ControllerBase
         return Created($"/api/v1/recurring-transactions/{created.Id}", created);
     }
 
+    [HttpPut("{id:guid}")]
+    [ProducesResponseType(typeof(RecurringTransactionResponse), StatusCodes.Status200OK)]
+    public async Task<ActionResult<RecurringTransactionResponse>> UpdateRecurringTransaction(
+        Guid id,
+        [FromBody] UpdateRecurringTransactionCommand command,
+        CancellationToken cancellationToken = default)
+    {
+        var updated = await _handlers.UpdateRecurringTransactionAsync(id, command, cancellationToken);
+        return Ok(updated);
+    }
+
     [HttpPost("{id:guid}/process")]
     [ProducesResponseType(typeof(RecurringTransactionResponse), StatusCodes.Status200OK)]
     public async Task<ActionResult<RecurringTransactionResponse>> ProcessOccurrence(

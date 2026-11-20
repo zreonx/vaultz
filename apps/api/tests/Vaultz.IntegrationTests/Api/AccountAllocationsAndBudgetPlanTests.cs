@@ -236,5 +236,29 @@ public sealed class AccountAllocationsAndBudgetPlanTests
 
         var crossTenantRes = await clientB.GetAsync($"/api/v1/accounts/{accountId}/allocations");
         Assert.Equal(HttpStatusCode.NotFound, crossTenantRes.StatusCode);
+
+        // 11. Deleting an account with allocations, monthly budget plans/slices, and slice-linked transactions
+        // deletes all child records cleanly without DbUpdateConcurrencyException
+        var backupAccountRes = await client.PostAsJsonAsync("/api/v1/accounts", new CreateAccountCommand(
+            "Backup Account",
+            AccountType.Checking,
+            CurrencyCode: "PHP",
+            InitialBalance: 1000m));
+        Assert.Equal(HttpStatusCode.Created, backupAccountRes.StatusCode);
+
+        var deleteRes = await client.DeleteAsync($"/api/v1/accounts/{accountId}");
+        Assert.Equal(HttpStatusCode.NoContent, deleteRes.StatusCode);
+
+        var deletedOverviewRes = await client.GetAsync($"/api/v1/accounts/{accountId}/allocations");
+        Assert.Equal(HttpStatusCode.NotFound, deletedOverviewRes.StatusCode);
+
+        var accountsAfterDelete = await client.GetFromJsonAsync<List<AccountResponse>>("/api/v1/accounts");
+        Assert.NotNull(accountsAfterDelete);
+        var remaining = Assert.Single(accountsAfterDelete);
+        Assert.Equal("Backup Account", remaining.Name);
+
+        var transactionsAfterDelete = await client.GetFromJsonAsync<List<Vaultz.Application.Features.Transactions.TransactionResponse>>("/api/v1/transactions");
+        Assert.NotNull(transactionsAfterDelete);
+        Assert.Empty(transactionsAfterDelete);
     }
 }

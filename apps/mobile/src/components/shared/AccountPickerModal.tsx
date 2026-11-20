@@ -145,11 +145,17 @@ export const AccountPickerModal: React.FC<AccountPickerModalProps> = ({
                   )}
                   <PressableScale
                     onPress={() => handleOpenEdit(acc)}
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                    style={styles.pickerEditBtn}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    style={[
+                      styles.pickerEditBtn,
+                      {
+                        backgroundColor: colors.surface,
+                        borderColor: colors.borderSubtle,
+                      },
+                    ]}
                     accessibilityLabel={`Edit ${acc.name}`}
                   >
-                    <Ionicons name="pencil-outline" size={13} color={colors.textMuted} />
+                    <Ionicons name="pencil-outline" size={14} color={colors.textSecondary} />
                   </PressableScale>
                 </View>
               </PressableScale>
@@ -231,13 +237,19 @@ const styles = StyleSheet.create({
     ...typography.body,
     fontWeight: '700',
     fontSize: 14,
+    fontVariant: ['tabular-nums'],
   },
   checkIcon: {
     marginTop: 2,
   },
   pickerEditBtn: {
-    marginTop: 4,
-    padding: 2,
+    marginTop: 6,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: StyleSheet.hairlineWidth,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   createButton: {
     marginTop: spacing.xs,

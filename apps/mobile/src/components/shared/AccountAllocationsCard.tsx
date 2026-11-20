@@ -30,7 +30,14 @@ import {
   MonthlyBudgetPlanDto,
 } from '@/types/api';
 
-const MOBILE_PALETTE = ['#6366f1', '#8b5cf6', '#0ea5e9', '#10b981', '#f59e0b', '#f43f5e'];
+const SLICE_PALETTE = ['#2A6B58', '#3B82F6', '#D97706', '#8B5CF6', '#0EA5E9', '#E06C6C'];
+
+const VAULT_CATEGORIES: { value: AllocationCategory; label: string }[] = [
+  { value: AllocationCategory.Emergency, label: 'Emergency' },
+  { value: AllocationCategory.Savings, label: 'Savings' },
+  { value: AllocationCategory.Bills, label: 'Bills' },
+  { value: AllocationCategory.Custom, label: 'Custom' },
+];
 
 function formatCleanNumber(num: number): string {
   if (isNaN(num) || num <= 0) return '';
@@ -42,6 +49,7 @@ interface AccountAllocationsCardProps {
   accountId: string;
   accountName: string;
   currencyCode: string;
+  refreshTrigger?: number;
   onRefreshParent?: () => void;
 }
 
@@ -49,6 +57,7 @@ export const AccountAllocationsCard: React.FC<AccountAllocationsCardProps> = ({
   accountId,
   accountName,
   currencyCode,
+  refreshTrigger = 0,
   onRefreshParent,
 }) => {
   const { colors, isDark } = useTheme();
@@ -57,7 +66,6 @@ export const AccountAllocationsCard: React.FC<AccountAllocationsCardProps> = ({
   const [overview, setOverview] = useState<AccountAllocationsOverviewResponse | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Modal states
   const [createVaultVisible, setCreateVaultVisible] = useState(false);
   const [transferModal, setTransferModal] = useState<{
     mode: 'deposit' | 'withdraw';
@@ -72,25 +80,35 @@ export const AccountAllocationsCard: React.FC<AccountAllocationsCardProps> = ({
       const data = await accountAllocationsApi.getOverview(accountId);
       setOverview(data);
     } catch {
-      // silently handle
+      // Offline / transient fallback: keep existing state if available
     } finally {
       setLoading(false);
     }
   }, [accountId]);
 
   useEffect(() => {
-    fetchOverview();
-  }, [fetchOverview]);
+    setLoading((prev) => (overview ? prev : true));
+    void fetchOverview();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [fetchOverview, refreshTrigger]);
 
-  if (loading) {
+  if (loading && !overview) {
     return (
-      <Card variant="surface" style={styles.card}>
+      <Card variant="surface" style={styles.loadingCard}>
         <ActivityIndicator color={colors.accent} />
       </Card>
     );
   }
 
-  if (!overview) return null;
+  if (!overview) {
+    return (
+      <Card variant="surface" style={styles.emptyBox}>
+        <Text style={[styles.emptyText, { color: colors.textMuted }]}>
+          Unable to load monthly finance data for {accountName}. Pull down to retry.
+        </Text>
+      </Card>
+    );
+  }
 
   const {
     accountBalance,
@@ -101,51 +119,77 @@ export const AccountAllocationsCard: React.FC<AccountAllocationsCardProps> = ({
     activeBudgetPlan,
   } = overview;
 
+  const planColor = isDark ? '#60A5FA' : '#2563EB';
+  const planSoft = isDark ? 'rgba(59, 130, 246, 0.14)' : 'rgba(37, 99, 235, 0.08)';
+  const planBorder = isDark ? 'rgba(96, 165, 250, 0.28)' : 'rgba(37, 99, 235, 0.2)';
+  const trackBg = isDark ? colors.surfaceSubtle : colors.surfaceMuted;
+
   return (
     <View style={styles.container}>
-      {/* 2-Tier Header Overview Card */}
+      {/* Partition Overview Card */}
       <Card variant="surface" style={styles.card}>
         <View style={styles.headerRow}>
-          <View>
-            <View style={styles.tagRow}>
-              <Text style={[styles.accountLabel, { color: colors.textMuted }]}>
-                {accountName}
-              </Text>
-            </View>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.accountLabel, { color: colors.textMuted }]}>
+              {accountName.toUpperCase()} • {currencyCode}
+            </Text>
             <Text style={[styles.title, { color: colors.textPrimary }]}>
-              Funds Partition & Finance
+              Balance Allocation
+            </Text>
+          </View>
+          <View style={styles.totalPill}>
+            <Text style={[styles.totalPillLabel, { color: colors.textMuted }]}>
+              Total Balance
+            </Text>
+            <Text style={[styles.totalPillVal, { color: colors.textPrimary }]}>
+              {hideBalance ? '••••' : formatMoney(accountBalance, currencyCode)}
             </Text>
           </View>
         </View>
 
-        {/* 3 Metric Badges */}
+        {/* 3 Partition Metrics */}
         <View style={styles.metricsGrid}>
-          <View style={[styles.metricBox, { backgroundColor: isDark ? 'rgba(16, 185, 129, 0.1)' : '#ecfdf5', borderColor: 'rgba(16, 185, 129, 0.2)' }]}>
+          <View
+            style={[
+              styles.metricBox,
+              { backgroundColor: colors.accentSoft, borderColor: colors.borderSubtle },
+            ]}
+          >
             <View style={styles.metricHeader}>
-              <Ionicons name="shield-checkmark-outline" size={13} color="#10b981" />
-              <Text style={[styles.metricLabel, { color: '#10b981' }]}>Vaults</Text>
+              <Ionicons name="shield-checkmark-outline" size={13} color={colors.accent} />
+              <Text style={[styles.metricLabel, { color: colors.accent }]}>Vaults</Text>
             </View>
-            <Text style={[styles.metricValue, { color: colors.textPrimary }]}>
+            <Text style={[styles.metricValue, { color: colors.textPrimary }]} numberOfLines={1}>
               {hideBalance ? '••••' : formatMoney(totalAllocatedInVaults, currencyCode)}
             </Text>
           </View>
 
-          <View style={[styles.metricBox, { backgroundColor: isDark ? 'rgba(99, 102, 241, 0.1)' : '#eef2ff', borderColor: 'rgba(99, 102, 241, 0.2)' }]}>
+          <View
+            style={[
+              styles.metricBox,
+              { backgroundColor: planSoft, borderColor: colors.borderSubtle },
+            ]}
+          >
             <View style={styles.metricHeader}>
-              <Ionicons name="sparkles-outline" size={13} color="#6366f1" />
-              <Text style={[styles.metricLabel, { color: '#6366f1' }]}>Budget Plan</Text>
+              <Ionicons name="pie-chart-outline" size={13} color={planColor} />
+              <Text style={[styles.metricLabel, { color: planColor }]}>Budget Left</Text>
             </View>
-            <Text style={[styles.metricValue, { color: colors.textPrimary }]}>
+            <Text style={[styles.metricValue, { color: colors.textPrimary }]} numberOfLines={1}>
               {hideBalance ? '••••' : formatMoney(activePlanRemaining, currencyCode)}
             </Text>
           </View>
 
-          <View style={[styles.metricBox, { backgroundColor: isDark ? 'rgba(245, 158, 11, 0.1)' : '#fffbeb', borderColor: 'rgba(245, 158, 11, 0.2)' }]}>
+          <View
+            style={[
+              styles.metricBox,
+              { backgroundColor: colors.warningSoft, borderColor: colors.borderSubtle },
+            ]}
+          >
             <View style={styles.metricHeader}>
-              <Ionicons name="wallet-outline" size={13} color="#f59e0b" />
-              <Text style={[styles.metricLabel, { color: '#f59e0b' }]}>Available</Text>
+              <Ionicons name="wallet-outline" size={13} color={colors.warning} />
+              <Text style={[styles.metricLabel, { color: colors.warning }]}>Available</Text>
             </View>
-            <Text style={[styles.metricValue, { color: colors.textPrimary }]}>
+            <Text style={[styles.metricValue, { color: colors.textPrimary }]} numberOfLines={1}>
               {hideBalance ? '••••' : formatMoney(unallocatedBalance, currencyCode)}
             </Text>
           </View>
@@ -154,13 +198,13 @@ export const AccountAllocationsCard: React.FC<AccountAllocationsCardProps> = ({
         {/* Visual Partition Bar */}
         {accountBalance > 0 && (
           <View style={styles.barContainer}>
-            <View style={[styles.barTrack, { backgroundColor: isDark ? colors.surfaceSubtle : '#e2e8f0' }]}>
+            <View style={[styles.barTrack, { backgroundColor: trackBg }]}>
               <View
                 style={[
                   styles.barFill,
                   {
-                    backgroundColor: '#10b981',
-                    width: `${Math.min(100, (totalAllocatedInVaults / accountBalance) * 100)}%`,
+                    backgroundColor: colors.accent,
+                    width: `${Math.min(100, Math.max(0, (totalAllocatedInVaults / accountBalance) * 100))}%`,
                   },
                 ]}
               />
@@ -168,8 +212,8 @@ export const AccountAllocationsCard: React.FC<AccountAllocationsCardProps> = ({
                 style={[
                   styles.barFill,
                   {
-                    backgroundColor: '#6366f1',
-                    width: `${Math.min(100, (activePlanRemaining / accountBalance) * 100)}%`,
+                    backgroundColor: planColor,
+                    width: `${Math.min(100, Math.max(0, (activePlanRemaining / accountBalance) * 100))}%`,
                   },
                 ]}
               />
@@ -177,8 +221,8 @@ export const AccountAllocationsCard: React.FC<AccountAllocationsCardProps> = ({
                 style={[
                   styles.barFill,
                   {
-                    backgroundColor: '#f59e0b',
-                    width: `${Math.min(100, (unallocatedBalance / accountBalance) * 100)}%`,
+                    backgroundColor: colors.warning,
+                    width: `${Math.min(100, Math.max(0, (unallocatedBalance / accountBalance) * 100))}%`,
                   },
                 ]}
               />
@@ -187,11 +231,11 @@ export const AccountAllocationsCard: React.FC<AccountAllocationsCardProps> = ({
         )}
       </Card>
 
-      {/* TIER 1: PURPOSE VAULTS */}
+      {/* PURPOSE VAULTS */}
       <Card variant="surface" style={styles.sectionCard}>
         <View style={styles.sectionHeaderRow}>
           <View style={styles.sectionTitleGroup}>
-            <Ionicons name="shield-outline" size={18} color="#10b981" />
+            <Ionicons name="shield-outline" size={18} color={colors.accent} />
             <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
               Purpose Vaults
             </Text>
@@ -201,99 +245,142 @@ export const AccountAllocationsCard: React.FC<AccountAllocationsCardProps> = ({
               haptics.light();
               setCreateVaultVisible(true);
             }}
-            style={[styles.addBtn, { backgroundColor: isDark ? colors.surfaceSubtle : colors.surfaceMuted }]}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            style={[styles.addBtn, { backgroundColor: colors.accentSoft }]}
           >
             <Ionicons name="add" size={15} color={colors.accent} />
-            <Text style={[styles.addBtnText, { color: colors.accent }]}>Vault</Text>
+            <Text style={[styles.addBtnText, { color: colors.accent }]}>New Vault</Text>
           </PressableScale>
         </View>
 
         {allocations.length === 0 ? (
           <View style={styles.emptyBox}>
             <Text style={[styles.emptyText, { color: colors.textMuted }]}>
-              No purpose vaults created yet. Protect savings from daily expenses.
+              No purpose vaults created yet. Protect savings or earmarked reserves from daily spending.
             </Text>
           </View>
         ) : (
           <View style={styles.vaultsList}>
-            {allocations.map((alloc) => (
-              <View
-                key={alloc.id}
-                style={[
-                  styles.vaultItem,
-                  { borderColor: colors.borderSubtle, backgroundColor: isDark ? colors.surfaceSubtle : colors.surface },
-                ]}
-              >
-                <View style={styles.vaultTopRow}>
-                  <View>
-                    <Text style={[styles.vaultName, { color: colors.textPrimary }]}>
-                      {alloc.name}
-                    </Text>
-                    <Badge label={alloc.categoryName} variant="outline" style={styles.categoryBadge} />
+            {allocations.map((alloc) => {
+              const target = alloc.targetAmount ?? 0;
+              const hasTarget = target > 0;
+              const targetPct = hasTarget
+                ? Math.min(100, Math.round((alloc.balance / target) * 100))
+                : 0;
+
+              return (
+                <View
+                  key={alloc.id}
+                  style={[
+                    styles.vaultItem,
+                    {
+                      borderColor: colors.borderSubtle,
+                      backgroundColor: isDark ? colors.surfaceSubtle : colors.background,
+                    },
+                  ]}
+                >
+                  <View style={styles.vaultTopRow}>
+                    <View style={{ flex: 1, marginRight: spacing.sm }}>
+                      <Text style={[styles.vaultName, { color: colors.textPrimary }]} numberOfLines={1}>
+                        {alloc.name}
+                      </Text>
+                      <Badge label={alloc.categoryName} variant="outline" style={styles.categoryBadge} />
+                    </View>
+                    <View style={styles.vaultRightCol}>
+                      <Text style={[styles.vaultBalance, { color: colors.textPrimary }]}>
+                        {hideBalance ? '••••' : formatMoney(alloc.balance, currencyCode)}
+                      </Text>
+                      {hasTarget && (
+                        <Text style={[styles.vaultTargetText, { color: colors.textMuted }]}>
+                          of {hideBalance ? '••••' : formatMoney(target, currencyCode)} ({targetPct}%)
+                        </Text>
+                      )}
+                    </View>
                   </View>
-                  <Text style={[styles.vaultBalance, { color: colors.textPrimary }]}>
-                    {hideBalance ? '••••' : formatMoney(alloc.balance, currencyCode)}
-                  </Text>
-                </View>
 
-                <View style={styles.vaultActionsRow}>
-                  <PressableScale
-                    onPress={() => {
-                      haptics.selection();
-                      setTransferModal({ mode: 'deposit', allocation: alloc });
-                    }}
-                    style={[styles.actionChip, { backgroundColor: isDark ? 'rgba(16, 185, 129, 0.15)' : '#ecfdf5' }]}
-                  >
-                    <Ionicons name="arrow-down-outline" size={12} color="#10b981" />
-                    <Text style={[styles.actionChipText, { color: '#10b981' }]}>Deposit</Text>
-                  </PressableScale>
-
-                  <PressableScale
-                    onPress={() => {
-                      haptics.selection();
-                      setTransferModal({ mode: 'withdraw', allocation: alloc });
-                    }}
-                    style={[styles.actionChip, { backgroundColor: isDark ? 'rgba(245, 158, 11, 0.15)' : '#fffbeb' }]}
-                  >
-                    <Ionicons name="arrow-up-outline" size={12} color="#f59e0b" />
-                    <Text style={[styles.actionChipText, { color: '#f59e0b' }]}>Withdraw</Text>
-                  </PressableScale>
-
-                  <PressableScale
-                    onPress={() => {
-                      Alert.alert(
-                        `Delete ${alloc.name}?`,
-                        `Any remaining funds (${formatMoney(alloc.balance, currencyCode)}) will return to your available balance.`,
-                        [
-                          { text: 'Cancel', style: 'cancel' },
+                  {hasTarget && (
+                    <View style={[styles.sliceProgressTrack, { backgroundColor: trackBg, marginTop: spacing.sm }]}>
+                      <View
+                        style={[
+                          styles.sliceProgressFill,
                           {
-                            text: 'Delete',
-                            style: 'destructive',
-                            onPress: async () => {
-                              await accountAllocationsApi.deleteAllocation(accountId, alloc.id);
-                              fetchOverview();
-                              if (onRefreshParent) onRefreshParent();
-                            },
+                            backgroundColor: colors.accent,
+                            width: `${targetPct}%`,
                           },
-                        ]
-                      );
-                    }}
-                    style={styles.deleteIconBtn}
-                  >
-                    <Ionicons name="trash-outline" size={14} color={colors.textMuted} />
-                  </PressableScale>
+                        ]}
+                      />
+                    </View>
+                  )}
+
+                  <View style={styles.vaultActionsRow}>
+                    <PressableScale
+                      onPress={() => {
+                        haptics.selection();
+                        setTransferModal({ mode: 'deposit', allocation: alloc });
+                      }}
+                      hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}
+                      style={[styles.actionChip, { backgroundColor: colors.accentSoft }]}
+                    >
+                      <Ionicons name="arrow-down-outline" size={13} color={colors.accent} />
+                      <Text style={[styles.actionChipText, { color: colors.accent }]}>Deposit</Text>
+                    </PressableScale>
+
+                    <PressableScale
+                      onPress={() => {
+                        haptics.selection();
+                        setTransferModal({ mode: 'withdraw', allocation: alloc });
+                      }}
+                      hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}
+                      style={[styles.actionChip, { backgroundColor: colors.warningSoft }]}
+                    >
+                      <Ionicons name="arrow-up-outline" size={13} color={colors.warning} />
+                      <Text style={[styles.actionChipText, { color: colors.warning }]}>Withdraw</Text>
+                    </PressableScale>
+
+                    <PressableScale
+                      onPress={() => {
+                        Alert.alert(
+                          `Delete ${alloc.name}?`,
+                          `Any remaining funds (${formatMoney(alloc.balance, currencyCode)}) will return to your available balance.`,
+                          [
+                            { text: 'Cancel', style: 'cancel' },
+                            {
+                              text: 'Delete',
+                              style: 'destructive',
+                              onPress: async () => {
+                                try {
+                                  await accountAllocationsApi.deleteAllocation(accountId, alloc.id);
+                                  haptics.success();
+                                  await fetchOverview();
+                                  if (onRefreshParent) onRefreshParent();
+                                } catch (err: any) {
+                                  haptics.error();
+                                  Alert.alert('Error', err?.message || 'Failed to delete vault');
+                                }
+                              },
+                            },
+                          ]
+                        );
+                      }}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                      style={styles.deleteIconBtn}
+                      accessibilityLabel={`Delete ${alloc.name}`}
+                    >
+                      <Ionicons name="trash-outline" size={16} color={colors.textMuted} />
+                    </PressableScale>
+                  </View>
                 </View>
-              </View>
-            ))}
+              );
+            })}
           </View>
         )}
       </Card>
 
-      {/* TIER 2: MONTHLY LOGICAL FINANCE PLAN */}
+      {/* MONTHLY BUDGET PLAN */}
       <Card variant="surface" style={styles.sectionCard}>
         <View style={styles.sectionHeaderRow}>
           <View style={styles.sectionTitleGroup}>
-            <Ionicons name="sparkles-outline" size={18} color="#6366f1" />
+            <Ionicons name="pie-chart-outline" size={18} color={planColor} />
             <Text style={[styles.sectionTitle, { color: colors.textPrimary }]}>
               Monthly Budget Plan
             </Text>
@@ -306,10 +393,11 @@ export const AccountAllocationsCard: React.FC<AccountAllocationsCardProps> = ({
                   haptics.light();
                   setCoverDeficitVisible(true);
                 }}
-                style={[styles.smallActionBtn, { borderColor: '#6366f1' }]}
+                hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}
+                style={[styles.smallActionBtn, { borderColor: planColor }]}
               >
-                <Ionicons name="swap-horizontal" size={13} color="#6366f1" />
-                <Text style={[styles.smallActionText, { color: '#6366f1' }]}>Cover Deficit</Text>
+                <Ionicons name="swap-horizontal" size={13} color={planColor} />
+                <Text style={[styles.smallActionText, { color: planColor }]}>Rebalance</Text>
               </PressableScale>
 
               <PressableScale
@@ -317,10 +405,11 @@ export const AccountAllocationsCard: React.FC<AccountAllocationsCardProps> = ({
                   haptics.light();
                   setSweepVisible(true);
                 }}
-                style={[styles.smallActionBtn, { backgroundColor: '#6366f1' }]}
+                hitSlop={{ top: 6, bottom: 6, left: 4, right: 4 }}
+                style={[styles.smallActionBtn, { backgroundColor: colors.accent, borderColor: colors.accent }]}
               >
-                <Ionicons name="refresh" size={13} color="#ffffff" />
-                <Text style={[styles.smallActionText, { color: '#ffffff' }]}>Sweep</Text>
+                <Ionicons name="refresh" size={13} color={colors.accentForeground} />
+                <Text style={[styles.smallActionText, { color: colors.accentForeground }]}>Sweep</Text>
               </PressableScale>
             </View>
           ) : (
@@ -329,10 +418,11 @@ export const AccountAllocationsCard: React.FC<AccountAllocationsCardProps> = ({
                 haptics.light();
                 setCreatePlanVisible(true);
               }}
-              style={[styles.addBtn, { backgroundColor: isDark ? 'rgba(99, 102, 241, 0.2)' : '#eef2ff' }]}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              style={[styles.addBtn, { backgroundColor: planSoft }]}
             >
-              <Ionicons name="add" size={15} color="#6366f1" />
-              <Text style={[styles.addBtnText, { color: '#6366f1' }]}>Setup</Text>
+              <Ionicons name="add" size={15} color={planColor} />
+              <Text style={[styles.addBtnText, { color: planColor }]}>Setup</Text>
             </PressableScale>
           )}
         </View>
@@ -340,7 +430,7 @@ export const AccountAllocationsCard: React.FC<AccountAllocationsCardProps> = ({
         {!activeBudgetPlan ? (
           <View style={styles.emptyBox}>
             <Text style={[styles.emptyText, { color: colors.textMuted }]}>
-              No active monthly plan. Allocate percentage fragments (50/30/20) for strict disciplined spending.
+              No active monthly plan. Split your monthly budget (50/30/20 or custom slices) for disciplined spending.
             </Text>
             <Button
               title="Create Monthly Plan"
@@ -352,11 +442,16 @@ export const AccountAllocationsCard: React.FC<AccountAllocationsCardProps> = ({
           </View>
         ) : (
           <View style={styles.planContent}>
-            <View style={[styles.planSummaryBox, { backgroundColor: isDark ? 'rgba(99, 102, 241, 0.08)' : '#f8faff', borderColor: 'rgba(99, 102, 241, 0.2)' }]}>
+            <View
+              style={[
+                styles.planSummaryBox,
+                { backgroundColor: planSoft, borderColor: planBorder },
+              ]}
+            >
               <View style={styles.planSummaryTopRow}>
                 <View style={styles.cycleBadge}>
-                  <View style={[styles.pulseDot, { backgroundColor: '#6366f1' }]} />
-                  <Text style={[styles.planPeriodText, { color: '#6366f1' }]}>
+                  <View style={[styles.pulseDot, { backgroundColor: planColor }]} />
+                  <Text style={[styles.planPeriodText, { color: planColor }]}>
                     Cycle {activeBudgetPlan.year}-{String(activeBudgetPlan.month).padStart(2, '0')}
                   </Text>
                 </View>
@@ -364,42 +459,62 @@ export const AccountAllocationsCard: React.FC<AccountAllocationsCardProps> = ({
                   onPress={() => {
                     Alert.alert(
                       'Close Monthly Plan?',
-                      'Unspent funds will safely return to available cash.',
+                      'Unspent funds will safely return to available balance.',
                       [
                         { text: 'Cancel', style: 'cancel' },
                         {
                           text: 'Close Plan',
                           style: 'destructive',
                           onPress: async () => {
-                            await accountAllocationsApi.closePlan(accountId, activeBudgetPlan.id);
-                            fetchOverview();
-                            if (onRefreshParent) onRefreshParent();
+                            try {
+                              await accountAllocationsApi.closePlan(accountId, activeBudgetPlan.id);
+                              haptics.success();
+                              await fetchOverview();
+                              if (onRefreshParent) onRefreshParent();
+                            } catch (err: any) {
+                              haptics.error();
+                              Alert.alert('Error', err?.message || 'Failed to close plan');
+                            }
                           },
                         },
                       ]
                     );
                   }}
+                  hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                   style={styles.closePlanBtn}
                 >
-                  <Text style={[styles.closePlanBtnText, { color: colors.textMuted }]}>Close</Text>
+                  <Text style={[styles.closePlanBtnText, { color: colors.textSecondary }]}>Close</Text>
                 </PressableScale>
               </View>
 
               <Text style={[styles.planRemainingText, { color: colors.textPrimary }]}>
                 {hideBalance ? '••••' : formatMoney(activeBudgetPlan.totalRemaining, currencyCode)} remaining
               </Text>
-              <Text style={[styles.planBudgetText, { color: colors.textMuted }]}>
-                Spent {formatMoney(activeBudgetPlan.totalSpent, currencyCode)} of {formatMoney(activeBudgetPlan.totalBudgetAmount, currencyCode)} ({activeBudgetPlan.totalBudgetAmount > 0 ? Math.round((activeBudgetPlan.totalSpent / activeBudgetPlan.totalBudgetAmount) * 100) : 0}%)
+              <Text style={[styles.planBudgetText, { color: colors.textSecondary }]}>
+                Spent {hideBalance ? '••••' : formatMoney(activeBudgetPlan.totalSpent, currencyCode)} of{' '}
+                {hideBalance ? '••••' : formatMoney(activeBudgetPlan.totalBudgetAmount, currencyCode)} (
+                {activeBudgetPlan.totalBudgetAmount > 0
+                  ? Math.round((activeBudgetPlan.totalSpent / activeBudgetPlan.totalBudgetAmount) * 100)
+                  : 0}
+                %)
               </Text>
 
-              {/* Progress bar */}
-              <View style={[styles.sliceProgressTrack, { height: 6, borderRadius: 3, marginTop: 8 }]}>
+              <View
+                style={[
+                  styles.sliceProgressTrack,
+                  { backgroundColor: trackBg, height: 6, borderRadius: 3, marginTop: 8, width: '100%' },
+                ]}
+              >
                 <View
                   style={[
                     styles.sliceProgressFill,
                     {
-                      backgroundColor: '#6366f1',
-                      width: `${activeBudgetPlan.totalBudgetAmount > 0 ? Math.min(100, Math.round((activeBudgetPlan.totalSpent / activeBudgetPlan.totalBudgetAmount) * 100)) : 0}%`,
+                      backgroundColor: planColor,
+                      width: `${
+                        activeBudgetPlan.totalBudgetAmount > 0
+                          ? Math.min(100, Math.round((activeBudgetPlan.totalSpent / activeBudgetPlan.totalBudgetAmount) * 100))
+                          : 0
+                      }%`,
                     },
                   ]}
                 />
@@ -409,11 +524,12 @@ export const AccountAllocationsCard: React.FC<AccountAllocationsCardProps> = ({
             {/* Slices */}
             <View style={styles.slicesList}>
               {activeBudgetPlan.slices.map((slice, idx) => {
-                const pctSpent = slice.allocatedAmount > 0
-                  ? Math.min(100, Math.round((slice.spentAmount / slice.allocatedAmount) * 100))
-                  : 0;
+                const pctSpent =
+                  slice.allocatedAmount > 0
+                    ? Math.min(100, Math.round((slice.spentAmount / slice.allocatedAmount) * 100))
+                    : 0;
                 const isExhausted = slice.remainingAmount <= 0;
-                const dotColor = MOBILE_PALETTE[idx % MOBILE_PALETTE.length] ?? '#6366f1';
+                const dotColor = SLICE_PALETTE[idx % SLICE_PALETTE.length] ?? colors.accent;
 
                 return (
                   <View
@@ -421,17 +537,19 @@ export const AccountAllocationsCard: React.FC<AccountAllocationsCardProps> = ({
                     style={[
                       styles.sliceCard,
                       {
-                        borderColor: isExhausted ? 'rgba(239, 68, 68, 0.4)' : colors.borderSubtle,
+                        borderColor: isExhausted ? colors.danger : colors.borderSubtle,
                         backgroundColor: isExhausted
-                          ? (isDark ? 'rgba(239, 68, 68, 0.08)' : '#fef2f2')
-                          : (isDark ? colors.surfaceSubtle : colors.surface),
+                          ? colors.dangerSoft
+                          : isDark
+                          ? colors.surfaceSubtle
+                          : colors.background,
                       },
                     ]}
                   >
                     <View style={styles.sliceHeader}>
                       <View style={styles.sliceNameRow}>
                         <View style={[styles.sliceDot, { backgroundColor: dotColor }]} />
-                        <Text style={[styles.sliceName, { color: colors.textPrimary }]}>
+                        <Text style={[styles.sliceName, { color: colors.textPrimary }]} numberOfLines={1}>
                           {slice.name}
                         </Text>
                         <Badge label={`${slice.allocationPercentage}%`} variant="outline" />
@@ -439,19 +557,23 @@ export const AccountAllocationsCard: React.FC<AccountAllocationsCardProps> = ({
                       <Text
                         style={[
                           styles.sliceRemaining,
-                          { color: isExhausted ? '#ef4444' : colors.textPrimary },
+                          { color: isExhausted ? colors.danger : colors.textPrimary },
                         ]}
                       >
                         {hideBalance ? '••••' : formatMoney(slice.remainingAmount, currencyCode)}
                       </Text>
                     </View>
 
-                    <View style={styles.sliceProgressTrack}>
+                    <View style={[styles.sliceProgressTrack, { backgroundColor: trackBg }]}>
                       <View
                         style={[
                           styles.sliceProgressFill,
                           {
-                            backgroundColor: isExhausted ? '#ef4444' : pctSpent > 80 ? '#f59e0b' : dotColor,
+                            backgroundColor: isExhausted
+                              ? colors.danger
+                              : pctSpent > 80
+                              ? colors.warning
+                              : dotColor,
                             width: `${pctSpent}%`,
                           },
                         ]}
@@ -460,7 +582,8 @@ export const AccountAllocationsCard: React.FC<AccountAllocationsCardProps> = ({
 
                     <View style={styles.sliceBottomRow}>
                       <Text style={[styles.sliceSubtext, { color: colors.textMuted }]}>
-                        Spent {formatMoney(slice.spentAmount, currencyCode)} of {formatMoney(slice.allocatedAmount, currencyCode)}
+                        Spent {hideBalance ? '••••' : formatMoney(slice.spentAmount, currencyCode)} of{' '}
+                        {hideBalance ? '••••' : formatMoney(slice.allocatedAmount, currencyCode)}
                       </Text>
                       {isExhausted && (
                         <PressableScale
@@ -468,8 +591,11 @@ export const AccountAllocationsCard: React.FC<AccountAllocationsCardProps> = ({
                             haptics.light();
                             setCoverDeficitVisible(true);
                           }}
+                          hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
                         >
-                          <Text style={styles.deficitLinkText}>Cover Deficit &rarr;</Text>
+                          <Text style={[styles.deficitLinkText, { color: colors.danger }]}>
+                            Cover Deficit →
+                          </Text>
                         </PressableScale>
                       )}
                     </View>
@@ -481,7 +607,7 @@ export const AccountAllocationsCard: React.FC<AccountAllocationsCardProps> = ({
         )}
       </Card>
 
-      {/* CREATE VAULT MODAL */}
+      {/* Modals */}
       <CreateVaultModal
         visible={createVaultVisible}
         onClose={() => setCreateVaultVisible(false)}
@@ -489,12 +615,11 @@ export const AccountAllocationsCard: React.FC<AccountAllocationsCardProps> = ({
         maxAvailable={unallocatedBalance}
         currencyCode={currencyCode}
         onSuccess={() => {
-          fetchOverview();
+          void fetchOverview();
           if (onRefreshParent) onRefreshParent();
         }}
       />
 
-      {/* DEPOSIT / WITHDRAW MODAL */}
       {transferModal && (
         <DepositWithdrawModal
           visible={Boolean(transferModal)}
@@ -502,16 +627,19 @@ export const AccountAllocationsCard: React.FC<AccountAllocationsCardProps> = ({
           accountId={accountId}
           mode={transferModal.mode}
           allocation={transferModal.allocation}
-          maxAmount={transferModal.mode === 'deposit' ? unallocatedBalance : transferModal.allocation.balance}
+          maxAmount={
+            transferModal.mode === 'deposit'
+              ? unallocatedBalance
+              : transferModal.allocation.balance
+          }
           currencyCode={currencyCode}
           onSuccess={() => {
-            fetchOverview();
+            void fetchOverview();
             if (onRefreshParent) onRefreshParent();
           }}
         />
       )}
 
-      {/* CREATE MONTHLY PLAN MODAL */}
       <CreateMonthlyPlanModal
         visible={createPlanVisible}
         onClose={() => setCreatePlanVisible(false)}
@@ -519,12 +647,11 @@ export const AccountAllocationsCard: React.FC<AccountAllocationsCardProps> = ({
         maxAvailable={unallocatedBalance}
         currencyCode={currencyCode}
         onSuccess={() => {
-          fetchOverview();
+          void fetchOverview();
           if (onRefreshParent) onRefreshParent();
         }}
       />
 
-      {/* COVER DEFICIT MODAL */}
       {activeBudgetPlan && coverDeficitVisible && (
         <CoverDeficitModal
           visible={coverDeficitVisible}
@@ -533,13 +660,12 @@ export const AccountAllocationsCard: React.FC<AccountAllocationsCardProps> = ({
           plan={activeBudgetPlan}
           currencyCode={currencyCode}
           onSuccess={() => {
-            fetchOverview();
+            void fetchOverview();
             if (onRefreshParent) onRefreshParent();
           }}
         />
       )}
 
-      {/* SWEEP PLAN MODAL */}
       {activeBudgetPlan && sweepVisible && (
         <SweepPlanModal
           visible={sweepVisible}
@@ -549,7 +675,7 @@ export const AccountAllocationsCard: React.FC<AccountAllocationsCardProps> = ({
           allocations={allocations}
           currencyCode={currencyCode}
           onSuccess={() => {
-            fetchOverview();
+            void fetchOverview();
             if (onRefreshParent) onRefreshParent();
           }}
         />
@@ -577,19 +703,45 @@ function CreateVaultModal({
   currencyCode: string;
   onSuccess: () => void;
 }) {
+  const { colors, isDark } = useTheme();
   const [name, setName] = useState('');
-  const [initialBalance, setInitialBalance] = useState('0');
+  const [category, setCategory] = useState<AllocationCategory>(AllocationCategory.Emergency);
+  const [initialBalance, setInitialBalance] = useState('');
+  const [targetAmount, setTargetAmount] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (visible) {
+      setName('');
+      setCategory(AllocationCategory.Emergency);
+      setInitialBalance('');
+      setTargetAmount('');
+      setError(null);
+    }
+  }, [visible]);
 
   const handleCreate = async () => {
     if (!name.trim()) {
       setError('Vault name is required');
+      haptics.error();
       return;
     }
-    const bal = parseFloat(initialBalance) || 0;
+    const bal = initialBalance.trim() ? parseFloat(initialBalance) : 0;
+    if (isNaN(bal) || bal < 0) {
+      setError('Initial deposit must be 0 or greater');
+      haptics.error();
+      return;
+    }
     if (bal > maxAvailable) {
-      setError(`Initial deposit cannot exceed available balance (${formatMoney(maxAvailable, currencyCode)})`);
+      setError(`Initial deposit cannot exceed available cash (${formatMoney(maxAvailable, currencyCode)})`);
+      haptics.error();
+      return;
+    }
+    const parsedTarget = targetAmount.trim() ? parseFloat(targetAmount) : null;
+    if (parsedTarget !== null && (isNaN(parsedTarget) || parsedTarget <= 0)) {
+      setError('Target amount must be a positive number');
+      haptics.error();
       return;
     }
 
@@ -598,37 +750,119 @@ function CreateVaultModal({
       setError(null);
       await accountAllocationsApi.createAllocation(accountId, {
         name: name.trim(),
-        category: AllocationCategory.Emergency,
+        category,
         initialBalance: bal,
+        targetAmount: parsedTarget,
       });
       haptics.success();
-      setName('');
-      setInitialBalance('0');
       onClose();
       onSuccess();
     } catch (err: any) {
-      setError(err.message || 'Failed to create vault');
+      haptics.error();
+      setError(err?.message || 'Failed to create vault');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <ModalSheet visible={visible} onClose={onClose} title="Create Purpose Vault" subtitle="Carve out an isolated reserve">
+    <ModalSheet
+      visible={visible}
+      onClose={onClose}
+      title="Create Purpose Vault"
+      subtitle="Carve out an isolated reserve"
+      maxHeightRatio={0.88}
+      footer={
+        <Button
+          title={loading ? 'Creating...' : 'Create Vault'}
+          onPress={handleCreate}
+          isLoading={loading}
+          disabled={loading}
+        />
+      }
+    >
       <View style={styles.formContainer}>
-        {error && <Text style={styles.errorText}>{error}</Text>}
-        <Input label="Vault Name" placeholder="e.g. Emergency Fund" value={name} onChangeText={setName} />
+        {error && (
+          <View style={[styles.errorBox, { backgroundColor: colors.dangerSoft, borderColor: colors.danger }]}>
+            <Text style={[styles.errorText, { color: colors.danger }]}>{error}</Text>
+          </View>
+        )}
+
+        <Input
+          label="Vault Name"
+          placeholder="e.g. Emergency Fund, Tax Reserve"
+          value={name}
+          onChangeText={(v) => {
+            setName(v);
+            if (error) setError(null);
+          }}
+        />
+
+        <Text style={[styles.sectionSubtitle, { color: colors.textSecondary }]}>
+          CATEGORY
+        </Text>
+        <View style={styles.chipWrap}>
+          {VAULT_CATEGORIES.map((cat) => {
+            const selected = category === cat.value;
+            return (
+              <PressableScale
+                key={cat.value}
+                onPress={() => {
+                  haptics.selection();
+                  setCategory(cat.value);
+                }}
+                style={[
+                  styles.selectorChip,
+                  {
+                    backgroundColor: selected
+                      ? colors.accentSoft
+                      : isDark
+                      ? colors.surfaceSubtle
+                      : colors.surfaceMuted,
+                    borderColor: selected ? colors.accent : colors.borderSubtle,
+                  },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.selectorChipText,
+                    { color: selected ? colors.accent : colors.textSecondary },
+                  ]}
+                >
+                  {cat.label}
+                </Text>
+              </PressableScale>
+            );
+          })}
+        </View>
+
         <Input
           label={`Initial Deposit (${currencyCode})`}
           placeholder="0.00"
-          keyboardType="numeric"
+          keyboardType="decimal-pad"
+          currencyCode={currencyCode}
           value={initialBalance}
-          onChangeText={setInitialBalance}
+          onChangeText={(v) => {
+            setInitialBalance(v);
+            if (error) setError(null);
+          }}
         />
-        <Text style={{ fontSize: 11, color: '#64748b', marginTop: -4 }}>
+        <Text style={[styles.helperText, { color: colors.textMuted }]}>
           Available free cash: {formatMoney(maxAvailable, currencyCode)}
         </Text>
-        <Button title={loading ? 'Creating...' : 'Create Vault'} onPress={handleCreate} disabled={loading} style={{ marginTop: spacing.md }} />
+
+        <Input
+          label={`Target Goal (${currencyCode}, Optional)`}
+          placeholder="e.g. 5000.00"
+          keyboardType="decimal-pad"
+          currencyCode={currencyCode}
+          value={targetAmount}
+          onChangeText={(v) => {
+            setTargetAmount(v);
+            if (error) setError(null);
+          }}
+          containerStyle={{ marginBottom: 0 }}
+        />
       </View>
     </ModalSheet>
   );
@@ -653,20 +887,30 @@ function DepositWithdrawModal({
   currencyCode: string;
   onSuccess: () => void;
 }) {
+  const { colors, isDark } = useTheme();
   const [amount, setAmount] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (visible) {
+      setAmount('');
+      setError(null);
+    }
+  }, [visible, allocation.id, mode]);
 
   const isDeposit = mode === 'deposit';
 
   const handleTransfer = async () => {
     const amt = parseFloat(amount);
     if (isNaN(amt) || amt <= 0) {
-      setError('Please enter a valid amount');
+      setError('Please enter a valid positive amount');
+      haptics.error();
       return;
     }
     if (amt > maxAmount) {
       setError(`Amount cannot exceed ${formatMoney(maxAmount, currencyCode)}`);
+      haptics.error();
       return;
     }
 
@@ -682,7 +926,8 @@ function DepositWithdrawModal({
       onClose();
       onSuccess();
     } catch (err: any) {
-      setError(err.message || 'Transfer failed');
+      haptics.error();
+      setError(err?.message || 'Transfer failed');
     } finally {
       setLoading(false);
     }
@@ -693,26 +938,53 @@ function DepositWithdrawModal({
       visible={visible}
       onClose={onClose}
       title={isDeposit ? `Deposit to ${allocation.name}` : `Withdraw from ${allocation.name}`}
-      subtitle={isDeposit ? 'Move funds from available cash into vault' : 'Return funds to available account balance'}
-    >
-      <View style={styles.formContainer}>
-        {error && <Text style={styles.errorText}>{error}</Text>}
-        <Input
-          label={`Amount (${currencyCode})`}
-          placeholder="0.00"
-          keyboardType="numeric"
-          value={amount}
-          onChangeText={setAmount}
-        />
-        <Text style={{ fontSize: 11, color: '#64748b', marginTop: -4 }}>
-          Max: {formatMoney(maxAmount, currencyCode)}
-        </Text>
+      subtitle={isDeposit ? 'Move available cash into this vault' : 'Return vault funds to available balance'}
+      maxHeightRatio={0.85}
+      footer={
         <Button
           title={loading ? 'Processing...' : isDeposit ? 'Confirm Deposit' : 'Confirm Withdrawal'}
           onPress={handleTransfer}
+          isLoading={loading}
           disabled={loading}
-          style={{ marginTop: spacing.md }}
         />
+      }
+    >
+      <View style={styles.formContainer}>
+        {error && (
+          <View style={[styles.errorBox, { backgroundColor: colors.dangerSoft, borderColor: colors.danger }]}>
+            <Text style={[styles.errorText, { color: colors.danger }]}>{error}</Text>
+          </View>
+        )}
+        <Input
+          label={`Amount (${currencyCode})`}
+          placeholder="0.00"
+          keyboardType="decimal-pad"
+          currencyCode={currencyCode}
+          value={amount}
+          onChangeText={(v) => {
+            setAmount(v);
+            if (error) setError(null);
+          }}
+        />
+        <View style={styles.quickFillRow}>
+          <Text style={[styles.helperText, { color: colors.textMuted }]}>
+            Max available: {formatMoney(maxAmount, currencyCode)}
+          </Text>
+          {maxAmount > 0 && (
+            <PressableScale
+              onPress={() => {
+                haptics.selection();
+                setAmount(formatCleanNumber(maxAmount));
+              }}
+              style={[
+                styles.quickChip,
+                { backgroundColor: isDark ? colors.surfaceSubtle : colors.surfaceMuted },
+              ]}
+            >
+              <Text style={[styles.quickChipText, { color: colors.accent }]}>Use Max</Text>
+            </PressableScale>
+          )}
+        </View>
       </View>
     </ModalSheet>
   );
@@ -742,36 +1014,37 @@ function CreateMonthlyPlanModal({
 }) {
   const { colors, isDark } = useTheme();
   const [budget, setBudget] = useState(maxAvailable > 0 ? String(Math.floor(maxAvailable)) : '0');
+  const [slices, setSlices] = useState<MobileSliceState[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!visible) return;
+    const initBudget = maxAvailable > 0 ? Math.floor(maxAvailable) : 0;
+    setBudget(String(initBudget));
+    setError(null);
+    setSlices([
+      { id: '1', name: 'Essentials', percentage: '50', amount: formatCleanNumber(initBudget * 0.5) },
+      { id: '2', name: 'Lifestyle & Wants', percentage: '30', amount: formatCleanNumber(initBudget * 0.3) },
+      { id: '3', name: 'Bills & Sinking', percentage: '20', amount: formatCleanNumber(initBudget * 0.2) },
+    ]);
+  }, [visible, maxAvailable]);
+
   const budgetNum = parseFloat(budget) || 0;
   const currencySymbol =
     CURRENCY_METADATA[currencyCode as SupportedCurrencyCode]?.symbol ?? currencyCode;
 
-  const [slices, setSlices] = useState<MobileSliceState[]>(() => {
-    const initBudget = maxAvailable > 0 ? Math.floor(maxAvailable) : 0;
-    return [
-      { id: '1', name: 'Essentials', percentage: '50', amount: formatCleanNumber(initBudget * 0.5) },
-      { id: '2', name: 'Lifestyle & Wants', percentage: '30', amount: formatCleanNumber(initBudget * 0.3) },
-      { id: '3', name: 'Bills & Sinking', percentage: '20', amount: formatCleanNumber(initBudget * 0.2) },
-    ];
-  });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const totalPct = Math.round(
-    slices.reduce((sum, s) => sum + (parseFloat(s.percentage) || 0), 0) * 100
-  ) / 100;
-
-  const totalAllocatedAmount = Math.round(
-    slices.reduce((sum, s) => sum + (parseFloat(s.amount) || 0), 0) * 100
-  ) / 100;
-
+  const totalPct =
+    Math.round(slices.reduce((sum, s) => sum + (parseFloat(s.percentage) || 0), 0) * 100) / 100;
+  const totalAllocatedAmount =
+    Math.round(slices.reduce((sum, s) => sum + (parseFloat(s.amount) || 0), 0) * 100) / 100;
   const remainingPct = Math.round((100 - totalPct) * 100) / 100;
   const remainingAmt = Math.round((budgetNum - totalAllocatedAmount) * 100) / 100;
 
   const handleBudgetChange = (newBudgetStr: string) => {
     setBudget(newBudgetStr);
     const newBudgetNum = parseFloat(newBudgetStr) || 0;
-    if (newBudgetNum > 0) {
+    if (newBudgetNum >= 0) {
       setSlices((prev) =>
         prev.map((s) => {
           const pct = parseFloat(s.percentage) || 0;
@@ -834,7 +1107,7 @@ function CreateMonthlyPlanModal({
         { id: '2', name: 'Savings & Investments', percentage: '20', amount: formatCleanNumber(budgetNum * 0.2) },
         { id: '3', name: 'Discretionary', percentage: '10', amount: formatCleanNumber(budgetNum * 0.1) },
       ]);
-    } else if (preset === 'even') {
+    } else {
       const n = Math.max(1, slices.length);
       const basePct = Math.floor((100 / n) * 100) / 100;
       const remainder = Math.round((100 - basePct * n) * 100) / 100;
@@ -892,14 +1165,15 @@ function CreateMonthlyPlanModal({
   const handleCreate = async () => {
     if (isNaN(budgetNum) || budgetNum <= 0 || budgetNum > maxAvailable) {
       setError(`Budget must be between 1 and ${formatMoney(maxAvailable, currencyCode)}`);
+      haptics.error();
       return;
     }
     if (Math.abs(totalPct - 100) > 0.05) {
       setError(`Slice percentages must equal 100% (currently ${totalPct}%)`);
+      haptics.error();
       return;
     }
 
-    // Auto-normalize slight float difference within 0.05%
     const normalized = [...slices];
     const diff = Math.round((100 - totalPct) * 100) / 100;
     if (Math.abs(diff) > 0 && normalized.length > 0) {
@@ -931,7 +1205,8 @@ function CreateMonthlyPlanModal({
       onClose();
       onSuccess();
     } catch (err: any) {
-      setError(err.message || 'Failed to create plan');
+      haptics.error();
+      setError(err?.message || 'Failed to create plan');
     } finally {
       setLoading(false);
     }
@@ -942,22 +1217,34 @@ function CreateMonthlyPlanModal({
       visible={visible}
       onClose={onClose}
       title="Setup Monthly Budget Plan"
-      subtitle="Edit amount or % — both stay synchronized in real time"
+      subtitle="Edit amount or % — both stay synchronized"
+      maxHeightRatio={0.92}
+      footer={
+        <Button
+          title={loading ? 'Activating...' : 'Activate Monthly Plan'}
+          onPress={handleCreate}
+          isLoading={loading}
+          disabled={loading || Math.abs(totalPct - 100) > 0.05 || budgetNum <= 0 || budgetNum > maxAvailable}
+        />
+      }
     >
       <View style={styles.formContainer}>
-        {error && <Text style={styles.errorText}>{error}</Text>}
+        {error && (
+          <View style={[styles.errorBox, { backgroundColor: colors.dangerSoft, borderColor: colors.danger }]}>
+            <Text style={[styles.errorText, { color: colors.danger }]}>{error}</Text>
+          </View>
+        )}
 
-        {/* Total Budget Input */}
         <Input
           label={`Monthly Budget Allowance (${currencyCode})`}
           placeholder="0.00"
-          keyboardType="numeric"
+          keyboardType="decimal-pad"
           currencyCode={currencyCode}
           value={budget}
           onChangeText={handleBudgetChange}
         />
         <View style={styles.quickFillRow}>
-          <Text style={[styles.availableSubtext, { color: colors.textMuted }]}>
+          <Text style={[styles.helperText, { color: colors.textMuted }]}>
             Available: {formatMoney(maxAvailable, currencyCode)}
           </Text>
           {maxAvailable > 0 && (
@@ -978,7 +1265,6 @@ function CreateMonthlyPlanModal({
           )}
         </View>
 
-        {/* Presets Row */}
         <View style={styles.presetSection}>
           <Text style={[styles.sectionSubtitle, { color: colors.textSecondary }]}>
             Quick Presets
@@ -986,37 +1272,36 @@ function CreateMonthlyPlanModal({
           <View style={styles.presetRow}>
             <PressableScale
               onPress={() => applyPreset('50-30-20')}
-              style={[styles.presetChip, { borderColor: colors.borderSubtle }]}
+              style={[styles.presetChip, { borderColor: colors.borderSubtle, backgroundColor: isDark ? colors.surfaceSubtle : colors.background }]}
             >
               <Text style={[styles.presetChipText, { color: colors.textPrimary }]}>50/30/20</Text>
             </PressableScale>
             <PressableScale
               onPress={() => applyPreset('70-20-10')}
-              style={[styles.presetChip, { borderColor: colors.borderSubtle }]}
+              style={[styles.presetChip, { borderColor: colors.borderSubtle, backgroundColor: isDark ? colors.surfaceSubtle : colors.background }]}
             >
               <Text style={[styles.presetChipText, { color: colors.textPrimary }]}>70/20/10</Text>
             </PressableScale>
             <PressableScale
               onPress={() => applyPreset('even')}
-              style={[styles.presetChip, { borderColor: colors.borderSubtle }]}
+              style={[styles.presetChip, { borderColor: colors.borderSubtle, backgroundColor: isDark ? colors.surfaceSubtle : colors.background }]}
             >
               <Text style={[styles.presetChipText, { color: colors.textPrimary }]}>Even Split</Text>
             </PressableScale>
           </View>
         </View>
 
-        {/* Visualizer Segment Bar */}
         {totalPct > 0 && (
-          <View style={[styles.modalBarTrack, { backgroundColor: isDark ? colors.surfaceSubtle : '#e2e8f0' }]}>
+          <View style={[styles.modalBarTrack, { backgroundColor: isDark ? colors.surfaceSubtle : colors.surfaceMuted }]}>
             {slices.map((slice, idx) => {
               const pct = Math.max(0, parseFloat(slice.percentage) || 0);
-              const color = MOBILE_PALETTE[idx % MOBILE_PALETTE.length] ?? '#6366f1';
+              const sliceColor = SLICE_PALETTE[idx % SLICE_PALETTE.length] ?? colors.accent;
               return (
                 <View
                   key={slice.id}
                   style={{
                     height: '100%',
-                    backgroundColor: color,
+                    backgroundColor: sliceColor,
                     width: `${Math.min(100, (pct / Math.max(100, totalPct)) * 100)}%`,
                   }}
                 />
@@ -1025,43 +1310,45 @@ function CreateMonthlyPlanModal({
           </View>
         )}
 
-        {/* Slices Form List */}
         <Text style={[styles.inputGroupLabel, { color: colors.textPrimary }]}>
-          Budget Slices (Edit Price or %)
+          Budget Slices
         </Text>
 
         {slices.map((slice, idx) => {
-          const color = MOBILE_PALETTE[idx % MOBILE_PALETTE.length] ?? '#6366f1';
+          const sliceColor = SLICE_PALETTE[idx % SLICE_PALETTE.length] ?? colors.accent;
           return (
             <View
               key={slice.id}
               style={[
                 styles.sliceFormCard,
                 {
-                  backgroundColor: isDark ? colors.surfaceSubtle : colors.surface,
+                  backgroundColor: isDark ? colors.surfaceSubtle : colors.background,
                   borderColor: colors.borderSubtle,
                 },
               ]}
             >
               <View style={styles.sliceFormHeader}>
                 <View style={styles.sliceHeaderLeft}>
-                  <View style={[styles.sliceFormNumber, { backgroundColor: color }]}>
+                  <View style={[styles.sliceFormNumber, { backgroundColor: sliceColor }]}>
                     <Text style={styles.sliceFormNumberText}>{idx + 1}</Text>
                   </View>
-                  <Input
-                    placeholder="Slice Name"
-                    value={slice.name}
-                    onChangeText={(val) => {
-                      setSlices((prev) =>
-                        prev.map((s) => (s.id === slice.id ? { ...s, name: val } : s))
-                      );
-                    }}
-                    style={{ flex: 1, height: 38 }}
-                  />
+                  <View style={{ flex: 1 }}>
+                    <Input
+                      placeholder="Slice Name"
+                      value={slice.name}
+                      onChangeText={(val) => {
+                        setSlices((prev) =>
+                          prev.map((s) => (s.id === slice.id ? { ...s, name: val } : s))
+                        );
+                      }}
+                      containerStyle={{ marginBottom: 0 }}
+                    />
+                  </View>
                 </View>
                 {slices.length > 1 && (
                   <PressableScale
                     onPress={() => handleRemoveSlice(slice.id)}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                     style={styles.sliceDeleteBtn}
                   >
                     <Ionicons name="trash-outline" size={16} color={colors.textMuted} />
@@ -1069,27 +1356,28 @@ function CreateMonthlyPlanModal({
                 )}
               </View>
 
-              {/* Dual Inputs: Price and % */}
               <View style={styles.sliceDualRow}>
                 <View style={{ flex: 1 }}>
                   <Input
                     label={`Amount (${currencySymbol})`}
                     placeholder="0.00"
-                    keyboardType="numeric"
+                    keyboardType="decimal-pad"
                     value={slice.amount}
                     onChangeText={(val) => handleAmountChange(slice.id, val)}
+                    containerStyle={{ marginBottom: 0 }}
                   />
                 </View>
                 <View style={styles.dualArrowIcon}>
                   <Ionicons name="swap-horizontal" size={14} color={colors.textMuted} />
                 </View>
-                <View style={{ width: 100 }}>
+                <View style={{ width: 108 }}>
                   <Input
                     label="Share (%)"
                     placeholder="0"
-                    keyboardType="numeric"
+                    keyboardType="decimal-pad"
                     value={slice.percentage}
                     onChangeText={(val) => handlePercentageChange(slice.id, val)}
+                    containerStyle={{ marginBottom: 0 }}
                   />
                 </View>
               </View>
@@ -1097,7 +1385,6 @@ function CreateMonthlyPlanModal({
           );
         })}
 
-        {/* Add Slice Button */}
         <PressableScale
           onPress={handleAddSlice}
           style={[
@@ -1112,18 +1399,17 @@ function CreateMonthlyPlanModal({
           <Text style={[styles.addSliceText, { color: colors.accent }]}>Add Slice</Text>
         </PressableScale>
 
-        {/* Allocation Summary Box */}
         <View
           style={[
             styles.allocSummaryCard,
             {
-              backgroundColor: isDark ? 'rgba(99, 102, 241, 0.08)' : '#f8faff',
+              backgroundColor: isDark ? colors.surfaceSubtle : colors.surfaceMuted,
               borderColor:
                 Math.abs(totalPct - 100) <= 0.05
-                  ? 'rgba(16, 185, 129, 0.3)'
+                  ? colors.accent
                   : totalPct > 100
-                  ? 'rgba(239, 68, 68, 0.3)'
-                  : 'rgba(245, 158, 11, 0.3)',
+                  ? colors.danger
+                  : colors.warning,
             },
           ]}
         >
@@ -1146,10 +1432,10 @@ function CreateMonthlyPlanModal({
                 {
                   color:
                     Math.abs(totalPct - 100) <= 0.05
-                      ? '#10b981'
+                      ? colors.accent
                       : totalPct > 100
-                      ? '#ef4444'
-                      : '#f59e0b',
+                      ? colors.danger
+                      : colors.warning,
                 },
               ]}
             >
@@ -1158,26 +1444,21 @@ function CreateMonthlyPlanModal({
           </View>
 
           {remainingPct > 0 && (
-            <View style={styles.remainderRow}>
-              <Text style={[styles.remainderText, { color: '#f59e0b' }]}>
+            <View style={[styles.remainderRow, { borderTopColor: colors.borderSubtle }]}>
+              <Text style={[styles.remainderText, { color: colors.warning }]}>
                 {formatMoney(remainingAmt, currencyCode)} ({remainingPct}%) unallocated
               </Text>
               <PressableScale
                 onPress={handleFillRemainder}
-                style={[styles.fillRemainderChip, { backgroundColor: isDark ? 'rgba(245, 158, 11, 0.2)' : '#fffbeb' }]}
+                style={[styles.fillRemainderChip, { backgroundColor: colors.warningSoft }]}
               >
-                <Text style={styles.fillRemainderText}>Fill Remainder</Text>
+                <Text style={[styles.fillRemainderText, { color: colors.warning }]}>
+                  Fill Remainder
+                </Text>
               </PressableScale>
             </View>
           )}
         </View>
-
-        <Button
-          title={loading ? 'Activating...' : 'Activate Monthly Plan'}
-          onPress={handleCreate}
-          disabled={loading || Math.abs(totalPct - 100) > 0.05 || budgetNum <= 0 || budgetNum > maxAvailable}
-          style={{ marginTop: spacing.sm }}
-        />
       </View>
     </ModalSheet>
   );
@@ -1198,23 +1479,41 @@ function CoverDeficitModal({
   currencyCode: string;
   onSuccess: () => void;
 }) {
-  const [fromSliceId, setFromSliceId] = useState(plan.slices[0]?.id || '');
-  const [toSliceId, setToSliceId] = useState(plan.slices[1]?.id || '');
+  const { colors, isDark } = useTheme();
+  const [fromSliceId, setFromSliceId] = useState('');
+  const [toSliceId, setToSliceId] = useState('');
   const [amount, setAmount] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  useEffect(() => {
+    if (!visible) return;
+    setAmount('');
+    setError(null);
+    const availableSources = plan.slices.filter((s) => s.remainingAmount > 0);
+    const depletedTarget = plan.slices.find((s) => s.remainingAmount <= 0);
+    const initialFrom = availableSources[0]?.id || plan.slices[0]?.id || '';
+    const initialTo =
+      (depletedTarget && depletedTarget.id !== initialFrom ? depletedTarget.id : null) ||
+      plan.slices.find((s) => s.id !== initialFrom)?.id ||
+      '';
+    setFromSliceId(initialFrom);
+    setToSliceId(initialTo);
+  }, [visible, plan]);
+
   const sourceSlice = plan.slices.find((s) => s.id === fromSliceId);
-  const maxAvailable = sourceSlice?.remainingAmount ?? 0;
+  const maxAvailable = Math.max(0, sourceSlice?.remainingAmount ?? 0);
 
   const handleCover = async () => {
     const amt = parseFloat(amount);
-    if (isNaN(amt) || amt <= 0 || amt > maxAvailable) {
-      setError(`Amount must be between 0.01 and ${formatMoney(maxAvailable, currencyCode)}`);
+    if (!fromSliceId || !toSliceId || fromSliceId === toSliceId) {
+      setError('Please pick distinct source and destination slices');
+      haptics.error();
       return;
     }
-    if (fromSliceId === toSliceId) {
-      setError('Source and target slices must be different');
+    if (isNaN(amt) || amt <= 0 || amt > maxAvailable) {
+      setError(`Amount must be between 0.01 and ${formatMoney(maxAvailable, currencyCode)}`);
+      haptics.error();
       return;
     }
 
@@ -1230,35 +1529,135 @@ function CoverDeficitModal({
       onClose();
       onSuccess();
     } catch (err: any) {
-      setError(err.message || 'Failed to cover deficit');
+      haptics.error();
+      setError(err?.message || 'Failed to rebalance budget');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <ModalSheet visible={visible} onClose={onClose} title="Cover Slice Deficit" subtitle="Strict Rule: Transfer between slices to unlock transactions">
-      <View style={styles.formContainer}>
-        {error && <Text style={styles.errorText}>{error}</Text>}
-        <Text style={styles.inputGroupLabel}>
-          Lending from: {sourceSlice?.name} ({formatMoney(maxAvailable, currencyCode)} remaining)
-        </Text>
-        <Input
-          label={`Transfer Amount (${currencyCode})`}
-          placeholder="0.00"
-          keyboardType="numeric"
-          value={amount}
-          onChangeText={setAmount}
-        />
-        <Text style={{ fontSize: 11, color: '#64748b', marginTop: -4 }}>
-          Max: {formatMoney(maxAvailable, currencyCode)}
-        </Text>
+    <ModalSheet
+      visible={visible}
+      onClose={onClose}
+      title="Rebalance Budget"
+      subtitle="Move funds between monthly budget slices"
+      maxHeightRatio={0.88}
+      footer={
         <Button
           title={loading ? 'Transferring...' : 'Transfer Budget'}
           onPress={handleCover}
-          disabled={loading || !parseFloat(amount)}
-          style={{ marginTop: spacing.md }}
+          isLoading={loading}
+          disabled={loading || !parseFloat(amount) || maxAvailable <= 0 || !toSliceId}
         />
+      }
+    >
+      <View style={styles.formContainer}>
+        {error && (
+          <View style={[styles.errorBox, { backgroundColor: colors.dangerSoft, borderColor: colors.danger }]}>
+            <Text style={[styles.errorText, { color: colors.danger }]}>{error}</Text>
+          </View>
+        )}
+
+        <Text style={[styles.sectionSubtitle, { color: colors.textSecondary }]}>
+          FROM SLICE (SOURCE)
+        </Text>
+        <View style={styles.chipWrap}>
+          {plan.slices.map((s) => {
+            const disabled = s.remainingAmount <= 0;
+            const selected = fromSliceId === s.id;
+            return (
+              <PressableScale
+                key={s.id}
+                disabled={disabled}
+                onPress={() => {
+                  haptics.selection();
+                  setFromSliceId(s.id);
+                  if (toSliceId === s.id) {
+                    const alt = plan.slices.find((x) => x.id !== s.id);
+                    setToSliceId(alt?.id || '');
+                  }
+                }}
+                style={[
+                  styles.selectorChip,
+                  {
+                    backgroundColor: selected
+                      ? colors.accentSoft
+                      : isDark
+                      ? colors.surfaceSubtle
+                      : colors.surfaceMuted,
+                    borderColor: selected ? colors.accent : colors.borderSubtle,
+                    opacity: disabled ? 0.45 : 1,
+                  },
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.selectorChipText,
+                    { color: selected ? colors.accent : colors.textSecondary },
+                  ]}
+                >
+                  {s.name} ({formatMoney(s.remainingAmount, currencyCode)})
+                </Text>
+              </PressableScale>
+            );
+          })}
+        </View>
+
+        <Text style={[styles.sectionSubtitle, { color: colors.textSecondary, marginTop: spacing.xs }]}>
+          TO SLICE (DESTINATION)
+        </Text>
+        <View style={styles.chipWrap}>
+          {plan.slices
+            .filter((s) => s.id !== fromSliceId)
+            .map((s) => {
+              const selected = toSliceId === s.id;
+              return (
+                <PressableScale
+                  key={s.id}
+                  onPress={() => {
+                    haptics.selection();
+                    setToSliceId(s.id);
+                  }}
+                  style={[
+                    styles.selectorChip,
+                    {
+                      backgroundColor: selected
+                        ? colors.accentSoft
+                        : isDark
+                        ? colors.surfaceSubtle
+                        : colors.surfaceMuted,
+                      borderColor: selected ? colors.accent : colors.borderSubtle,
+                    },
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.selectorChipText,
+                      { color: selected ? colors.accent : colors.textSecondary },
+                    ]}
+                  >
+                    {s.name} ({formatMoney(s.remainingAmount, currencyCode)})
+                  </Text>
+                </PressableScale>
+              );
+            })}
+        </View>
+
+        <Input
+          label={`Transfer Amount (${currencyCode})`}
+          placeholder="0.00"
+          keyboardType="decimal-pad"
+          currencyCode={currencyCode}
+          value={amount}
+          onChangeText={(v) => {
+            setAmount(v);
+            if (error) setError(null);
+          }}
+        />
+        <Text style={[styles.helperText, { color: colors.textMuted }]}>
+          Max transferable from {sourceSlice?.name || 'slice'}: {formatMoney(maxAvailable, currencyCode)}
+        </Text>
       </View>
     </ModalSheet>
   );
@@ -1281,6 +1680,7 @@ function SweepPlanModal({
   currencyCode: string;
   onSuccess: () => void;
 }) {
+  const { colors } = useTheme();
   const [loading, setLoading] = useState(false);
 
   const handleSweep = async (targetId?: string | null) => {
@@ -1291,25 +1691,39 @@ function SweepPlanModal({
       onClose();
       onSuccess();
     } catch (err: any) {
-      Alert.alert('Error', err.message || 'Failed to sweep plan');
+      haptics.error();
+      Alert.alert('Error', err?.message || 'Failed to sweep plan');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <ModalSheet visible={visible} onClose={onClose} title="Sweep Unspent Allowance" subtitle="Safely save unspent budget into a vault">
+    <ModalSheet
+      visible={visible}
+      onClose={onClose}
+      title="Sweep Unspent Allowance"
+      subtitle="Move unspent budget into savings or available cash"
+      maxHeightRatio={0.85}
+      footer={
+        <Button title="Cancel" variant="ghost" onPress={onClose} disabled={loading} />
+      }
+    >
       <View style={styles.formContainer}>
-        <Text style={styles.sweepDesc}>
-          You have <Text style={{ fontWeight: 'bold' }}>{formatMoney(plan.totalRemaining, currencyCode)}</Text> unspent. Choose where to sweep:
+        <Text style={[styles.sweepDesc, { color: colors.textSecondary }]}>
+          You have{' '}
+          <Text style={{ fontWeight: '700', color: colors.textPrimary }}>
+            {formatMoney(plan.totalRemaining, currencyCode)}
+          </Text>{' '}
+          unspent. Choose where to sweep these funds:
         </Text>
 
         <Button
-          title="Sweep to Available Cash (General Balance)"
+          title="Sweep to Available Cash"
           variant="secondary"
           onPress={() => handleSweep(null)}
           disabled={loading}
-          style={{ marginBottom: spacing.sm }}
+          style={{ marginBottom: spacing.xs }}
         />
 
         {allocations.map((a) => (
@@ -1319,7 +1733,7 @@ function SweepPlanModal({
             variant="secondary"
             onPress={() => handleSweep(a.id)}
             disabled={loading}
-            style={{ marginBottom: spacing.sm }}
+            style={{ marginBottom: spacing.xs }}
           />
         ))}
       </View>
@@ -1329,11 +1743,15 @@ function SweepPlanModal({
 
 const styles = StyleSheet.create({
   container: {
-    marginTop: spacing.md,
     gap: spacing.md,
   },
+  loadingCard: {
+    paddingVertical: spacing.xl,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   card: {
-    padding: spacing.md,
+    padding: spacing.base,
     borderRadius: radius.xl,
   },
   headerRow: {
@@ -1342,27 +1760,39 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: spacing.sm,
   },
-  tagRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    marginBottom: 4,
-  },
   accountLabel: {
-    fontSize: typography.caption.fontSize,
+    ...typography.caption,
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.7,
+    marginBottom: 2,
   },
   title: {
-    fontSize: typography.heading.fontSize,
+    ...typography.title,
+    fontSize: 18,
     fontWeight: '700',
+  },
+  totalPill: {
+    alignItems: 'flex-end',
+  },
+  totalPillLabel: {
+    ...typography.caption,
+    fontSize: 10,
+  },
+  totalPillVal: {
+    ...typography.label,
+    fontSize: 14,
+    fontWeight: '700',
+    fontVariant: ['tabular-nums'],
   },
   metricsGrid: {
     flexDirection: 'row',
-    gap: spacing.xs,
-    marginTop: spacing.sm,
+    gap: spacing.xs + 2,
+    marginTop: spacing.xs,
   },
   metricBox: {
     flex: 1,
-    padding: spacing.sm,
+    padding: spacing.sm + 2,
     borderRadius: radius.md,
     borderWidth: StyleSheet.hairlineWidth,
   },
@@ -1376,15 +1806,16 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   metricValue: {
-    fontSize: typography.body.fontSize,
+    fontSize: 13,
     fontWeight: '700',
     marginTop: 4,
+    fontVariant: ['tabular-nums'],
   },
   barContainer: {
     marginTop: spacing.md,
   },
   barTrack: {
-    height: 8,
+    height: 7,
     borderRadius: 4,
     flexDirection: 'row',
     overflow: 'hidden',
@@ -1393,7 +1824,7 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   sectionCard: {
-    padding: spacing.md,
+    padding: spacing.base,
     borderRadius: radius.xl,
   },
   sectionHeaderRow: {
@@ -1405,19 +1836,21 @@ const styles = StyleSheet.create({
   sectionTitleGroup: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xs,
+    gap: spacing.xs + 2,
   },
   sectionTitle: {
-    fontSize: typography.body.fontSize,
+    ...typography.bodyLarge,
+    fontSize: 15,
     fontWeight: '700',
   },
   addBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 5,
-    borderRadius: radius.sm,
+    paddingHorizontal: spacing.sm + 2,
+    paddingVertical: 6,
+    minHeight: 32,
+    borderRadius: radius.full,
   },
   addBtnText: {
     fontSize: 12,
@@ -1431,10 +1864,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 4,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: radius.sm,
-    borderWidth: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    minHeight: 32,
+    borderRadius: radius.full,
+    borderWidth: StyleSheet.hairlineWidth,
   },
   smallActionText: {
     fontSize: 11,
@@ -1446,16 +1880,18 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   emptyText: {
-    fontSize: typography.caption.fontSize,
+    ...typography.caption,
+    fontSize: 12,
     textAlign: 'center',
+    lineHeight: 18,
   },
   vaultsList: {
     gap: spacing.sm,
     marginTop: spacing.xs,
   },
   vaultItem: {
-    padding: spacing.sm,
-    borderRadius: radius.md,
+    padding: spacing.md,
+    borderRadius: radius.lg,
     borderWidth: StyleSheet.hairlineWidth,
   },
   vaultTopRow: {
@@ -1464,46 +1900,61 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   vaultName: {
-    fontSize: typography.body.fontSize,
+    ...typography.body,
     fontWeight: '600',
   },
   categoryBadge: {
-    marginTop: 2,
+    marginTop: 4,
     alignSelf: 'flex-start',
   },
+  vaultRightCol: {
+    alignItems: 'flex-end',
+  },
   vaultBalance: {
-    fontSize: typography.body.fontSize,
+    ...typography.bodyLarge,
+    fontSize: 15,
     fontWeight: '700',
+    fontVariant: ['tabular-nums'],
+  },
+  vaultTargetText: {
+    ...typography.caption,
+    fontSize: 11,
+    marginTop: 2,
+    fontVariant: ['tabular-nums'],
   },
   vaultActionsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xs,
-    marginTop: spacing.sm,
+    gap: spacing.sm,
+    marginTop: spacing.md,
   },
   actionChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 3,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: radius.sm,
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    minHeight: 32,
+    borderRadius: radius.full,
   },
   actionChipText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '600',
   },
   deleteIconBtn: {
-    padding: 4,
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
     marginLeft: 'auto',
   },
   planContent: {
-    gap: spacing.sm,
+    gap: spacing.sm + 2,
   },
   planSummaryBox: {
-    padding: spacing.sm,
-    borderRadius: radius.md,
-    borderWidth: 1,
+    padding: spacing.md,
+    borderRadius: radius.lg,
+    borderWidth: StyleSheet.hairlineWidth,
     alignItems: 'center',
   },
   planSummaryTopRow: {
@@ -1524,12 +1975,12 @@ const styles = StyleSheet.create({
     borderRadius: 3,
   },
   closePlanBtn: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
   },
   closePlanBtnText: {
-    fontSize: 11,
-    fontWeight: '500',
+    fontSize: 12,
+    fontWeight: '600',
   },
   planPeriodText: {
     fontSize: 11,
@@ -1537,19 +1988,24 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
   },
   planRemainingText: {
-    fontSize: typography.heading.fontSize,
+    ...typography.heading,
+    fontSize: 22,
     fontWeight: '800',
     marginTop: 2,
+    fontVariant: ['tabular-nums'],
   },
   planBudgetText: {
-    fontSize: 11,
+    ...typography.caption,
+    fontSize: 12,
+    marginTop: 2,
+    fontVariant: ['tabular-nums'],
   },
   slicesList: {
-    gap: spacing.xs,
+    gap: spacing.sm,
   },
   sliceCard: {
-    padding: spacing.sm,
-    borderRadius: radius.md,
+    padding: spacing.md,
+    borderRadius: radius.lg,
     borderWidth: StyleSheet.hairlineWidth,
   },
   sliceHeader: {
@@ -1561,6 +2017,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
+    flex: 1,
+    marginRight: spacing.sm,
   },
   sliceDot: {
     width: 8,
@@ -1568,90 +2026,122 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   sliceName: {
-    fontSize: typography.caption.fontSize,
+    ...typography.body,
+    fontSize: 13,
     fontWeight: '600',
+    flexShrink: 1,
   },
   sliceRemaining: {
-    fontSize: typography.caption.fontSize,
+    ...typography.body,
+    fontSize: 13,
     fontWeight: '700',
+    fontVariant: ['tabular-nums'],
   },
   sliceProgressTrack: {
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: '#e2e8f0',
-    marginTop: 6,
+    height: 5,
+    borderRadius: 3,
+    marginTop: 8,
     overflow: 'hidden',
   },
   sliceProgressFill: {
     height: '100%',
+    borderRadius: 3,
   },
   sliceBottomRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 4,
+    marginTop: 6,
   },
   sliceSubtext: {
-    fontSize: 10,
+    ...typography.caption,
+    fontSize: 11,
+    fontVariant: ['tabular-nums'],
   },
   deficitLinkText: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '700',
-    color: '#ef4444',
   },
   formContainer: {
     gap: spacing.sm,
-    paddingVertical: spacing.sm,
+    paddingVertical: spacing.xs,
+  },
+  errorBox: {
+    borderWidth: StyleSheet.hairlineWidth,
+    borderRadius: radius.md,
+    padding: spacing.sm,
   },
   errorText: {
-    color: '#ef4444',
+    ...typography.caption,
     fontSize: 12,
+    fontWeight: '600',
+    textAlign: 'center',
   },
-  availableSubtext: {
+  helperText: {
+    ...typography.caption,
     fontSize: 11,
+    marginTop: -4,
+  },
+  chipWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.xs,
+  },
+  selectorChip: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: 7,
+    borderRadius: radius.full,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  selectorChipText: {
+    ...typography.caption,
+    fontSize: 12,
+    fontWeight: '600',
   },
   quickFillRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: -4,
+    marginTop: -2,
   },
   quickChipsGroup: {
     flexDirection: 'row',
-    gap: 4,
+    gap: 6,
   },
   quickChip: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
     borderRadius: radius.full,
   },
   quickChipText: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '600',
   },
   presetSection: {
     marginTop: spacing.xs,
   },
   sectionSubtitle: {
+    ...typography.label,
     fontSize: 11,
-    fontWeight: '600',
+    fontWeight: '700',
     textTransform: 'uppercase',
-    marginBottom: 6,
+    letterSpacing: 0.5,
   },
   presetRow: {
     flexDirection: 'row',
     gap: spacing.xs,
+    marginTop: 6,
   },
   presetChip: {
     flex: 1,
-    paddingVertical: 6,
+    paddingVertical: 8,
     borderRadius: radius.md,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     alignItems: 'center',
     justifyContent: 'center',
   },
   presetChipText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '600',
   },
   modalBarTrack: {
@@ -1662,12 +2152,13 @@ const styles = StyleSheet.create({
     marginVertical: 4,
   },
   inputGroupLabel: {
+    ...typography.label,
     fontSize: 12,
     fontWeight: '700',
     marginTop: spacing.xs,
   },
   sliceFormCard: {
-    padding: spacing.sm,
+    padding: spacing.sm + 2,
     borderRadius: radius.md,
     borderWidth: StyleSheet.hairlineWidth,
     gap: spacing.xs,
@@ -1691,12 +2182,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   sliceFormNumberText: {
-    color: '#ffffff',
+    color: '#FFFFFF',
     fontSize: 10,
     fontWeight: '700',
   },
   sliceDeleteBtn: {
-    padding: 6,
+    padding: 8,
     marginLeft: spacing.xs,
   },
   sliceDualRow: {
@@ -1714,7 +2205,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 4,
-    paddingVertical: spacing.sm,
+    paddingVertical: spacing.sm + 2,
     borderRadius: radius.md,
     borderWidth: 1,
     borderStyle: 'dashed',
@@ -1724,9 +2215,9 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   allocSummaryCard: {
-    padding: spacing.sm,
+    padding: spacing.md,
     borderRadius: radius.md,
-    borderWidth: 1,
+    borderWidth: StyleSheet.hairlineWidth,
     gap: 4,
     marginTop: spacing.xs,
   },
@@ -1736,41 +2227,39 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   allocSummaryLabel: {
+    ...typography.caption,
     fontSize: 11,
   },
   allocSummaryVal: {
+    ...typography.caption,
     fontSize: 12,
     fontWeight: '700',
+    fontVariant: ['tabular-nums'],
   },
   remainderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginTop: 4,
-    paddingTop: 4,
+    paddingTop: 6,
     borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: 'rgba(245, 158, 11, 0.3)',
   },
   remainderText: {
     fontSize: 11,
     fontWeight: '600',
   },
   fillRemainderChip: {
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
     borderRadius: radius.full,
   },
   fillRemainderText: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: '700',
-    color: '#f59e0b',
-  },
-  sliceInputRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
   },
   sweepDesc: {
-    fontSize: typography.body.fontSize,
-    marginBottom: spacing.md,
+    ...typography.body,
+    marginBottom: spacing.sm,
+    lineHeight: 20,
   },
 });

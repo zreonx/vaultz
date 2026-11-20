@@ -216,7 +216,7 @@ export function useCreateMonthlyPlanMutation() {
       });
       void queryClient.invalidateQueries({ queryKey: ACCOUNTS_QUERY_KEY });
       void queryClient.invalidateQueries({ queryKey: ["dashboard"] });
-      toast.success("Monthly logical budget plan activated!");
+      toast.success("Monthly budget plan activated!");
     },
     onError: (err) => {
       toast.error(
@@ -251,7 +251,7 @@ export function useCoverSliceDeficitMutation() {
       void queryClient.invalidateQueries({
         queryKey: ["account-allocations", vars.accountId],
       });
-      toast.success("Deficit covered: funds transferred between slices!");
+      toast.success("Funds transferred between monthly budgets!");
     },
     onError: (err) => {
       toast.error(

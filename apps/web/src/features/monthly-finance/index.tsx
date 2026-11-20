@@ -105,6 +105,3 @@ export function MonthlyFinanceFeatureView() {
     </div>
   );
 }
-
-// Backwards-compatible alias for any legacy imports
-export const BudgetsFeatureView = MonthlyFinanceFeatureView;

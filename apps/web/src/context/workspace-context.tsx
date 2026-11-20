@@ -311,12 +311,38 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
 
   const deleteWorkspaceMutation = useMutation({
     mutationFn: (id: string) => apiClient.delete(`/api/v1/accounts/${id}`),
-    onSuccess: () => {
+    onSuccess: (_data, deletedId) => {
+      const currentAccounts =
+        queryClient.getQueryData<AccountResponse[]>(["accounts"]) ?? workspaces;
+      const remaining = currentAccounts.filter((w) => w.id !== deletedId);
+
+      queryClient.setQueryData<AccountResponse[]>(["accounts"], remaining);
+
+      if (
+        selectedWorkspaceId === deletedId ||
+        !remaining.some((w) => w.id === selectedWorkspaceId)
+      ) {
+        const nextWorkspace =
+          remaining.find((w) => w.isDefault) ?? remaining[0];
+        if (nextWorkspace) {
+          setSelectedWorkspaceId(nextWorkspace.id);
+        }
+      }
+
+      queryClient.removeQueries({ queryKey: ["account-allocations", deletedId] });
+      queryClient.removeQueries({ queryKey: ["quick-log-presets", deletedId] });
+
       void queryClient.invalidateQueries({ queryKey: ["accounts"] });
       void queryClient.invalidateQueries({ queryKey: ["dashboard"] });
       void queryClient.invalidateQueries({ queryKey: ["transactions"] });
-      void queryClient.invalidateQueries({ queryKey: ["budgets"] });
       void queryClient.invalidateQueries({ queryKey: ["account-allocations"] });
+      void queryClient.invalidateQueries({ queryKey: ["quick-log-presets"] });
+      void queryClient.invalidateQueries({ queryKey: ["categories"] });
+      void queryClient.invalidateQueries({ queryKey: ["savings-goals"] });
+      void queryClient.invalidateQueries({ queryKey: ["lending"] });
+      void queryClient.invalidateQueries({ queryKey: ["recurring-transactions"] });
+      void queryClient.invalidateQueries({ queryKey: ["reports"] });
+
       setIsDeleteOpen(false);
       setDeletingWorkspace(null);
       toast.success("Account deleted successfully.");
@@ -512,8 +538,8 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
 
       {/* Global Dialog 1: Create New Account */}
       <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-        <DialogContent>
-          <DialogHeader>
+        <DialogContent className="sm:max-w-lg max-h-[90dvh] flex flex-col p-0 overflow-hidden gap-0">
+          <DialogHeader className="px-6 pt-5 pb-3.5 border-b border-[var(--border-subtle)] shrink-0">
             <DialogTitle className="flex items-center gap-2">
               <Wallet className="h-4 w-4 text-[var(--accent)]" />
               Add New Account
@@ -524,7 +550,8 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
             </DialogDescription>
           </DialogHeader>
 
-          <form onSubmit={handleCreateSubmit} className="space-y-4">
+          <form onSubmit={handleCreateSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+            <div className="overflow-y-auto px-6 py-4 space-y-4 flex-1 min-h-0">
             {createError && (
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
@@ -544,8 +571,8 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1.5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1.5 min-w-0">
                 <Label htmlFor="global-acc-type">Account Type</Label>
                 <Select
                   value={String(newType)}
@@ -625,8 +652,9 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
                 Set as default account
               </Label>
             </div>
+            </div>
 
-            <DialogFooter>
+            <DialogFooter className="px-6 py-3.5 border-t border-[var(--border-subtle)] bg-[var(--surface-muted)]/40">
               <Button
                 type="button"
                 variant="outline"
@@ -650,8 +678,8 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
 
       {/* Global Dialog 2: Transfer Between Accounts (Same or Different Currency) */}
       <Dialog open={isTransferOpen} onOpenChange={setIsTransferOpen}>
-        <DialogContent>
-          <DialogHeader>
+        <DialogContent className="sm:max-w-xl max-h-[90dvh] flex flex-col p-0 overflow-hidden gap-0">
+          <DialogHeader className="px-6 pt-5 pb-3.5 border-b border-[var(--border-subtle)] shrink-0">
             <DialogTitle className="flex items-center gap-2">
               <ArrowLeftRight className="h-4 w-4 text-[var(--accent)]" />
               Transfer Between Accounts
@@ -663,7 +691,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
           </DialogHeader>
 
           {workspaces.length < 2 ? (
-            <div className="space-y-4 py-2">
+            <div className="space-y-4 px-6 py-4">
               <Alert variant="muted">
                 <Wallet className="h-4 w-4" />
                 <AlertTitle>Add a second account to transfer</AlertTitle>
@@ -687,7 +715,8 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
               </DialogFooter>
             </div>
           ) : (
-            <form onSubmit={handleTransferSubmit} className="space-y-4">
+            <form onSubmit={handleTransferSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+              <div className="overflow-y-auto px-6 py-4 space-y-4 flex-1 min-h-0">
               {transferError && (
                 <Alert variant="destructive">
                   <AlertCircle className="h-4 w-4" />
@@ -696,10 +725,10 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
                 </Alert>
               )}
 
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div className="space-y-1.5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1.5 min-w-0">
                   <Label>From Account</Label>
-                  <div className="flex h-9 items-center justify-between rounded-xl border border-[var(--border)] bg-[var(--surface-subtle)] px-3 text-xs">
+                  <div className="flex h-10 items-center justify-between rounded-xl border border-[var(--border)] bg-[var(--surface-subtle)] px-3 text-xs">
                     <span className="truncate font-semibold text-[var(--foreground)]">
                       {fromWorkspace?.name} ({fromWorkspace?.currencyCode})
                     </span>
@@ -713,7 +742,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
                   </div>
                 </div>
 
-                <div className="space-y-1.5">
+                <div className="space-y-1.5 min-w-0">
                   <Label htmlFor="transfer-to-acc">To Account</Label>
                   <Select value={toId} onValueChange={setToId}>
                     <SelectTrigger
@@ -736,7 +765,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <Label htmlFor="transfer-amount">
                     Amount Sent{" "}
@@ -866,8 +895,9 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
                   </div>
                 </div>
               )}
+              </div>
 
-              <DialogFooter>
+              <DialogFooter className="px-6 py-3.5 border-t border-[var(--border-subtle)] bg-[var(--surface-muted)]/40">
                 <Button
                   type="button"
                   variant="outline"
@@ -888,8 +918,8 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
       </Dialog>
       {/* Global Dialog 3: Edit Account */}
       <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-        <DialogContent>
-          <DialogHeader>
+        <DialogContent className="sm:max-w-lg max-h-[90dvh] flex flex-col p-0 overflow-hidden gap-0">
+          <DialogHeader className="px-6 pt-5 pb-3.5 border-b border-[var(--border-subtle)] shrink-0">
             <DialogTitle className="flex items-center gap-2">
               <Pencil className="h-4 w-4 text-[var(--accent)]" />
               Edit Account
@@ -900,7 +930,8 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
           </DialogHeader>
 
           {editingWorkspace && (
-            <form onSubmit={handleEditSubmit} className="space-y-4">
+            <form onSubmit={handleEditSubmit} className="flex flex-col flex-1 min-h-0 overflow-hidden">
+              <div className="overflow-y-auto px-6 py-4 space-y-4 flex-1 min-h-0">
               {editError && (
                 <div className="rounded-xl border border-[var(--danger)]/30 bg-[var(--danger)]/10 p-3 text-xs text-[var(--danger)]">
                   {editError}
@@ -919,8 +950,8 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1.5 min-w-0">
                   <Label htmlFor="edit-account-type">Account Type</Label>
                   <Select
                     value={String(editType)}
@@ -949,9 +980,9 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
                   </Select>
                 </div>
 
-                <div className="space-y-1.5">
+                <div className="space-y-1.5 min-w-0">
                   <Label>Fixed Currency</Label>
-                  <div className="flex h-9 items-center justify-between rounded-md border border-[var(--border-subtle)] bg-[var(--surface-muted)]/50 px-3 text-xs text-[var(--muted-foreground)]">
+                  <div className="flex h-10 items-center justify-between rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-muted)]/50 px-3 text-xs text-[var(--muted-foreground)]">
                     <span className="font-semibold text-[var(--foreground)]">
                       {editingWorkspace.currencyCode}
                     </span>
@@ -964,8 +995,9 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
                   </p>
                 </div>
               </div>
+              </div>
 
-              <DialogFooter className="flex items-center justify-between sm:justify-between w-full">
+              <DialogFooter className="px-6 py-3.5 border-t border-[var(--border-subtle)] bg-[var(--surface-muted)]/40 flex-row flex-wrap items-center justify-between sm:justify-between gap-2">
                 {workspaces.length > 1 ? (
                   <Button
                     type="button"
@@ -1079,7 +1111,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
                 </div>
               )}
 
-              <DialogFooter className="gap-2 sm:gap-0">
+              <DialogFooter className="gap-2">
                 <Button
                   type="button"
                   variant="outline"

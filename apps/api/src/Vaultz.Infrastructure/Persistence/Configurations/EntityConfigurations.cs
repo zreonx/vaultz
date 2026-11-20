@@ -115,6 +115,8 @@ public sealed class FinancialTransactionConfiguration : IEntityTypeConfiguration
         builder.HasIndex(x => new { x.UserId, x.OccurredOn }).HasDatabaseName("ix_transactions_user_id_occurred_on");
         builder.HasIndex(x => new { x.UserId, x.AccountId }).HasDatabaseName("ix_transactions_user_id_account_id");
         builder.HasIndex(x => new { x.UserId, x.CategoryId }).HasDatabaseName("ix_transactions_user_id_category_id");
+        builder.HasIndex(x => x.BudgetSliceId).HasDatabaseName("ix_transactions_budget_slice_id");
+        builder.HasIndex(x => x.AccountAllocationId).HasDatabaseName("ix_transactions_account_allocation_id");
     }
 }
 
@@ -332,5 +334,80 @@ public sealed class MonthlyBudgetSliceConfiguration : IEntityTypeConfiguration<M
         builder.Property(x => x.UpdatedAtUtc).HasColumnName("updated_at_utc");
 
         builder.HasIndex(x => x.MonthlyBudgetPlanId).HasDatabaseName("ix_monthly_budget_slices_plan_id");
+    }
+}
+
+public sealed class QuickLogPresetConfiguration : IEntityTypeConfiguration<QuickLogPreset>
+{
+    public void Configure(EntityTypeBuilder<QuickLogPreset> builder)
+    {
+        builder.ToTable("quick_log_presets");
+        builder.HasKey(x => x.Id);
+
+        builder.Property(x => x.UserId).HasColumnName("user_id").HasMaxLength(128).IsRequired();
+        builder.Property(x => x.AccountId).HasColumnName("account_id").IsRequired();
+        builder.Property(x => x.Label).HasColumnName("label").HasMaxLength(50).IsRequired();
+        builder.Property(x => x.Amount).HasColumnName("amount").HasPrecision(19, 4).IsRequired();
+        builder.Property(x => x.CurrencyCode).HasColumnName("currency_code").HasMaxLength(3).IsFixedLength().IsRequired();
+        builder.Property(x => x.Type).HasColumnName("type").IsRequired();
+        builder.Property(x => x.CategoryId).HasColumnName("category_id");
+        builder.Property(x => x.BudgetSliceId).HasColumnName("budget_slice_id");
+        builder.Property(x => x.Icon).HasColumnName("icon").HasMaxLength(32).IsRequired();
+        builder.Property(x => x.ColorHex).HasColumnName("color_hex").HasMaxLength(7).IsRequired();
+        builder.Property(x => x.SortOrder).HasColumnName("sort_order").IsRequired();
+        builder.Property(x => x.CreatedAtUtc).HasColumnName("created_at_utc").IsRequired();
+        builder.Property(x => x.UpdatedAtUtc).HasColumnName("updated_at_utc");
+
+        builder.HasIndex(x => new { x.UserId, x.AccountId, x.SortOrder }).HasDatabaseName("ix_quick_log_presets_user_account_sort");
+    }
+}
+
+public sealed class WishlistItemConfiguration : IEntityTypeConfiguration<WishlistItem>
+{
+    public void Configure(EntityTypeBuilder<WishlistItem> builder)
+    {
+        builder.ToTable("wishlist_items");
+        builder.HasKey(x => x.Id);
+
+        builder.Property(x => x.UserId).HasColumnName("user_id").HasMaxLength(128).IsRequired();
+        builder.Property(x => x.AccountId).HasColumnName("account_id");
+        builder.Property(x => x.CategoryId).HasColumnName("category_id");
+        builder.Property(x => x.Name).HasColumnName("name").HasMaxLength(120).IsRequired();
+        builder.Property(x => x.EstimatedPrice).HasColumnName("estimated_price").HasPrecision(19, 4).IsRequired();
+        builder.Property(x => x.CurrencyCode).HasColumnName("currency_code").HasMaxLength(3).IsFixedLength().IsRequired();
+        builder.Property(x => x.Priority).HasColumnName("priority").IsRequired();
+        builder.Property(x => x.Status).HasColumnName("status").IsRequired();
+        builder.Property(x => x.TargetDate).HasColumnName("target_date");
+        builder.Property(x => x.Url).HasColumnName("url").HasMaxLength(500);
+        builder.Property(x => x.Notes).HasColumnName("notes").HasMaxLength(500);
+        builder.Property(x => x.PurchasedAtUtc).HasColumnName("purchased_at_utc");
+        builder.Property(x => x.PurchasedTransactionId).HasColumnName("purchased_transaction_id");
+        builder.Property(x => x.CreatedAtUtc).HasColumnName("created_at_utc").IsRequired();
+        builder.Property(x => x.UpdatedAtUtc).HasColumnName("updated_at_utc");
+
+        builder.HasIndex(x => new { x.UserId, x.Status }).HasDatabaseName("ix_wishlist_items_user_id_status");
+        builder.HasIndex(x => new { x.UserId, x.AccountId }).HasDatabaseName("ix_wishlist_items_user_id_account_id");
+    }
+}
+
+public sealed class QuickNoteConfiguration : IEntityTypeConfiguration<QuickNote>
+{
+    public void Configure(EntityTypeBuilder<QuickNote> builder)
+    {
+        builder.ToTable("quick_notes");
+        builder.HasKey(x => x.Id);
+
+        builder.Property(x => x.UserId).HasColumnName("user_id").HasMaxLength(128).IsRequired();
+        builder.Property(x => x.AccountId).HasColumnName("account_id");
+        builder.Property(x => x.Title).HasColumnName("title").HasMaxLength(120).IsRequired();
+        builder.Property(x => x.Content).HasColumnName("content").HasMaxLength(4000).IsRequired();
+        builder.Property(x => x.ColorHex).HasColumnName("color_hex").HasMaxLength(7).IsRequired();
+        builder.Property(x => x.IsPinned).HasColumnName("is_pinned").IsRequired();
+        builder.Property(x => x.IsArchived).HasColumnName("is_archived").IsRequired();
+        builder.Property(x => x.CreatedAtUtc).HasColumnName("created_at_utc").IsRequired();
+        builder.Property(x => x.UpdatedAtUtc).HasColumnName("updated_at_utc");
+
+        builder.HasIndex(x => new { x.UserId, x.IsPinned, x.IsArchived }).HasDatabaseName("ix_quick_notes_user_id_pinned_archived");
+        builder.HasIndex(x => new { x.UserId, x.AccountId }).HasDatabaseName("ix_quick_notes_user_id_account_id");
     }
 }

@@ -22,6 +22,72 @@ namespace Vaultz.Infrastructure.Persistence.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("Vaultz.Domain.Entities.AccountAllocation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("account_id");
+
+                    b.Property<decimal>("Balance")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("numeric(19,4)")
+                        .HasColumnName("balance");
+
+                    b.Property<int>("Category")
+                        .HasColumnType("integer")
+                        .HasColumnName("category");
+
+                    b.Property<string>("Color")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("color");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<string>("Icon")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("icon");
+
+                    b.Property<bool>("IsArchived")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_archived");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("name");
+
+                    b.Property<decimal?>("TargetAmount")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("numeric(19,4)")
+                        .HasColumnName("target_amount");
+
+                    b.Property<DateTimeOffset?>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "AccountId")
+                        .HasDatabaseName("ix_account_allocations_user_id_account_id");
+
+                    b.ToTable("account_allocations", (string)null);
+                });
+
             modelBuilder.Entity("Vaultz.Domain.Entities.Budget", b =>
                 {
                     b.Property<Guid>("Id")
@@ -203,6 +269,10 @@ namespace Vaultz.Infrastructure.Persistence.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<Guid?>("AccountAllocationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("account_allocation_id");
+
                     b.Property<Guid>("AccountId")
                         .HasColumnType("uuid")
                         .HasColumnName("account_id");
@@ -211,6 +281,10 @@ namespace Vaultz.Infrastructure.Persistence.Migrations
                         .HasPrecision(19, 4)
                         .HasColumnType("numeric(19,4)")
                         .HasColumnName("amount");
+
+                    b.Property<Guid?>("BudgetSliceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("budget_slice_id");
 
                     b.Property<Guid?>("CategoryId")
                         .HasColumnType("uuid")
@@ -277,6 +351,12 @@ namespace Vaultz.Infrastructure.Persistence.Migrations
                         .HasColumnName("user_id");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("AccountAllocationId")
+                        .HasDatabaseName("ix_transactions_account_allocation_id");
+
+                    b.HasIndex("BudgetSliceId")
+                        .HasDatabaseName("ix_transactions_budget_slice_id");
 
                     b.HasIndex("UserId", "AccountId")
                         .HasDatabaseName("ix_transactions_user_id_account_id");
@@ -410,6 +490,328 @@ namespace Vaultz.Infrastructure.Persistence.Migrations
                         .HasDatabaseName("ix_lending_records_user_id_status");
 
                     b.ToTable("lending_records", (string)null);
+                });
+
+            modelBuilder.Entity("Vaultz.Domain.Entities.MonthlyBudgetPlan", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("account_id");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_active");
+
+                    b.Property<bool>("IsSwept")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_swept");
+
+                    b.Property<int>("Month")
+                        .HasColumnType("integer")
+                        .HasColumnName("month");
+
+                    b.Property<DateTimeOffset?>("SweptAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("swept_at_utc");
+
+                    b.Property<Guid?>("SweptToAllocationId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("swept_to_allocation_id");
+
+                    b.Property<decimal>("TotalBudgetAmount")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("numeric(19,4)")
+                        .HasColumnName("total_budget_amount");
+
+                    b.Property<DateTimeOffset?>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("user_id");
+
+                    b.Property<int>("Year")
+                        .HasColumnType("integer")
+                        .HasColumnName("year");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "AccountId", "Year", "Month")
+                        .HasDatabaseName("ix_monthly_budget_plans_user_account_period");
+
+                    b.ToTable("monthly_budget_plans", (string)null);
+                });
+
+            modelBuilder.Entity("Vaultz.Domain.Entities.MonthlyBudgetSlice", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("AllocatedAmount")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("numeric(19,4)")
+                        .HasColumnName("allocated_amount");
+
+                    b.Property<decimal>("AllocationPercentage")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)")
+                        .HasColumnName("allocation_percentage");
+
+                    b.Property<Guid?>("CategoryId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("category_id");
+
+                    b.Property<string>("Color")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("color");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<Guid>("MonthlyBudgetPlanId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("monthly_budget_plan_id");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)")
+                        .HasColumnName("name");
+
+                    b.Property<decimal>("SpentAmount")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("numeric(19,4)")
+                        .HasColumnName("spent_amount");
+
+                    b.Property<DateTimeOffset?>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MonthlyBudgetPlanId")
+                        .HasDatabaseName("ix_monthly_budget_slices_plan_id");
+
+                    b.ToTable("monthly_budget_slices", (string)null);
+                });
+
+            modelBuilder.Entity("Vaultz.Domain.Entities.Notification", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ActionUrl")
+                        .HasMaxLength(300)
+                        .HasColumnType("character varying(300)")
+                        .HasColumnName("action_url");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<bool>("IsRead")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_read");
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)")
+                        .HasColumnName("message");
+
+                    b.Property<DateTimeOffset?>("ReadAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("read_at_utc");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("character varying(150)")
+                        .HasColumnName("title");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("integer")
+                        .HasColumnName("type");
+
+                    b.Property<DateTimeOffset?>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "CreatedAtUtc")
+                        .HasDatabaseName("ix_notifications_user_id_created_at_utc");
+
+                    b.HasIndex("UserId", "IsRead")
+                        .HasDatabaseName("ix_notifications_user_id_is_read");
+
+                    b.ToTable("notifications", (string)null);
+                });
+
+            modelBuilder.Entity("Vaultz.Domain.Entities.QuickLogPreset", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("AccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("account_id");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("numeric(19,4)")
+                        .HasColumnName("amount");
+
+                    b.Property<Guid?>("BudgetSliceId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("budget_slice_id");
+
+                    b.Property<Guid?>("CategoryId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("category_id");
+
+                    b.Property<string>("ColorHex")
+                        .IsRequired()
+                        .HasMaxLength(7)
+                        .HasColumnType("character varying(7)")
+                        .HasColumnName("color_hex");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<string>("CurrencyCode")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("character(3)")
+                        .HasColumnName("currency_code")
+                        .IsFixedLength();
+
+                    b.Property<string>("Icon")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)")
+                        .HasColumnName("icon");
+
+                    b.Property<string>("Label")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)")
+                        .HasColumnName("label");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer")
+                        .HasColumnName("sort_order");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("integer")
+                        .HasColumnName("type");
+
+                    b.Property<DateTimeOffset?>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "AccountId", "SortOrder")
+                        .HasDatabaseName("ix_quick_log_presets_user_account_sort");
+
+                    b.ToTable("quick_log_presets", (string)null);
+                });
+
+            modelBuilder.Entity("Vaultz.Domain.Entities.QuickNote", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("AccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("account_id");
+
+                    b.Property<string>("ColorHex")
+                        .IsRequired()
+                        .HasMaxLength(7)
+                        .HasColumnType("character varying(7)")
+                        .HasColumnName("color_hex");
+
+                    b.Property<string>("Content")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)")
+                        .HasColumnName("content");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<bool>("IsArchived")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_archived");
+
+                    b.Property<bool>("IsPinned")
+                        .HasColumnType("boolean")
+                        .HasColumnName("is_pinned");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)")
+                        .HasColumnName("title");
+
+                    b.Property<DateTimeOffset?>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "AccountId")
+                        .HasDatabaseName("ix_quick_notes_user_id_account_id");
+
+                    b.HasIndex("UserId", "IsPinned", "IsArchived")
+                        .HasDatabaseName("ix_quick_notes_user_id_pinned_archived");
+
+                    b.ToTable("quick_notes", (string)null);
                 });
 
             modelBuilder.Entity("Vaultz.Domain.Entities.RecurringTransaction", b =>
@@ -575,17 +977,101 @@ namespace Vaultz.Infrastructure.Persistence.Migrations
                         .HasColumnType("character varying(256)")
                         .HasColumnName("email");
 
+                    b.Property<string>("EmailVerificationToken")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("email_verification_token");
+
+                    b.Property<DateTimeOffset?>("EmailVerificationTokenExpiresAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("email_verification_token_expires_at_utc");
+
+                    b.Property<int>("FailedLoginAttempts")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("failed_login_attempts");
+
                     b.Property<string>("FullName")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)")
                         .HasColumnName("full_name");
 
+                    b.Property<bool>("IsEmailVerified")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("is_email_verified");
+
+                    b.Property<DateTimeOffset?>("LastLoginAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("last_login_at_utc");
+
+                    b.Property<string>("LastLoginIp")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("last_login_ip");
+
+                    b.Property<string>("LastLoginUserAgent")
+                        .HasMaxLength(512)
+                        .HasColumnType("character varying(512)")
+                        .HasColumnName("last_login_user_agent");
+
+                    b.Property<DateTimeOffset?>("LockoutEndUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("lockout_end_utc");
+
                     b.Property<string>("PasswordHash")
                         .IsRequired()
                         .HasMaxLength(512)
                         .HasColumnType("character varying(512)")
                         .HasColumnName("password_hash");
+
+                    b.Property<string>("PasswordResetToken")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("password_reset_token");
+
+                    b.Property<DateTimeOffset?>("PasswordResetTokenExpiresAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("password_reset_token_expires_at_utc");
+
+                    b.Property<string>("SecurityStamp")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)")
+                        .HasColumnName("security_stamp");
+
+                    b.Property<bool>("TwoFactorEnabled")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false)
+                        .HasColumnName("two_factor_enabled");
+
+                    b.Property<string>("TwoFactorOtpCode")
+                        .HasMaxLength(16)
+                        .HasColumnType("character varying(16)")
+                        .HasColumnName("two_factor_otp_code");
+
+                    b.Property<DateTimeOffset?>("TwoFactorOtpExpiresAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("two_factor_otp_expires_at_utc");
+
+                    b.Property<string>("TwoFactorRecoveryCodes")
+                        .HasColumnType("text")
+                        .HasColumnName("two_factor_recovery_codes");
+
+                    b.Property<string>("TwoFactorSecret")
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)")
+                        .HasColumnName("two_factor_secret");
+
+                    b.Property<int>("TwoFactorType")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0)
+                        .HasColumnName("two_factor_type");
 
                     b.Property<DateTimeOffset?>("UpdatedAtUtc")
                         .HasColumnType("timestamp with time zone")
@@ -600,6 +1086,93 @@ namespace Vaultz.Infrastructure.Persistence.Migrations
                     b.ToTable("users", (string)null);
                 });
 
+            modelBuilder.Entity("Vaultz.Domain.Entities.WishlistItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("AccountId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("account_id");
+
+                    b.Property<Guid?>("CategoryId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("category_id");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("created_at_utc");
+
+                    b.Property<string>("CurrencyCode")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("character(3)")
+                        .HasColumnName("currency_code")
+                        .IsFixedLength();
+
+                    b.Property<decimal>("EstimatedPrice")
+                        .HasPrecision(19, 4)
+                        .HasColumnType("numeric(19,4)")
+                        .HasColumnName("estimated_price");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("character varying(120)")
+                        .HasColumnName("name");
+
+                    b.Property<string>("Notes")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("notes");
+
+                    b.Property<int>("Priority")
+                        .HasColumnType("integer")
+                        .HasColumnName("priority");
+
+                    b.Property<DateTimeOffset?>("PurchasedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("purchased_at_utc");
+
+                    b.Property<Guid?>("PurchasedTransactionId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("purchased_transaction_id");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("integer")
+                        .HasColumnName("status");
+
+                    b.Property<DateOnly?>("TargetDate")
+                        .HasColumnType("date")
+                        .HasColumnName("target_date");
+
+                    b.Property<DateTimeOffset?>("UpdatedAtUtc")
+                        .HasColumnType("timestamp with time zone")
+                        .HasColumnName("updated_at_utc");
+
+                    b.Property<string>("Url")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("url");
+
+                    b.Property<string>("UserId")
+                        .IsRequired()
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "AccountId")
+                        .HasDatabaseName("ix_wishlist_items_user_id_account_id");
+
+                    b.HasIndex("UserId", "Status")
+                        .HasDatabaseName("ix_wishlist_items_user_id_status");
+
+                    b.ToTable("wishlist_items", (string)null);
+                });
+
             modelBuilder.Entity("Vaultz.Domain.Entities.LendingPayment", b =>
                 {
                     b.HasOne("Vaultz.Domain.Entities.LendingRecord", null)
@@ -609,9 +1182,23 @@ namespace Vaultz.Infrastructure.Persistence.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Vaultz.Domain.Entities.MonthlyBudgetSlice", b =>
+                {
+                    b.HasOne("Vaultz.Domain.Entities.MonthlyBudgetPlan", null)
+                        .WithMany("Slices")
+                        .HasForeignKey("MonthlyBudgetPlanId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Vaultz.Domain.Entities.LendingRecord", b =>
                 {
                     b.Navigation("Payments");
+                });
+
+            modelBuilder.Entity("Vaultz.Domain.Entities.MonthlyBudgetPlan", b =>
+                {
+                    b.Navigation("Slices");
                 });
 #pragma warning restore 612, 618
         }

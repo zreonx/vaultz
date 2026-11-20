@@ -70,10 +70,6 @@ public static class DemoDataSeeder
             userId, accUsd, accEur, null, TransactionType.Transfer, 1000.00m, today, "USD to EUR Travel Transfer", null, 920.00m);
         db.Transactions.AddRange(txSalary, txRent, txDinner, txTransfer);
 
-        var budgetRent = new Budget(userId, catRent.Id, today.Year, today.Month, 2400.00m, "USD");
-        var budgetFood = new Budget(userId, catFood.Id, today.Year, today.Month, 600.00m, "USD");
-        db.Budgets.AddRange(budgetRent, budgetFood);
-
         var vaultEmergency = new AccountAllocation(
             userId, accUsd.Id, "Emergency Fund Vault", AllocationCategory.Emergency, 10000.00m, 25000.00m, "#10b981", "shield");
         db.AccountAllocations.Add(vaultEmergency);

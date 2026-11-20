@@ -86,7 +86,7 @@ export const lendingApi = {
       amount: data.amount ?? data.totalAmount ?? 0,
       dueDate: data.dueDate ? data.dueDate.split('T')[0] : null,
       notes: data.notes || null,
-      syncAccountBalance: data.syncAccountBalance ?? false,
+      syncAccountBalance: data.syncAccountBalance ?? true,
     };
 
     return apiClient<LendingRecordResponse>("/api/v1/lending", {
@@ -104,7 +104,7 @@ export const lendingApi = {
       amount: data.amount,
       occurredOn: (data.occurredOn || data.repaymentDate || new Date().toISOString()).split('T')[0],
       notes: data.notes || null,
-      syncAccountBalance: data.syncAccountBalance ?? false,
+      syncAccountBalance: data.syncAccountBalance ?? true,
     };
 
     return apiClient<void>(`/api/v1/lending/${id}/payments`, {
@@ -117,9 +117,22 @@ export const lendingApi = {
     return lendingApi.recordPayment(id, data);
   },
 
-  async settle(id: string): Promise<void> {
-    return apiClient<void>(`/api/v1/lending/${id}/settle`, {
-      method: "PUT",
+  async settle(
+    id: string,
+    remainingAmount: number,
+    syncAccountBalance = true
+  ): Promise<void> {
+    return lendingApi.recordPayment(id, {
+      amount: remainingAmount,
+      occurredOn: new Date().toISOString().split('T')[0],
+      notes: "Settled in full",
+      syncAccountBalance,
+    });
+  },
+
+  async deleteRecord(id: string): Promise<void> {
+    return apiClient<void>(`/api/v1/lending/${id}`, {
+      method: "DELETE",
     });
   },
 };

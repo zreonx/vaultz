@@ -5,10 +5,11 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  TouchableWithoutFeedback,
+  Pressable,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  useWindowDimensions,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -22,6 +23,7 @@ interface ModalSheetProps {
   title?: string;
   subtitle?: string;
   children: React.ReactNode;
+  footer?: React.ReactNode;
   maxHeightRatio?: number;
 }
 
@@ -31,9 +33,11 @@ export const ModalSheet: React.FC<ModalSheetProps> = ({
   title,
   subtitle,
   children,
-  maxHeightRatio = 0.85,
+  footer,
+  maxHeightRatio = 0.88,
 }) => {
   const insets = useSafeAreaInsets();
+  const { height: windowHeight } = useWindowDimensions();
   const { colors, isDark } = useTheme();
 
   const handleClose = () => {
@@ -41,9 +45,18 @@ export const ModalSheet: React.FC<ModalSheetProps> = ({
     onClose();
   };
 
+  const topInset = Math.max(
+    insets.top,
+    Platform.OS === 'android' ? 24 : 12
+  );
   const bottomInset = Math.max(
     insets.bottom,
     Platform.OS === 'android' ? 20 : 16
+  );
+
+  const sheetMaxHeight = Math.min(
+    Math.round(windowHeight * maxHeightRatio),
+    Math.round(windowHeight - topInset - 12)
   );
 
   return (
@@ -54,89 +67,127 @@ export const ModalSheet: React.FC<ModalSheetProps> = ({
       onRequestClose={handleClose}
       statusBarTranslucent
     >
-      <TouchableWithoutFeedback onPress={handleClose}>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.keyboardAvoid}
+      >
         <View
           style={[
             styles.backdrop,
-            { backgroundColor: isDark ? 'rgba(0, 0, 0, 0.65)' : 'rgba(0, 0, 0, 0.4)' },
+            {
+              backgroundColor: isDark
+                ? 'rgba(0, 0, 0, 0.65)'
+                : 'rgba(0, 0, 0, 0.4)',
+            },
           ]}
         >
-          <TouchableWithoutFeedback>
-            <KeyboardAvoidingView
-              behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-              style={[
-                styles.sheetContainer,
+          <Pressable
+            style={StyleSheet.absoluteFill}
+            onPress={handleClose}
+            accessibilityLabel="Close modal"
+          />
+          <View
+            style={[
+              styles.sheetContainer,
+              {
+                backgroundColor: colors.surface,
+                borderColor: colors.borderSubtle,
+                maxHeight: sheetMaxHeight,
+              },
+            ]}
+          >
+            {/* Top Handle Bar */}
+            <View style={styles.handleContainer}>
+              <View
+                style={[
+                  styles.handle,
+                  { backgroundColor: isDark ? colors.borderLight : colors.border },
+                ]}
+              />
+            </View>
+
+            {/* Header (pinned) */}
+            {(title || subtitle) && (
+              <View
+                style={[
+                  styles.header,
+                  { borderBottomColor: colors.borderSubtle },
+                ]}
+              >
+                <View style={styles.headerTextContainer}>
+                  {title && (
+                    <Text
+                      style={[styles.title, { color: colors.textPrimary }]}
+                      numberOfLines={2}
+                    >
+                      {title}
+                    </Text>
+                  )}
+                  {subtitle && (
+                    <Text
+                      style={[styles.subtitle, { color: colors.textMuted }]}
+                      numberOfLines={2}
+                    >
+                      {subtitle}
+                    </Text>
+                  )}
+                </View>
+                <TouchableOpacity
+                  style={styles.closeButton}
+                  onPress={handleClose}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  accessibilityLabel="Close dialog"
+                >
+                  <Ionicons name="close" size={20} color={colors.textSecondary} />
+                </TouchableOpacity>
+              </View>
+            )}
+
+            {/* Scrollable Body */}
+            <ScrollView
+              style={styles.content}
+              contentContainerStyle={[
+                styles.scrollContent,
                 {
-                  backgroundColor: colors.surface,
-                  borderColor: colors.borderSubtle,
-                  maxHeight: `${Math.round(maxHeightRatio * 100)}%`,
+                  paddingBottom: footer ? spacing.lg : spacing.xl + bottomInset,
                 },
               ]}
+              keyboardShouldPersistTaps="handled"
+              nestedScrollEnabled
+              bounces={false}
+              showsVerticalScrollIndicator
             >
-              {/* Top Handle Bar */}
-              <View style={styles.handleContainer}>
-                <View
-                  style={[
-                    styles.handle,
-                    { backgroundColor: isDark ? colors.borderLight : colors.border },
-                  ]}
-                />
-              </View>
+              {children}
+            </ScrollView>
 
-              {/* Header */}
-              {(title || subtitle) && (
-                <View
-                  style={[
-                    styles.header,
-                    { borderBottomColor: colors.borderSubtle },
-                  ]}
-                >
-                  <View style={styles.headerTextContainer}>
-                    {title && (
-                      <Text style={[styles.title, { color: colors.textPrimary }]}>
-                        {title}
-                      </Text>
-                    )}
-                    {subtitle && (
-                      <Text style={[styles.subtitle, { color: colors.textMuted }]}>
-                        {subtitle}
-                      </Text>
-                    )}
-                  </View>
-                  <TouchableOpacity
-                    style={styles.closeButton}
-                    onPress={handleClose}
-                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                  >
-                    <Ionicons name="close" size={20} color={colors.textSecondary} />
-                  </TouchableOpacity>
-                </View>
-              )}
-
-              {/* Content */}
-              <ScrollView
-                style={styles.content}
-                contentContainerStyle={[
-                  styles.scrollContent,
-                  { paddingBottom: spacing.lg + bottomInset },
+            {/* Optional Pinned Footer */}
+            {footer ? (
+              <View
+                style={[
+                  styles.footer,
+                  {
+                    borderTopColor: colors.borderSubtle,
+                    backgroundColor: colors.surface,
+                    paddingBottom: bottomInset,
+                  },
                 ]}
-                keyboardShouldPersistTaps="handled"
-                showsVerticalScrollIndicator={false}
               >
-                {children}
-              </ScrollView>
-            </KeyboardAvoidingView>
-          </TouchableWithoutFeedback>
+                {footer}
+              </View>
+            ) : null}
+          </View>
         </View>
-      </TouchableWithoutFeedback>
+      </KeyboardAvoidingView>
     </Modal>
   );
 };
 
 const styles = StyleSheet.create({
+  keyboardAvoid: {
+    flex: 1,
+  },
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.65)',
     justifyContent: 'flex-end',
   },
   sheetContainer: {
@@ -145,6 +196,7 @@ const styles = StyleSheet.create({
     borderWidth: StyleSheet.hairlineWidth,
     borderBottomWidth: 0,
     width: '100%',
+    overflow: 'hidden',
   },
   handleContainer: {
     alignItems: 'center',
@@ -166,6 +218,7 @@ const styles = StyleSheet.create({
   },
   headerTextContainer: {
     flex: 1,
+    paddingRight: spacing.sm,
   },
   title: {
     ...typography.title,
@@ -175,13 +228,20 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   closeButton: {
-    padding: spacing.xs,
-    marginLeft: spacing.md,
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   content: {
-    flexGrow: 0,
+    flexShrink: 1,
   },
   scrollContent: {
     padding: spacing.base,
+  },
+  footer: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    paddingHorizontal: spacing.base,
+    paddingTop: spacing.md,
   },
 });
