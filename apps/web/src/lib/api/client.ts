@@ -54,12 +54,21 @@ export async function apiRequest<TResponse>(
     serializedBody = JSON.stringify(options.body);
   }
 
-  const response = await fetch(url, {
-    ...options,
-    headers,
-    body: serializedBody,
-    credentials: "include",
-  });
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      ...options,
+      headers,
+      body: serializedBody,
+      credentials: "include",
+    });
+  } catch (err: unknown) {
+    const errorMsg =
+      err instanceof Error && err.name === "AbortError"
+        ? "The request timed out. Please check your internet connection."
+        : "Unable to connect to the server. Please check your internet connection.";
+    throw new ApiError(errorMsg, 0);
+  }
 
   if (!response.ok) {
     let problemDetails: ProblemDetails | undefined;
@@ -91,10 +100,36 @@ export async function apiRequest<TResponse>(
       }
     }
 
-    const message =
-      problemDetails?.detail ||
-      problemDetails?.title ||
-      `Request failed with HTTP status ${response.status}`;
+    let message = problemDetails?.detail || problemDetails?.title;
+
+    if (!message) {
+      switch (response.status) {
+        case 400:
+          message = "Please check the information you entered and try again.";
+          break;
+        case 403:
+          message = "You do not have permission to perform this action.";
+          break;
+        case 404:
+          message = "The requested item could not be found.";
+          break;
+        case 409:
+          message = "This record was updated elsewhere. Please refresh to see the latest version.";
+          break;
+        case 422:
+          message = "The operation could not be completed with the provided data.";
+          break;
+        case 500:
+        case 502:
+        case 503:
+        case 504:
+          message = "Something went wrong on our server. Please try again in a few moments.";
+          break;
+        default:
+          message = "An unexpected error occurred. Please try again.";
+          break;
+      }
+    }
 
     throw new ApiError(message, response.status, problemDetails);
   }

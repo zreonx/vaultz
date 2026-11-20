@@ -91,12 +91,19 @@ export interface ApiErrorPayload {
 export class ApiError extends Error {
   public status: number;
   public payload?: ApiErrorPayload;
+  public technicalDetails?: string;
 
-  constructor(message: string, status = 500, payload?: ApiErrorPayload) {
+  constructor(
+    message: string,
+    status = 500,
+    payload?: ApiErrorPayload,
+    technicalDetails?: string
+  ) {
     super(message);
     this.name = "ApiError";
     this.status = status;
     this.payload = payload;
+    this.technicalDetails = technicalDetails;
   }
 }
 
@@ -137,16 +144,20 @@ export async function apiClient<T>(
     });
   } catch (err: unknown) {
     clearTimeout(timer);
+    const rawMsg = err instanceof Error ? err.message : "Network request failed";
     if (err instanceof Error && err.name === "AbortError") {
       throw new ApiError(
-        `Request to ${endpoint} timed out after ${timeoutMs / 1000}s. Please check connection.`,
-        0
+        "The request took too long to complete. Please check your internet connection.",
+        0,
+        undefined,
+        `Timeout after ${timeoutMs}ms on ${endpoint}: ${rawMsg}`
       );
     }
-    const errorMsg = err instanceof Error ? err.message : "Network request failed";
     throw new ApiError(
-      `Cannot connect to Vaultz API at ${getApiBaseUrl()}. Please check connection. (${errorMsg})`,
-      0
+      "Unable to connect to Vaultz. Please check your internet connection and try again.",
+      0,
+      undefined,
+      `Network failure on ${endpoint}: ${rawMsg}`
     );
   } finally {
     clearTimeout(timer);
@@ -177,21 +188,49 @@ export async function apiClient<T>(
     const errorPayload = data as ApiErrorPayload | undefined;
     const message =
       errorPayload?.detail ||
-      errorPayload?.title ||
       (isAuthEndpoint
-        ? "Invalid email or password."
-        : "Session expired. Please log in again.");
+        ? "Invalid email or password. Please try again."
+        : "Your session has expired. Please sign in again.");
 
     throw new ApiError(message, 401, errorPayload);
   }
 
   if (!response.ok) {
     const errorPayload = data as ApiErrorPayload | undefined;
-    let message = errorPayload?.detail || errorPayload?.title || `Request failed with status ${response.status}`;
+    let message = errorPayload?.detail;
 
-    if (errorPayload?.errors) {
+    if (!message && errorPayload?.errors) {
       const firstError = Object.values(errorPayload.errors).flat()[0];
       if (firstError) message = firstError;
+    }
+
+    if (!message) {
+      switch (response.status) {
+        case 400:
+          message = "Please check the information you entered and try again.";
+          break;
+        case 403:
+          message = "You do not have permission to perform this action.";
+          break;
+        case 404:
+          message = "The requested item could not be found.";
+          break;
+        case 409:
+          message = "This record was updated elsewhere. Please refresh to see the latest version.";
+          break;
+        case 422:
+          message = "The operation could not be completed with the provided data.";
+          break;
+        case 500:
+        case 502:
+        case 503:
+        case 504:
+          message = "Something went wrong on our server. Please try again in a few moments.";
+          break;
+        default:
+          message = "An unexpected error occurred. Please try again.";
+          break;
+      }
     }
 
     throw new ApiError(message, response.status, errorPayload);
