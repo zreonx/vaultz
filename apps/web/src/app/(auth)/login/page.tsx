@@ -8,6 +8,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { AlertCircle, KeyRound, Lock, ShieldCheck, Sparkles } from "lucide-react";
 import { useLoginMutation, useVerifyTwoFactorMutation } from "@/hooks/use-auth";
+import { setAuthToken } from "@/lib/api/client";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -71,6 +72,10 @@ export default function LoginPage() {
       return;
     }
 
+    if (res.accessToken) {
+      setAuthToken(res.accessToken, res.expiresAtUtc);
+    }
+
     if (!res.isEmailVerified) {
       window.location.href = `/verify-email?email=${encodeURIComponent(values.email)}`;
       return;
@@ -83,12 +88,16 @@ export default function LoginPage() {
     e.preventDefault();
     if (!twoFactorData || !twoFactorCode.trim()) return;
 
-    await verify2FaMutation.mutateAsync({
+    const res = await verify2FaMutation.mutateAsync({
       email: twoFactorData.email,
       code: twoFactorCode.trim(),
       twoFactorToken: twoFactorData.twoFactorToken,
       isRecoveryCode: useRecoveryCode,
     });
+
+    if (res.accessToken) {
+      setAuthToken(res.accessToken, res.expiresAtUtc);
+    }
 
     window.location.href = getTargetUrl();
   };

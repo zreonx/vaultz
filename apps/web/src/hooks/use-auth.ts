@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { apiClient } from "@/lib/api/client";
+import { apiClient, clearAuthToken, setAuthToken } from "@/lib/api/client";
 import type {
   AuthResultResponse,
   TwoFactorSetupResponse,
@@ -35,6 +35,9 @@ export function useLoginMutation() {
       apiClient.post<AuthResultResponse>("/api/v1/auth/login", payload),
     onSuccess: (result) => {
       if (!result.requiresTwoFactor) {
+        if (result.accessToken) {
+          setAuthToken(result.accessToken, result.expiresAtUtc);
+        }
         queryClient.setQueryData(AUTH_ME_QUERY_KEY, result);
         void queryClient.invalidateQueries();
       }
@@ -54,6 +57,9 @@ export function useRegisterMutation() {
     }) =>
       apiClient.post<AuthResultResponse>("/api/v1/auth/register", payload),
     onSuccess: (user) => {
+      if (user.accessToken) {
+        setAuthToken(user.accessToken, user.expiresAtUtc);
+      }
       queryClient.setQueryData(AUTH_ME_QUERY_KEY, user);
       void queryClient.invalidateQueries();
     },
@@ -67,6 +73,9 @@ export function useVerifyEmailMutation() {
     mutationFn: (payload: { email: string; code: string }) =>
       apiClient.post<AuthResultResponse>("/api/v1/auth/verify-email", payload),
     onSuccess: (user) => {
+      if (user.accessToken) {
+        setAuthToken(user.accessToken, user.expiresAtUtc);
+      }
       queryClient.setQueryData(AUTH_ME_QUERY_KEY, user);
       void queryClient.invalidateQueries();
     },
@@ -92,6 +101,9 @@ export function useVerifyTwoFactorMutation() {
     }) =>
       apiClient.post<AuthResultResponse>("/api/v1/auth/verify-2fa", payload),
     onSuccess: (user) => {
+      if (user.accessToken) {
+        setAuthToken(user.accessToken, user.expiresAtUtc);
+      }
       queryClient.setQueryData(AUTH_ME_QUERY_KEY, user);
       void queryClient.invalidateQueries();
     },
@@ -206,6 +218,7 @@ export function useLogoutMutation() {
   return useMutation({
     mutationFn: () => apiClient.post<void>("/api/v1/auth/logout"),
     onSuccess: () => {
+      clearAuthToken();
       queryClient.setQueryData(AUTH_ME_QUERY_KEY, null);
       queryClient.clear();
       window.location.href = "/login";

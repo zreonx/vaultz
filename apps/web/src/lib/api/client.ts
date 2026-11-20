@@ -6,6 +6,26 @@ export interface ApiRequestOptions extends Omit<RequestInit, "body"> {
   body?: unknown;
 }
 
+export function getAuthToken(): string | null {
+  if (typeof document === "undefined") return null;
+  const match = document.cookie.match(/(?:^|;\s*)vaultz\.jwt=([^;]*)/);
+  const token = match?.[1];
+  return token ? decodeURIComponent(token) : null;
+}
+
+export function setAuthToken(token: string, expiresAtUtc?: string) {
+  if (typeof document === "undefined") return;
+  const expires = expiresAtUtc ? new Date(expiresAtUtc).toUTCString() : "";
+  const secure = window.location.protocol === "https:" ? "; Secure" : "";
+  document.cookie = `vaultz.jwt=${encodeURIComponent(token)}; path=/; SameSite=Lax${expires ? `; expires=${expires}` : ""}${secure}`;
+}
+
+export function clearAuthToken() {
+  if (typeof document === "undefined") return;
+  const secure = window.location.protocol === "https:" ? "; Secure" : "";
+  document.cookie = `vaultz.jwt=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax${secure}`;
+}
+
 /**
  * Centralized, typed HTTP client for communicating with the Vaultz /api/v1 backend.
  * Uses credentials: 'include' for cookie-based auth and parses RFC 9457 ProblemDetails on error.
@@ -20,6 +40,12 @@ export async function apiRequest<TResponse>(
   const headers = new Headers(options.headers);
   if (!headers.has("Accept")) {
     headers.set("Accept", "application/json");
+  }
+
+  // Attach Bearer token header if present in document.cookie for cross-domain auth
+  const token = getAuthToken();
+  if (token && !headers.has("Authorization")) {
+    headers.set("Authorization", `Bearer ${token}`);
   }
 
   let serializedBody: BodyInit | undefined;
@@ -49,6 +75,7 @@ export async function apiRequest<TResponse>(
       !normalizedPath.includes("/auth/login") &&
       !normalizedPath.includes("/auth/register")
     ) {
+      clearAuthToken();
       const currentPath = window.location.pathname;
       const isPublicPage =
         currentPath === "/" ||
