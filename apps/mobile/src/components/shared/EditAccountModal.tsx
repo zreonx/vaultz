@@ -314,7 +314,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   deleteWrapper: {
-    marginTop: spacing.md,
+    marginTop: spacing.sm,
     alignItems: "center",
   },
   errorBox: {

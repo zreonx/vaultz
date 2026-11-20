@@ -315,7 +315,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "flex-end",
     gap: spacing.sm,
-    marginTop: spacing.md,
+    marginTop: 0,
   },
   cancelBtn: {
     flex: 1,

@@ -7,14 +7,15 @@ import {
   Dimensions,
   Animated,
   Modal,
+  Platform,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTutorial } from '@/context/TutorialContext';
 import { useTheme } from '@/context/ThemeContext';
 import { PressableScale } from '@/components/ui';
-import { colors } from '@/theme/colors';
 import { typography, radius, spacing } from '@/theme/tokens';
+import { haptics } from '@/utils/haptics';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
@@ -40,7 +41,7 @@ export const SpotlightTourModal: React.FC<SpotlightTourModalProps> = ({
     activeTargetRect,
   } = useTutorial();
 
-  const pulseAnim = useRef(new Animated.Value(1)).current;
+  const pulseAnim = useRef(new Animated.Value(0.82)).current;
 
   useEffect(() => {
     if (!isTourActive || isActionModalOpen) return;
@@ -48,13 +49,13 @@ export const SpotlightTourModal: React.FC<SpotlightTourModalProps> = ({
     const pulse = Animated.loop(
       Animated.sequence([
         Animated.timing(pulseAnim, {
-          toValue: 1.03,
-          duration: 900,
+          toValue: 1,
+          duration: 1000,
           useNativeDriver: true,
         }),
         Animated.timing(pulseAnim, {
-          toValue: 1,
-          duration: 900,
+          toValue: 0.82,
+          duration: 1000,
           useNativeDriver: true,
         }),
       ])
@@ -69,36 +70,47 @@ export const SpotlightTourModal: React.FC<SpotlightTourModalProps> = ({
 
   const isLastStep = currentStepIndex === totalTourSteps - 1;
 
-  // Calculate Popover placement
-  const cardPadding = spacing.md;
-  const cardMarginHorizontal = spacing.md;
-  const cardWidth = SCREEN_WIDTH - cardMarginHorizontal * 2;
-  const estimatedCardHeight = 220;
+  // Layout calculations
+  const PADDING = 8;
+  const cardMarginHorizontal = spacing.base;
+  const cardWidth = Math.min(SCREEN_WIDTH - cardMarginHorizontal * 2, 420);
+  const estimatedCardHeight = currentTourStep.actionText ? 240 : 205;
+  const GAP = 14;
+
+  const topSafe = insets.top + (Platform.OS === 'android' ? 16 : 12);
+  const bottomSafe = insets.bottom + (Platform.OS === 'android' ? 24 : 16);
 
   let popoverTop: number | null = null;
   let popoverBottom: number | null = null;
   let isCentered = false;
 
-  if (activeTargetRect) {
-    const cutoutY = Math.max(0, activeTargetRect.y - 6);
-    const cutoutH = activeTargetRect.height + 12;
+  let cutoutX = 0;
+  let cutoutY = 0;
+  let cutoutW = 0;
+  let cutoutH = 0;
+
+  if (activeTargetRect && activeTargetRect.width > 0 && activeTargetRect.height > 0) {
+    cutoutX = Math.max(0, activeTargetRect.x - PADDING);
+    cutoutY = Math.max(0, activeTargetRect.y - PADDING);
+    cutoutW = Math.min(SCREEN_WIDTH - cutoutX, activeTargetRect.width + PADDING * 2);
+    cutoutH = activeTargetRect.height + PADDING * 2;
     const cutoutBottom = cutoutY + cutoutH;
 
-    const spaceBelow = SCREEN_HEIGHT - insets.bottom - cutoutBottom;
-    const spaceAbove = cutoutY - insets.top;
+    const spaceBelow = SCREEN_HEIGHT - bottomSafe - cutoutBottom;
+    const spaceAbove = cutoutY - topSafe;
 
-    if (spaceBelow >= estimatedCardHeight + 16) {
-      // Dock below
-      popoverTop = cutoutBottom + 14;
-    } else if (spaceAbove >= estimatedCardHeight + 16) {
-      // Dock above
-      popoverBottom = SCREEN_HEIGHT - cutoutY + 14;
+    if (spaceBelow >= estimatedCardHeight + GAP) {
+      // Comfortably fits below target
+      popoverTop = Math.min(cutoutBottom + GAP, SCREEN_HEIGHT - bottomSafe - estimatedCardHeight);
+    } else if (spaceAbove >= estimatedCardHeight + GAP) {
+      // Comfortably fits above target
+      popoverBottom = Math.min(SCREEN_HEIGHT - cutoutY + GAP, SCREEN_HEIGHT - topSafe - estimatedCardHeight);
     } else {
-      // Dock where there is maximum room or clamp
-      if (spaceBelow > spaceAbove) {
-        popoverTop = Math.max(insets.top + 16, cutoutBottom + 10);
+      // Dock on the side with more room
+      if (spaceBelow >= spaceAbove) {
+        popoverTop = Math.max(topSafe, cutoutBottom + 8);
       } else {
-        popoverBottom = Math.max(insets.bottom + 16, SCREEN_HEIGHT - cutoutY + 10);
+        popoverBottom = Math.max(bottomSafe, SCREEN_HEIGHT - cutoutY + 8);
       }
     }
   } else {
@@ -106,10 +118,28 @@ export const SpotlightTourModal: React.FC<SpotlightTourModalProps> = ({
   }
 
   const handleAction = () => {
+    haptics.light();
     if (currentTourStep.actionType) {
       onActionTrigger?.(currentTourStep.actionType);
     }
   };
+
+  const handleNext = () => {
+    haptics.selection();
+    nextStep();
+  };
+
+  const handlePrev = () => {
+    haptics.selection();
+    prevStep();
+  };
+
+  const handleSkip = () => {
+    haptics.light();
+    skipTour();
+  };
+
+  const backdropBg = isDark ? 'rgba(5, 8, 14, 0.70)' : 'rgba(15, 23, 42, 0.48)';
 
   return (
     <Modal
@@ -117,13 +147,13 @@ export const SpotlightTourModal: React.FC<SpotlightTourModalProps> = ({
       transparent
       animationType="fade"
       statusBarTranslucent
-      onRequestClose={skipTour}
+      onRequestClose={handleSkip}
     >
       <View style={styles.fullscreenContainer}>
-        {/* Dimmed Background Overlay with Cutout Spotlight */}
-        {activeTargetRect ? (
+        {/* Dimmed Background Overlay with Focused Cutout */}
+        {activeTargetRect && activeTargetRect.width > 0 ? (
           <>
-            {/* Top Dimmed Rect */}
+            {/* Top Dimmed Slice */}
             <View
               style={[
                 styles.dimmedSlice,
@@ -131,69 +161,84 @@ export const SpotlightTourModal: React.FC<SpotlightTourModalProps> = ({
                   top: 0,
                   left: 0,
                   right: 0,
-                  height: Math.max(0, activeTargetRect.y - 6),
+                  height: cutoutY,
+                  backgroundColor: backdropBg,
                 },
               ]}
             />
 
-            {/* Bottom Dimmed Rect */}
+            {/* Bottom Dimmed Slice */}
             <View
               style={[
                 styles.dimmedSlice,
                 {
-                  top: activeTargetRect.y + activeTargetRect.height + 6,
+                  top: cutoutY + cutoutH,
                   left: 0,
                   right: 0,
                   bottom: 0,
+                  backgroundColor: backdropBg,
                 },
               ]}
             />
 
-            {/* Left Dimmed Rect */}
+            {/* Left Dimmed Slice */}
             <View
               style={[
                 styles.dimmedSlice,
                 {
-                  top: Math.max(0, activeTargetRect.y - 6),
+                  top: cutoutY,
                   left: 0,
-                  width: Math.max(0, activeTargetRect.x - 6),
-                  height: activeTargetRect.height + 12,
+                  width: cutoutX,
+                  height: cutoutH,
+                  backgroundColor: backdropBg,
                 },
               ]}
             />
 
-            {/* Right Dimmed Rect */}
+            {/* Right Dimmed Slice */}
             <View
               style={[
                 styles.dimmedSlice,
                 {
-                  top: Math.max(0, activeTargetRect.y - 6),
-                  left: activeTargetRect.x + activeTargetRect.width + 6,
+                  top: cutoutY,
+                  left: cutoutX + cutoutW,
                   right: 0,
-                  height: activeTargetRect.height + 12,
+                  height: cutoutH,
+                  backgroundColor: backdropBg,
                 },
               ]}
             />
 
-            {/* Glowing Emerald Ring around Focused Component */}
+            {/* Glowing Focus Ring around Focused Element */}
             <Animated.View
               style={[
                 styles.focusRing,
                 {
-                  top: activeTargetRect.y - 6,
-                  left: activeTargetRect.x - 6,
-                  width: activeTargetRect.width + 12,
-                  height: activeTargetRect.height + 12,
+                  top: cutoutY,
+                  left: cutoutX,
+                  width: cutoutW,
+                  height: cutoutH,
                   borderColor: colors.accent,
                   shadowColor: colors.accent,
-                  transform: [{ scale: pulseAnim }],
+                  opacity: pulseAnim,
                 },
               ]}
               pointerEvents="none"
-            />
+            >
+              <View
+                style={[
+                  styles.focusRingInner,
+                  {
+                    backgroundColor: isDark
+                      ? 'rgba(71, 153, 128, 0.06)'
+                      : 'rgba(42, 107, 88, 0.04)',
+                  },
+                ]}
+              />
+            </Animated.View>
           </>
         ) : (
-          <View style={[StyleSheet.absoluteFill, styles.fallbackDimmed]} />
+          <View style={[StyleSheet.absoluteFill, { backgroundColor: backdropBg }]} />
         )}
 
         {/* Floating Step Popover Card */}
@@ -202,9 +247,11 @@ export const SpotlightTourModal: React.FC<SpotlightTourModalProps> = ({
             styles.popoverCard,
             {
               backgroundColor: colors.surface,
-              borderColor: colors.border,
+              borderColor: colors.borderSubtle,
               width: cardWidth,
               marginHorizontal: cardMarginHorizontal,
+              shadowColor: '#000',
+              shadowOpacity: isDark ? 0.45 : 0.15,
             },
             isCentered && styles.centeredCard,
             popoverTop !== null && { top: popoverTop },
@@ -213,24 +260,63 @@ export const SpotlightTourModal: React.FC<SpotlightTourModalProps> = ({
         >
           {/* Header Row */}
           <View style={styles.cardHeader}>
-            <View style={[styles.badgeWrapper, { backgroundColor: colors.accentMuted }]}>
+            <View
+              style={[
+                styles.badgeWrapper,
+                {
+                  backgroundColor: isDark
+                    ? 'rgba(71, 153, 128, 0.16)'
+                    : 'rgba(42, 107, 88, 0.1)',
+                  borderColor: isDark
+                    ? 'rgba(71, 153, 128, 0.3)'
+                    : 'rgba(42, 107, 88, 0.2)',
+                },
+              ]}
+            >
               <View style={[styles.pulseDot, { backgroundColor: colors.accent }]} />
               <Text style={[styles.badgeText, { color: colors.accent }]}>
-                STEP {currentStepIndex + 1} OF {totalTourSteps}: {currentTourStep.badge}
+                STEP {currentStepIndex + 1} OF {totalTourSteps} • {currentTourStep.badge}
               </Text>
             </View>
 
             <TouchableOpacity
-              onPress={skipTour}
-              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              onPress={handleSkip}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              accessibilityLabel="Skip interactive tour"
             >
-              <Text style={[styles.skipBtnText, { color: colors.textMuted }]}>Skip Tour</Text>
+              <Text style={[styles.skipBtnText, { color: colors.textMuted }]}>
+                Skip
+              </Text>
             </TouchableOpacity>
           </View>
 
+          {/* Segmented Progress Bar */}
+          <View style={styles.progressRow}>
+            {Array.from({ length: totalTourSteps }).map((_, i) => (
+              <View
+                key={i}
+                style={[
+                  styles.progressBarSegment,
+                  {
+                    backgroundColor:
+                      i <= currentStepIndex
+                        ? colors.accent
+                        : isDark
+                        ? colors.borderSubtle
+                        : colors.surfaceMuted,
+                  },
+                ]}
+              />
+            ))}
+          </View>
+
           {/* Body Content */}
-          <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>{currentTourStep.title}</Text>
-          <Text style={[styles.cardDesc, { color: colors.textSecondary }]}>{currentTourStep.description}</Text>
+          <Text style={[styles.cardTitle, { color: colors.textPrimary }]}>
+            {currentTourStep.title}
+          </Text>
+          <Text style={[styles.cardDesc, { color: colors.textSecondary }]}>
+            {currentTourStep.description}
+          </Text>
 
           {/* Optional Action Button */}
           {currentTourStep.actionText && (
@@ -238,74 +324,75 @@ export const SpotlightTourModal: React.FC<SpotlightTourModalProps> = ({
               style={[
                 styles.actionBtn,
                 {
-                  borderColor: isDark ? 'rgba(71, 153, 128, 0.35)' : 'rgba(42, 107, 88, 0.25)',
-                  backgroundColor: isDark ? 'rgba(71, 153, 128, 0.12)' : 'rgba(42, 107, 88, 0.08)',
+                  borderColor: isDark
+                    ? 'rgba(71, 153, 128, 0.35)'
+                    : 'rgba(42, 107, 88, 0.25)',
+                  backgroundColor: isDark
+                    ? 'rgba(71, 153, 128, 0.14)'
+                    : 'rgba(42, 107, 88, 0.08)',
                 },
               ]}
               onPress={handleAction}
             >
-              <Ionicons name="sparkles-outline" size={15} color={colors.accent} />
-              <Text style={[styles.actionBtnText, { color: colors.accent }]}>{currentTourStep.actionText}</Text>
+              <Ionicons name="sparkles" size={15} color={colors.accent} />
+              <Text style={[styles.actionBtnText, { color: colors.accent }]}>
+                {currentTourStep.actionText}
+              </Text>
             </PressableScale>
           )}
 
           {/* Footer Controls */}
-          <View style={[styles.cardFooter, { borderTopColor: colors.borderSubtle }]}>
-            {/* Step Dots */}
-            <View style={styles.dotsRow}>
-              {Array.from({ length: totalTourSteps }).map((_, i) => (
-                <View
-                  key={i}
-                  style={[
-                    styles.dot,
-                    i === currentStepIndex
-                      ? { width: 14, backgroundColor: colors.accent }
-                      : { width: 4, backgroundColor: colors.border },
-                  ]}
-                />
-              ))}
-            </View>
-
-            {/* Navigation Buttons */}
-            <View style={styles.navButtonsRow}>
-              <TouchableOpacity
-                onPress={prevStep}
-                disabled={currentStepIndex === 0}
+          <View
+            style={[
+              styles.cardFooter,
+              { borderTopColor: colors.borderSubtle },
+            ]}
+          >
+            {/* Back Button */}
+            <TouchableOpacity
+              onPress={handlePrev}
+              disabled={currentStepIndex === 0}
+              style={[
+                styles.backBtn,
+                currentStepIndex === 0 && styles.disabledBtn,
+              ]}
+              hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            >
+              <Ionicons
+                name="chevron-back"
+                size={16}
+                color={currentStepIndex === 0 ? colors.textMuted : colors.textSecondary}
+              />
+              <Text
                 style={[
-                  styles.backBtn,
-                  currentStepIndex === 0 && styles.disabledBtn,
+                  styles.backBtnText,
+                  { color: colors.textSecondary },
+                  currentStepIndex === 0 && { color: colors.textMuted },
                 ]}
               >
-                <Ionicons
-                  name="chevron-back"
-                  size={16}
-                  color={currentStepIndex === 0 ? colors.textMuted : colors.textSecondary}
-                />
-                <Text
-                  style={[
-                    styles.backBtnText,
-                    { color: colors.textSecondary },
-                    currentStepIndex === 0 && { color: colors.textMuted },
-                  ]}
-                >
-                  Back
-                </Text>
-              </TouchableOpacity>
+                Back
+              </Text>
+            </TouchableOpacity>
 
-              <PressableScale
-                onPress={nextStep}
-                style={[styles.nextBtn, { backgroundColor: colors.accent }]}
+            {/* Next / Finish Button */}
+            <PressableScale
+              onPress={handleNext}
+              style={[styles.nextBtn, { backgroundColor: colors.accent }]}
+            >
+              <Text
+                style={[
+                  styles.nextBtnText,
+                  { color: colors.accentForeground || '#0B0F17' },
+                ]}
               >
-                <Text style={[styles.nextBtnText, { color: colors.accentForeground }]}>
-                  {isLastStep ? 'Finish' : 'Next'}
-                </Text>
-                <Ionicons
-                  name={isLastStep ? 'checkmark' : 'chevron-forward'}
-                  size={16}
-                  color={colors.accentForeground}
-                />
-              </PressableScale>
-            </View>
+                {isLastStep ? 'Finish Tour' : 'Next'}
+              </Text>
+              <Ionicons
+                name={isLastStep ? 'checkmark' : 'chevron-forward'}
+                size={15}
+                color={colors.accentForeground || '#0B0F17'}
+              />
+            </PressableScale>
           </View>
         </View>
       </View>
@@ -320,37 +407,31 @@ const styles = StyleSheet.create({
   },
   dimmedSlice: {
     position: 'absolute',
-    backgroundColor: 'rgba(0, 0, 0, 0.78)',
-  },
-  fallbackDimmed: {
-    backgroundColor: 'rgba(0, 0, 0, 0.78)',
   },
   focusRing: {
     position: 'absolute',
     borderRadius: radius.lg,
     borderWidth: 2,
-    borderColor: colors.accent,
-    shadowColor: colors.accent,
     shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.6,
-    shadowRadius: 16,
+    shadowRadius: 14,
     elevation: 8,
+    overflow: 'hidden',
+  },
+  focusRingInner: {
+    flex: 1,
   },
   popoverCard: {
     position: 'absolute',
-    backgroundColor: colors.surface,
     borderRadius: radius.xl,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.md,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.45,
-    shadowRadius: 18,
+    borderWidth: StyleSheet.hairlineWidth,
+    padding: spacing.base,
+    shadowOffset: { width: 0, height: 10 },
+    shadowRadius: 24,
     elevation: 12,
+    alignSelf: 'center',
   },
   centeredCard: {
-    top: '38%',
+    top: '36%',
   },
   cardHeader: {
     flexDirection: 'row',
@@ -361,124 +442,101 @@ const styles = StyleSheet.create({
   badgeWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.accentMuted,
-    paddingHorizontal: spacing.sm,
+    paddingHorizontal: spacing.sm + 2,
     paddingVertical: 3,
     borderRadius: radius.full,
+    borderWidth: StyleSheet.hairlineWidth,
   },
   pulseDot: {
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: colors.accent,
     marginRight: 6,
   },
   badgeText: {
     ...typography.caption,
     fontSize: 10,
     fontWeight: '700',
-    color: colors.accent,
     letterSpacing: 0.5,
   },
   skipBtnText: {
     ...typography.caption,
-    color: colors.textMuted,
-    fontSize: 11,
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  progressRow: {
+    flexDirection: 'row',
+    gap: 4,
+    marginVertical: spacing.xs + 2,
+  },
+  progressBarSegment: {
+    flex: 1,
+    height: 3,
+    borderRadius: 2,
   },
   cardTitle: {
     ...typography.title,
-    fontSize: 15,
-    color: colors.textPrimary,
+    fontSize: 16,
+    fontWeight: '700',
     marginTop: spacing.xs,
     marginBottom: 4,
+    letterSpacing: -0.2,
   },
   cardDesc: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    lineHeight: 18,
-    fontSize: 12,
+    ...typography.body,
+    fontSize: 13.5,
+    lineHeight: 20,
   },
   actionBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    marginTop: spacing.sm,
-    paddingVertical: 8,
-    paddingHorizontal: spacing.sm,
+    marginTop: spacing.sm + 2,
+    paddingVertical: 9,
+    paddingHorizontal: spacing.md,
     borderRadius: radius.md,
     borderWidth: 1,
-    borderColor: 'rgba(16, 185, 129, 0.3)',
-    backgroundColor: 'rgba(16, 185, 129, 0.08)',
   },
   actionBtnText: {
-    ...typography.caption,
-    color: colors.accent,
+    ...typography.label,
+    fontSize: 12.5,
     fontWeight: '600',
-    fontSize: 12,
   },
   cardFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginTop: spacing.md,
-    paddingTop: spacing.sm,
-    borderTopWidth: 1,
-    borderTopColor: colors.borderSubtle,
-  },
-  dotsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  dot: {
-    height: 4,
-    borderRadius: 2,
-  },
-  activeDot: {
-    width: 14,
-    backgroundColor: colors.accent,
-  },
-  inactiveDot: {
-    width: 4,
-    backgroundColor: colors.border,
-  },
-  navButtonsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
+    paddingTop: spacing.sm + 2,
+    borderTopWidth: StyleSheet.hairlineWidth,
   },
   backBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 6,
-    paddingHorizontal: 8,
+    paddingHorizontal: 6,
+    gap: 2,
   },
   backBtnText: {
     ...typography.caption,
-    color: colors.textSecondary,
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '500',
   },
   disabledBtn: {
-    opacity: 0.4,
-  },
-  disabledBtnText: {
-    color: colors.textMuted,
+    opacity: 0.35,
   },
   nextBtn: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.accent,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
     borderRadius: radius.full,
-    gap: 4,
+    gap: 5,
   },
   nextBtnText: {
     ...typography.caption,
-    color: '#101413',
+    fontSize: 13,
     fontWeight: '700',
-    fontSize: 12,
   },
 });

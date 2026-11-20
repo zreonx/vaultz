@@ -49,6 +49,15 @@ export const ModalSheet: React.FC<ModalSheetProps> = ({
     insets.top,
     Platform.OS === 'android' ? 24 : 12
   );
+
+  // Safe clearance above system navigation bar (Android 3-button nav or iOS home indicator)
+  // Ensure the footer action buttons have generous breathing room so they never touch
+  // or overlap the navigation bar or bottom screen edge.
+  const footerBottomPadding = Math.max(
+    insets.bottom + (Platform.OS === 'android' ? 18 : 14),
+    Platform.OS === 'android' ? 38 : 30
+  );
+
   const bottomInset = Math.max(
     insets.bottom,
     Platform.OS === 'android' ? 20 : 16
@@ -168,7 +177,7 @@ export const ModalSheet: React.FC<ModalSheetProps> = ({
                   {
                     borderTopColor: colors.borderSubtle,
                     backgroundColor: colors.surface,
-                    paddingBottom: bottomInset,
+                    paddingBottom: footerBottomPadding,
                   },
                 ]}
               >

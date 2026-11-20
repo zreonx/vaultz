@@ -7,7 +7,6 @@ import { AuthProvider } from '@/context/AuthContext';
 import { WorkspaceProvider, useWorkspace } from '@/context/WorkspaceContext';
 import { OfflineSyncProvider } from '@/context/OfflineSyncContext';
 import { TutorialProvider } from '@/context/TutorialContext';
-import { SpotlightTourModal } from '@/components/tutorial/SpotlightTourModal';
 import { RootNavigator } from '@/navigation/RootNavigator';
 
 const queryClient = new QueryClient({
@@ -28,7 +27,6 @@ function InnerApp() {
       <TutorialProvider>
         <StatusBar style={isDark ? "light" : "dark"} />
         <RootNavigator />
-        <SpotlightTourModal />
       </TutorialProvider>
     </OfflineSyncProvider>
   );

@@ -906,7 +906,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "flex-end",
     gap: spacing.sm,
-    marginTop: spacing.md,
+    marginTop: 0,
   },
   cancelBtn: {
     flex: 1,
@@ -915,7 +915,7 @@ const styles = StyleSheet.create({
     flex: 2,
   },
   deleteWrapper: {
-    marginTop: spacing.md,
+    marginTop: spacing.sm,
     alignItems: "center",
   },
 });

@@ -23,33 +23,33 @@ export interface MobileTourStep {
 export const MOBILE_TOUR_STEPS: MobileTourStep[] = [
   {
     id: 'workspace_pill',
-    badge: 'ACCOUNT ISOLATION',
-    title: '1. Personal Account Containers',
+    badge: 'ISOLATION',
+    title: 'Personal Account Containers',
     description:
-      'In Vaultz, every account operates in strict personal isolation. Each container has its own private currency and ledger so balances never get mixed up. Tap here anytime to switch accounts.',
+      'In Vaultz, every account operates in strict personal isolation with its own private currency and ledger. Tap the switcher anytime to manage or change accounts.',
   },
   {
     id: 'balance_card',
-    badge: 'ACTIVE SCOPING',
-    title: '2. Scoped Net Balance & Cash Flow',
+    badge: 'OVERVIEW',
+    title: 'Scoped Net Balance & Cash Flow',
     description:
-      'This card shows your live balance and monthly cash flow strictly scoped to the active account. Tap the eye icon to instantly hide sensitive numbers.',
+      'Track your current net balance, monthly income, and expenses scoped strictly to your active account. Tap the eye icon to quickly hide sensitive numbers.',
   },
   {
     id: 'quick_actions',
-    badge: 'LOG REAL ACTIVITY',
-    title: '3. Record Real Transactions',
+    badge: 'QUICK ACTIONS',
+    title: 'Record Real Transactions',
     description:
-      "Tap 'Expense' or 'Income' to quickly record activity. Vaultz immediately recalculates your cash flow, net balance, and spending pace in real time.",
-    actionText: '+ Log Expense',
+      "Tap 'Expense' or 'Income' to log financial activity with live FX conversion. Vaultz recalculates your cash flow, net balance, and spending pace in real time.",
+    actionText: 'Try Logging an Expense',
     actionType: 'record_transaction',
   },
   {
     id: 'bottom_tabs',
-    badge: 'FINANCIAL TOOLKIT',
-    title: '4. Full Financial Toolkit',
+    badge: 'NAVIGATION',
+    title: 'Full Financial Toolkit',
     description:
-      'Navigate effortlessly across Overview, Finance (Vaults & Monthly Budgets), Activity, Accounts, and More (Reports, Goals, Recurring, IOUs, Categories & Tools).',
+      'Explore your financial toolkit: Overview, Finance (Vaults & Budgets), Activity, and More (Reports, Goals, Recurring, IOUs & Tools).',
   },
 ];
 
