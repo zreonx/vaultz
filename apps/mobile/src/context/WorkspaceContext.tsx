@@ -158,7 +158,11 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const refetchAll = useCallback(async () => {
-    await Promise.all([refetch(), queryClient.invalidateQueries()]);
+    await Promise.all([
+      refetch(),
+      queryClient.invalidateQueries({ queryKey: ["accounts"] }),
+      queryClient.invalidateQueries({ queryKey: ["notifications-unread"] }),
+    ]);
   }, [queryClient, refetch]);
 
   const unreadNotificationsCount = isAuthActive ? (unreadData?.unreadCount ?? 0) : 0;

@@ -249,6 +249,8 @@ export const SettingsScreen: React.FC = () => {
       );
     } else if (result.synced > 0) {
       Alert.alert("Sync Complete", `${result.synced} offline transaction(s) synced.`);
+    } else {
+      Alert.alert("Up to Date", "Your accounts and transactions are in sync with the cloud.");
     }
   };
 

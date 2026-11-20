@@ -16,25 +16,13 @@ function isTunnelHost(host: string): boolean {
 }
 
 // Dynamic default API base URL:
-// - Web: uses current window hostname (e.g. localhost or local IP) with port 5180
-// - Native Android / iOS: defaults to live backend https://vaultz-api.zreon.space or local debug IP
+// - Web: uses current window hostname if on localhost
+// - Native Android / iOS & remote web: defaults directly to live backend https://vaultz-api.zreon.space
 function getDefaultBaseUrl(): string {
   if (Platform.OS === "web" && typeof window !== "undefined" && window.location) {
     const host = window.location.hostname || "localhost";
     if (host === "localhost" || host === "127.0.0.1") {
       return "http://localhost:5180";
-    }
-    return DEFAULT_API_URL;
-  }
-
-  const hostUri = Constants.expoConfig?.hostUri || (Constants as any)?.manifest?.debuggerHost;
-  if (hostUri) {
-    const host = hostUri.split(":")[0];
-    if (host && host !== "localhost") {
-      if (isTunnelHost(host)) {
-        return DEFAULT_API_URL;
-      }
-      return `http://${host}:5180`;
     }
   }
 
@@ -48,8 +36,15 @@ let configuredApiBaseUrl = getDefaultBaseUrl();
   try {
     const saved = await secureStore.getItemAsync?.("vaultz.custom_api_url");
     if (saved) {
-      // Automatically clear outdated subnet IP if router changed from 192.168.254.x to 192.168.1.x
-      if (saved.includes("192.168.254.194")) {
+      // Automatically purge stale local/unreachable IPs so users on Android/iOS don't get stuck
+      if (
+        saved.includes("192.168.") ||
+        saved.includes("10.") ||
+        saved.includes("172.") ||
+        saved.includes("localhost") ||
+        saved.includes("127.0.0.1") ||
+        saved.startsWith("http://")
+      ) {
         await secureStore.deleteItemAsync?.("vaultz.custom_api_url");
         configuredApiBaseUrl = getDefaultBaseUrl();
       } else {
@@ -113,7 +108,7 @@ export function setOnUnauthorizedCallback(cb: () => void) {
 
 export async function apiClient<T>(
   endpoint: string,
-  options: RequestInit = {}
+  options: RequestInit & { timeout?: number } = {}
 ): Promise<T> {
   const token = await secureStore.getToken();
   const url = `${getApiBaseUrl()}${endpoint.startsWith("/") ? endpoint : `/${endpoint}`}`;
@@ -128,18 +123,33 @@ export async function apiClient<T>(
     headers.Authorization = `Bearer ${token}`;
   }
 
+  // Fast fail-safe timeout so requests never stall or hang on Android/iOS
+  const controller = new AbortController();
+  const timeoutMs = options.timeout ?? 10000;
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+
   let response: Response;
   try {
     response = await fetch(url, {
       ...options,
       headers,
+      signal: controller.signal,
     });
   } catch (err: unknown) {
+    clearTimeout(timer);
+    if (err instanceof Error && err.name === "AbortError") {
+      throw new ApiError(
+        `Request to ${endpoint} timed out after ${timeoutMs / 1000}s. Please check connection.`,
+        0
+      );
+    }
     const errorMsg = err instanceof Error ? err.message : "Network request failed";
     throw new ApiError(
       `Cannot connect to Vaultz API at ${getApiBaseUrl()}. Please check connection. (${errorMsg})`,
       0
     );
+  } finally {
+    clearTimeout(timer);
   }
 
   if (response.status === 204) {
