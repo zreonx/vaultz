@@ -18,13 +18,6 @@ export const ALL_ACCOUNTS_NAVIGATION: NavItem[] = [
     scope: "portfolio",
   },
   {
-    title: "Accounts",
-    href: "/accounts",
-    status: "active",
-    description: "Checking, savings, cash & credit card balances",
-    scope: "portfolio",
-  },
-  {
     title: "Transaction History",
     href: "/transactions",
     status: "active",

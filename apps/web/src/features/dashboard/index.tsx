@@ -126,13 +126,6 @@ export function DashboardOverviewFeature() {
               Your Accounts ({workspaces.length})
             </h3>
           </div>
-          <div className="flex items-center gap-2">
-            <Button asChild variant="ghost" size="sm" data-tour="manage-accounts-btn">
-              <Link href="/accounts">
-                Manage Accounts <ArrowRight className="h-3.5 w-3.5" />
-              </Link>
-            </Button>
-          </div>
         </div>
 
         <div className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">

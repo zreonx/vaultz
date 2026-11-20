@@ -104,7 +104,7 @@ export function AppSidebar() {
 
   return (
     <Sidebar collapsible="icon" aria-label="Primary Sidebar Navigation">
-      <SidebarHeader className={cn("border-b border-[var(--border-subtle)]", isCollapsed ? "p-2 justify-center" : "p-3 pb-2.5")}>
+      <SidebarHeader className={cn("border-b-0", isCollapsed ? "p-2 justify-center" : "p-3 pb-2.5")}>
         <SidebarMenu>
           <SidebarMenuItem>
             <DropdownMenu>
@@ -112,7 +112,7 @@ export function AppSidebar() {
                 <SidebarMenuButton
                   size="lg"
                   className={cn(
-                    "rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-muted)]/60 hover:bg-[var(--surface-muted)] transition-all",
+                    "rounded-xl border-0 bg-[var(--surface-muted)]/50 hover:bg-[var(--surface-muted)] transition-all shadow-none",
                     isCollapsed ? "h-10 w-10 p-0 justify-center mx-auto" : "p-2"
                   )}
                   tooltip={
@@ -158,7 +158,7 @@ export function AppSidebar() {
                 side={isCollapsed ? "right" : "bottom"}
                 align="start"
                 sideOffset={isCollapsed ? 12 : 6}
-                className="w-72"
+                className="w-72 border-0 shadow-lg"
               >
                 <DropdownMenuLabel className="flex items-center justify-between">
                   <div>
