@@ -1,10 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { AlertCircle, Lock, Mail, User } from "lucide-react";
+import { AlertCircle, Eye, EyeOff, Lock, Mail, User } from "lucide-react";
 import { useRegisterMutation } from "@/hooks/use-auth";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -34,6 +35,7 @@ type RegisterFormValues = z.infer<typeof registerSchema>;
 
 export default function RegisterPage() {
   const registerMutation = useRegisterMutation();
+  const [showPassword, setShowPassword] = useState(false);
 
   const {
     register,
@@ -144,13 +146,25 @@ export default function RegisterPage() {
             <div className="relative">
               <Input
                 id="password"
-                type="password"
+                type={showPassword ? "text" : "password"}
                 placeholder="••••••••"
                 autoComplete="new-password"
                 {...register("password")}
-                className="h-10 text-sm pl-9"
+                className="h-10 text-sm pl-9 pr-10"
               />
               <Lock className="absolute left-3 top-3 h-4 w-4 text-[var(--muted-foreground)]" />
+              <button
+                type="button"
+                onClick={() => setShowPassword((prev) => !prev)}
+                className="absolute right-3 top-3 text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors focus:outline-none"
+                aria-label={showPassword ? "Hide password" : "Show password"}
+              >
+                {showPassword ? (
+                  <EyeOff className="h-4 w-4" />
+                ) : (
+                  <Eye className="h-4 w-4" />
+                )}
+              </button>
             </div>
             {errors.password && (
               <p className="text-xs text-[var(--danger)]">
