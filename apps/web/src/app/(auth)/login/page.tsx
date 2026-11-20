@@ -6,7 +6,7 @@ import { useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { AlertCircle, KeyRound, Lock, ShieldCheck, Sparkles } from "lucide-react";
+import { AlertCircle, KeyRound, Lock, ShieldCheck } from "lucide-react";
 import { useLoginMutation, useVerifyTwoFactorMutation } from "@/hooks/use-auth";
 import { setAuthToken } from "@/lib/api/client";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -100,11 +100,6 @@ export default function LoginPage() {
     }
 
     window.location.href = getTargetUrl();
-  };
-
-  const fillDemoCredentials = () => {
-    setValue("email", "demo@vaultz.local");
-    setValue("password", "Password123");
   };
 
   return (
@@ -232,7 +227,7 @@ export default function LoginPage() {
               <Input
                 id="email"
                 type="email"
-                placeholder="demo@vaultz.local"
+                placeholder="name@example.com"
                 autoComplete="email"
                 {...register("email")}
                 className="h-10 text-sm"
@@ -274,24 +269,13 @@ export default function LoginPage() {
               )}
             </div>
 
-            <div className="space-y-2 pt-1">
+            <div className="pt-1">
               <Button
                 type="submit"
                 className="w-full h-10 font-medium"
                 disabled={loginMutation.isPending}
               >
                 {loginMutation.isPending ? "Signing in…" : "Sign In"}
-              </Button>
-
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                className="w-full h-9 text-xs"
-                onClick={fillDemoCredentials}
-              >
-                <Sparkles className="h-3.5 w-3.5 mr-1 text-[var(--accent)]" />
-                Fill Demo Credentials (demo@vaultz.local)
               </Button>
             </div>
 

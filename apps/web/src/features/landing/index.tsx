@@ -233,8 +233,8 @@ export function LandingPageFeature() {
               </Link>
             </Button>
             <Button asChild variant="outline" size="lg">
-              <Link href={user ? "/accounts" : "/register"}>
-                {user ? "Manage Accounts" : "Create Free Account"}
+              <Link href={user ? "/dashboard" : "/register"}>
+                {user ? "View Dashboard" : "Create Free Account"}
               </Link>
             </Button>
           </div>
@@ -659,26 +659,18 @@ export function LandingPageFeature() {
                 Ready to take calm control of your finances?
               </CardTitle>
               <CardDescription className="text-sm">
-                Explore right away with our sample account (
-                <Badge variant="neutral" className="font-mono">
-                  demo@vaultz.local
-                </Badge>{" "}
-                /{" "}
-                <Badge variant="neutral" className="font-mono">
-                  Password123
-                </Badge>
-                ) or create your own personal profile in seconds.
+                Join Vaultz today to track multi-account balances, budgets, savings goals, and cash flow with clarity.
               </CardDescription>
               <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
                 <Button asChild size="lg">
-                  <Link href={user ? "/dashboard" : "/login"}>
-                    {user ? "Open Dashboard" : "Sign In with Sample Account"}
+                  <Link href={user ? "/dashboard" : "/register"}>
+                    {user ? "Open Dashboard" : "Get Started Free"}
                     <ArrowRight className="h-4 w-4" />
                   </Link>
                 </Button>
                 <Button asChild variant="outline" size="lg">
-                  <Link href={user ? "/accounts" : "/register"}>
-                    {user ? "Manage Accounts" : "Create Free Account"}
+                  <Link href={user ? "/dashboard" : "/login"}>
+                    {user ? "Go to Dashboard" : "Sign In"}
                   </Link>
                 </Button>
               </div>
@@ -705,9 +697,6 @@ export function LandingPageFeature() {
               <>
                 <Button asChild variant="ghost" size="sm">
                   <Link href="/dashboard">Dashboard</Link>
-                </Button>
-                <Button asChild variant="ghost" size="sm">
-                  <Link href="/accounts">Accounts</Link>
                 </Button>
                 <Button asChild variant="ghost" size="sm">
                   <Link href="/transactions">Transactions</Link>
